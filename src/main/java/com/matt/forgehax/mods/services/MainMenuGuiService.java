@@ -11,6 +11,7 @@ import static org.lwjgl.input.Keyboard.KEY_UP;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.matt.forgehax.util.color.Colors;
+import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.ServiceMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import java.io.IOException;
@@ -33,8 +34,15 @@ import org.lwjgl.input.Keyboard;
  */
 @RegisterMod
 public class MainMenuGuiService extends ServiceMod {
-  
-  private GuiButton customButton;
+
+  private final Setting<Boolean> multicmd =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("multicommand")
+          .description("Split string at ; allowing to process multiple commands at once")
+          .defaultTo(true)
+          .build();
   
   public MainMenuGuiService() {
     super("MainMenuGuiService");
@@ -43,32 +51,19 @@ public class MainMenuGuiService extends ServiceMod {
   @SubscribeEvent
   public void onGui(GuiScreenEvent.InitGuiEvent.Post event) {
     if (event.getGui() instanceof GuiMainMenu) {
-      GuiMainMenu gui = (GuiMainMenu) event.getGui();
-      
-      event
-          .getButtonList()
-          .stream()
-          .skip(4) // skip first 4 button
-          .forEach(
-              button -> {
-                button.y += 24;
-              }); // lower the rest of the buttons to make room for ours
-      
-      event
-          .getButtonList()
-          .add(
-              customButton =
-                  new GuiButton(
-                      666,
-                      gui.width / 2 - 100,
-                      gui.height / 4 + 48 + (24 * 3), // put button in 4th row
-                      "Command Input"));
+      List<GuiButton> menu = event.getButtonList();
+      for (GuiButton b : menu) {
+        if (b.id == 14) {
+          b.id = 666;
+          b.displayString = "ForgeHax Prompt";
+        }
+      }
     }
   }
   
   @SubscribeEvent
   public void onActionPerformed(GuiScreenEvent.ActionPerformedEvent event) {
-    if (event.getButton() == customButton) {
+    if (event.getButton().id == 666) {
       MC.displayGuiScreen(new CommandInputGui());
     }
   }
@@ -181,12 +176,14 @@ public class MainMenuGuiService extends ServiceMod {
         if (!str.isEmpty()) {
           // this.print("> " + str);
           this.inputField.setText("");
-          if (this.inputHistory.isEmpty()
-              || !this.inputHistory.get(this.inputHistory.size() - 1).equals(str)) {
-            this.inputHistory.add(str);
+          for (String cmd : str.split(multicmd.get() ? ";" : "\0")) { // jank but compact, there cannot
+            if (this.inputHistory.isEmpty()                           //   be any null char at this point
+                || !this.inputHistory.get(this.inputHistory.size() - 1).equals(cmd)) {
+              this.inputHistory.add(cmd);
+            }
+            this.sentHistoryCursor = inputHistory.size();
+            this.runCommand(cmd);
           }
-          this.sentHistoryCursor = inputHistory.size();
-          this.runCommand(str);
         }
       }
     }
