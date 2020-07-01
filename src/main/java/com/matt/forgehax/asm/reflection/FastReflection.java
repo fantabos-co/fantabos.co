@@ -35,11 +35,13 @@ import net.minecraft.item.ItemTool;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.network.play.client.CPacketCloseWindow;
 import net.minecraft.network.play.client.CPacketEntityAction;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketVehicleMove;
+import net.minecraft.network.play.client.CPacketCustomPayload;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
@@ -178,8 +180,19 @@ public interface FastReflection extends ASMCommon {
         .setName("entityID")
         .autoAssign()
         .asField();
-    
+
     /**
+     * CPacketCustomPayload
+     */
+
+    FastField<PacketBuffer> CPacketCustomPayload_data =
+    FastTypeBuilder.create()
+      .setInsideClass(CPacketCustomPayload.class)
+      .setName("data")
+      .autoAssign()
+      .asField();
+    
+      /**
      * SPacketPlayerPosLook
      */
     FastField<Float> SPacketPlayer_pitch =
