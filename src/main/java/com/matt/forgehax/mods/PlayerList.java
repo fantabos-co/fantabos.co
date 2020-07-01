@@ -7,6 +7,7 @@ import static com.matt.forgehax.Helper.getModManager;
 
 import com.matt.forgehax.mods.services.FriendService;
 import com.matt.forgehax.util.entity.EntityUtils;
+import com.matt.forgehax.util.entity.PlayerUtils;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
@@ -21,8 +22,21 @@ import net.minecraft.util.text.TextFormatting;
 
 import java.util.*;
 
+/**
+ * Created by OverFloyd
+ * may 2020
+ */
 @RegisterMod
 public class PlayerList extends ListMod {
+
+  private final Setting<Boolean> color =
+    getCommandStub()
+        .builders()
+        .<Boolean>newSettingBuilder()
+        .name("color")
+        .description("Color player names depending on gear")
+        .defaultTo(false)
+        .build();
 
   public PlayerList() {
     super(Category.GUI, "PlayerList", false, "Displays nearby players and some stats");
@@ -49,7 +63,7 @@ public class PlayerList extends ListMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + TextFormatting.DARK_AQUA + count + TextFormatting.WHITE + "]");
+    return (getModName() + " [" + count + "]");
   }
 
   @SubscribeEvent
@@ -60,6 +74,7 @@ public class PlayerList extends ListMod {
 
       EntityPlayer player = getLocalPlayer();
 
+      // Prints all the "InfoDisplayElement" mods
       getWorld()
         .loadedEntityList
         .stream()
@@ -108,6 +123,9 @@ public class PlayerList extends ListMod {
   private String getNameColor(EntityPlayer entity) {
     if (getModManager().get(FriendService.class).get().isFriend(entity.getName()))
       return TextFormatting.LIGHT_PURPLE + entity.getName() + TextFormatting.GRAY;
+    if (color.get()) {
+      return PlayerUtils.getGearColor(entity).getFormattedText() + TextFormatting.GRAY;
+    }
     return TextFormatting.GRAY + entity.getName();
   }
 }
