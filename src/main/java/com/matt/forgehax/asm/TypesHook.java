@@ -67,6 +67,24 @@ public interface TypesHook {
         .setName("isLiquidInteractEnabled")
         .setType(boolean.class)
         .build();
+
+    ASMField ForgeHaxHooks_preventArmorRendering =
+      Classes.ForgeHaxHooks.childField()
+        .setName("preventArmorRendering")
+        .setType(boolean.class)
+        .build();
+
+    ASMField ForgeHaxHooks_doPreventGhostBlocksPlace =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doPreventGhostBlocksPlace")
+        .setType(boolean.class)
+        .build();
+
+    ASMField ForgeHaxHooks_doPreventGhostBlocksBreak =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doPreventGhostBlocksBreak")
+        .setType(boolean.class)
+        .build();
   }
   
   interface Methods {

@@ -98,8 +98,10 @@ public class ForgeHaxHooks implements ASMCommon {
   public static boolean isBoatSetYawActivated = false;
   public static boolean isNotRowingBoatActivated = false;
   public static boolean isLiquidInteractEnabled = false;
-  
+  public static boolean preventArmorRendering = false;
   public static boolean doIncreaseTabListSize = false;
+  public static boolean doPreventGhostBlocksBreak = false;
+  public static boolean doPreventGhostBlocksPlace = false;
   
   /** static hooks */
   

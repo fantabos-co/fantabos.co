@@ -33,6 +33,12 @@ public interface TypesMc {
         .setClassName("net/minecraft/block/BlockLiquid")
         .autoAssign()
         .build();
+
+    ASMClass LayerArmorBase =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/client/renderer/entity/layers/LayerArmorBase")
+        .autoAssign()
+        .build();
     
     ASMClass Material =
       ASMBuilders.newClassBuilder()
@@ -497,6 +503,23 @@ public interface TypesMc {
         .finish()
         .autoAssign()
         .build();
+
+    ASMMethod LayerArmorBase_doRenderLayer =
+      Classes.LayerArmorBase.childMethod()
+        .setName("doRenderLayer")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(Classes.EntityLivingBase)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .finish()
+        .autoAssign()
+        .build();
     
     ASMMethod Minecraft_setIngameFocus =
       Classes.Minecraft.childMethod()
@@ -673,6 +696,17 @@ public interface TypesMc {
         .finish()
         .autoAssign()
         .build();
+    ASMMethod World_setBlockState =
+      Classes.World.childMethod()
+        .setName("setBlockState")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(Classes.BlockPos)
+        .add(Classes.IBlockState)
+        .add(int.class)
+        .finish()
+        .autoAssign()
+        .build();
     
     ASMMethod EntityBoat_updateMotion =
       Classes.EntityBoat.childMethod()
@@ -768,6 +802,15 @@ public interface TypesMc {
         .setReturnType(void.class)
         .beginParameters()
         .add(Classes.EntityPlayer)
+        .finish()
+        .autoAssign()
+        .build();
+    ASMMethod PlayerControllerMC_onPlayerDestroyBlock =
+      Classes.PlayerControllerMP.childMethod()
+        .setName("onPlayerDestroyBlock")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(Classes.BlockPos)
         .finish()
         .autoAssign()
         .build();
