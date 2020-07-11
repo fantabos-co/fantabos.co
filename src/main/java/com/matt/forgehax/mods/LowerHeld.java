@@ -12,10 +12,6 @@ import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
-/**
- * Author fsck
- * 2019-10-20.
- */
 @RegisterMod
 public class LowerHeld extends ToggleMod {
 
@@ -51,7 +47,7 @@ public final Setting<Float> mainhand =
       .build();
 
   public LowerHeld() {
-    super(Category.RENDER, "LowerHeld", false, "Lowers or hides your held items");
+    super(Category.PLAYER, "LowerHeld", false, "Lowers or hides your held items");
   }
 
   private Field off;
@@ -63,7 +59,7 @@ public final Setting<Float> mainhand =
     try {
       off = ObfuscationReflectionHelper.findField(MC.entityRenderer.itemRenderer.getClass(),"field_187471_h");
       main = ObfuscationReflectionHelper.findField(MC.entityRenderer.itemRenderer.getClass(), "field_187469_f");
-    } catch (Exception e) { // What does it throw?
+    } catch (NoSuchMethodError e) { // What does it throw?
       LOGGER.warn("Could not find fields to lower held item progress : {}", e.getMessage());
       disabled = true;
     }
@@ -81,6 +77,7 @@ public final Setting<Float> mainhand =
   @SubscribeEvent
   public void changeOffhandProgress(LocalPlayerUpdateEvent event) {
     if (MC.player == null) return;
+    if (disabled) return;
     try {
       if (off.getFloat(MC.entityRenderer.itemRenderer) > offhand.get()) {
         off.set(MC.entityRenderer.itemRenderer, offhand.get());
