@@ -2,6 +2,7 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
+import com.matt.forgehax.Helper;
 import com.matt.forgehax.util.command.Setting;//TODO implement some settings for fancy shit
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
@@ -13,6 +14,7 @@ import net.minecraft.client.gui.GuiGameOver;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.network.play.client.CPacketKeepAlive;
+import net.minecraft.network.play.client.CPacketTabComplete;
 import net.minecraft.util.text.TextFormatting;
 
 @RegisterMod
@@ -63,8 +65,10 @@ public class NoDeathScreen extends ToggleMod {
       dead = false;
       return; // Don't mess with menus! 
     }
-    if (silent.get() && dead && !(event.getPacket() instanceof CPacketChatMessage)
-         && !(event.getPacket() instanceof CPacketKeepAlive)) {
+    if (silent.get() && dead &&
+        !(event.getPacket() instanceof CPacketChatMessage ||
+          event.getPacket() instanceof CPacketKeepAlive ||
+          event.getPacket() instanceof CPacketTabComplete)) {
       event.setCanceled(true);
     }
   }
@@ -81,7 +85,7 @@ public class NoDeathScreen extends ToggleMod {
   public void onGuiScreen(GuiScreenEvent event) {
     if (event.getGui() instanceof GuiGameOver) {
       dead = true;
-      MC.displayGuiScreen(new GuiChat("Oh geez guess I'm bad at this game"));
+      MC.displayGuiScreen(new GuiChat(""));
       MC.player.respawnPlayer();
       getLocalPlayer().setHealth(1F);
       getLocalPlayer().isDead = false;
