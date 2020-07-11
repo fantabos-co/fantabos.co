@@ -13,7 +13,7 @@ import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.math.AlignHelper;
 import com.matt.forgehax.util.mod.Category;
-import com.matt.forgehax.util.mod.ListMod;
+import com.matt.forgehax.util.mod.HudMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -22,12 +22,8 @@ import net.minecraft.util.text.TextFormatting;
 
 import java.util.*;
 
-/**
- * Created by OverFloyd
- * may 2020
- */
 @RegisterMod
-public class PlayerList extends ListMod {
+public class PlayerList extends HudMod {
 
   private final Setting<Boolean> color =
     getCommandStub()
@@ -38,8 +34,45 @@ public class PlayerList extends ListMod {
         .defaultTo(false)
         .build();
 
+  private final Setting<Float> maxdist =
+    getCommandStub()
+        .builders()
+        .<Float>newSettingBuilder()
+        .name("maxdist")
+        .description("Don't show players further than this")
+        .min(0F)
+        .defaultTo(500F)
+        .build();
+
+  private final Setting<ListSorter> sortMode =
+    getCommandStub()
+        .builders()
+        .<ListSorter>newSettingEnumBuilder()
+        .name("sorting")
+        .description("Sorting mode")
+        .defaultTo(ListSorter.LENGTH)
+        .build();
+
   public PlayerList() {
     super(Category.GUI, "PlayerList", false, "Displays nearby players and some stats");
+  }
+
+  protected enum ListSorter {
+    ALPHABETICAL(Comparator.comparing(e -> ((EntityPlayer) e).getName())), // mod list is already sorted alphabetically
+    LENGTH(Comparator.comparing(e -> ((EntityPlayer) e).getName().length(), Comparator.reverseOrder())),
+    REVLENGTH(Comparator.comparingInt(e -> ((EntityPlayer) e).getName().length())),
+    DISTANCE(Comparator.comparing(e -> getLocalPlayer().getDistance((EntityPlayer) e), Comparator.reverseOrder())),
+    REVDISTANCE(Comparator.comparing(e -> getLocalPlayer().getDistance((EntityPlayer) e)));
+
+    private final Comparator<EntityPlayer> comparator;
+
+    public Comparator<EntityPlayer> getComparator() {
+      return this.comparator;
+    }
+
+    ListSorter(Comparator<EntityPlayer> comparatorIn) {
+      this.comparator = comparatorIn;
+    }
   }
 
   @Override
@@ -63,7 +96,7 @@ public class PlayerList extends ListMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + count + "]");
+    return (getModName() + " [" + TextFormatting.DARK_AQUA + count + TextFormatting.WHITE + "]");
   }
 
   @SubscribeEvent
@@ -72,22 +105,20 @@ public class PlayerList extends ListMod {
       int align = alignment.get().ordinal();
 	    List<String> text = new ArrayList<>();
 
-      EntityPlayer player = getLocalPlayer();
-
-      // Prints all the "InfoDisplayElement" mods
       getWorld()
         .loadedEntityList
         .stream()
         .filter(EntityUtils::isPlayer)
+        .filter(e -> e.getDistance(getLocalPlayer()) < maxdist.get())
         .filter(
           entity ->
             !Objects.equals(getLocalPlayer(), entity) && !EntityUtils.isFakeLocalPlayer(entity))
-		    .map(entity -> (EntityPlayer) entity)
-        .map(entity -> (getDistanceColor(distance(entity.posX, entity.posY, entity.posZ, player.posX, player.posY, player.posZ)) +
-                        getNameColor(entity) + " [" +
-                        getHPColor(entity.getHealth()) + TextFormatting.GRAY + "] " +
-                        above_below(getLocalPlayer().posY, entity.posY)))
+        .map(entity -> (EntityPlayer) entity)
         .sorted(sortMode.get().getComparator())
+        .map(entity -> (getDistanceColor(getLocalPlayer().getDistance(entity)) +
+                        getNameColor(entity) + " [" +
+                        getHPColor(entity.getHealth() + entity.getAbsorptionAmount()) + TextFormatting.GRAY + "] " +
+                        above_below(getLocalPlayer().posY, entity.posY)) + TextFormatting.RESET)
         .forEach(line -> text.add(line));
 
       count = text.size();
@@ -99,9 +130,9 @@ public class PlayerList extends ListMod {
   }
 
   private static String getHPColor(float hp) {
-    if (hp > 19.9F) return TextFormatting.DARK_GREEN + String.format("%.0f", hp);
-    if (hp > 17F) return TextFormatting.GREEN + String.format("%.0f", hp);
-    if (hp > 12F) return TextFormatting.YELLOW + String.format("%.0f", hp);
+    if (hp > 20F) return TextFormatting.YELLOW + String.format("%.0f", hp);
+    if (hp > 17F) return TextFormatting.DARK_GREEN + String.format("%.0f", hp);
+    if (hp > 12F) return TextFormatting.GREEN + String.format("%.0f", hp);
     if (hp > 8F) return TextFormatting.GOLD + String.format("%.0f", hp);
     if (hp > 5F) return TextFormatting.RED + String.format("%.1f", hp);
     if (hp > 2F) return TextFormatting.DARK_RED + String.format("%.1f", hp);
