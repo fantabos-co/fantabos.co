@@ -26,9 +26,8 @@ public class AccountService extends ServiceMod {
   }
 
   private Field session;
-  // private Field token;
   private boolean enabled;
-  private AuthHelper auth = new AuthHelper();
+  private Authenticator auth = new Authenticator();
 
   private Session originalSession;
 
@@ -42,14 +41,10 @@ public class AccountService extends ServiceMod {
     super.onLoad();
     try {
       session = ObfuscationReflectionHelper.findField(MC.getClass(), "field_71449_j");
-      // token = YggdrasilUserAuthentication.class.getDeclaredField("accessToken");
       enabled = true;
     } catch (NoSuchMethodError e) {
       LOGGER.warn("Could not find session field, cannot change session");
       enabled = false;
-    /// } catch (NoSuchFieldException e) {
-    ///   LOGGER.warn("Could not find token field, cannot change session");
-    ///   enabled = false;
     }
 
     if (enabled) {
@@ -62,8 +57,13 @@ public class AccountService extends ServiceMod {
         .description("Switch back to original session")
         .processor(
             data -> {
-              setSession(originalSession);
-              Helper.printInform("Back to original player");
+              try {
+                session.set(MC, originalSession);
+                Helper.printInform("Back to original player");
+              } catch (IllegalAccessException e) {
+                Helper.printError("Could not restore original session");
+                LOGGER.error(String.format("Failed Reflection access for restoring session : %s", e.getMessage()));
+              }  
             })
         .build();
       } catch (IllegalAccessException e) {
@@ -80,11 +80,14 @@ public class AccountService extends ServiceMod {
               final String username = data.getArgumentAsString(0);
               final String password = data.getArgumentAsString(1);
               try {
-                boolean res = auth.login(username, password);
-                if (res) Helper.printError("Succesfully logged in");
-                else Helper.printWarning("Login failed");
+                auth.login(username, password);
+                Helper.printError("Succesfully logged in");
               } catch (AuthenticationException e) {
                 Helper.printError("Could not login as %s", username);
+                LOGGER.error("Failed logging in, recheck credentials?");
+              } catch (IllegalAccessException e) {
+                Helper.printError("Failed to change active session");
+                LOGGER.error(String.format("Failed setting new session : %s", e.getMessage()));
               }
             })
         .build();
@@ -115,68 +118,50 @@ public class AccountService extends ServiceMod {
             data -> {
               data.requiredArguments(1);
               final String alias = data.getArgumentAsString(0);
-              try {
-                boolean res = auth.login(user_db.get(alias), pwd_db.get(alias));
-                if (res) Helper.printInform("Logged in as %s", alias);
-                else Helper.printWarning("Failed to login as %s", alias);
-              } catch (AuthenticationException e) {
-                Helper.printError("Could not login as %s", alias);
+              if (user_db.get(alias) == null) {
+                Helper.printWarning("No account saved as %s", alias);
+              } else {
+                try {
+                  auth.login(user_db.get(alias), pwd_db.get(alias));
+                  Helper.printInform("Logged in as %s", alias);
+                } catch (AuthenticationException e) {
+                  Helper.printError("Could not login as %s", alias);
+                  LOGGER.error(String.format("Could not login as %s : %s", alias, e.getMessage()));
+                } catch (IllegalAccessException e) {
+                  Helper.printError("Failed to change active session");
+                  LOGGER.error(String.format("Failed setting new session as %s : %s", alias, e.getMessage()));
+                }
               }
             })
         .build();
     }
   }
 
-  private void setSession(Session s) {
-    try {
-        session.set(MC, s);
-    } catch (IllegalAccessException e) {
-        throw new RuntimeException("Failed Reflective Access", e);
-    }
-}
+  private final class Authenticator extends YggdrasilUserAuthentication {
 
-  private final class AuthHelper extends YggdrasilUserAuthentication {
+    /* Thanks ReAuth for showing how to do it https://github.com/TechnicianLP/ReAuth */
 
-    /* Thanks ReAuth! https://github.com/TechnicianLP/ReAuth */
-
-    private YggdrasilAuthenticationService loginService;
-    private boolean returnLoginService = false;
-
-    public AuthHelper() {
+    public Authenticator() {
       super(new YggdrasilAuthenticationService(MC.getProxy(), null), Agent.MINECRAFT);
-      loginService = new YggdrasilAuthenticationService(MC.getProxy(), UUID.randomUUID().toString());
+      alt_login = new YggdrasilAuthenticationService(MC.getProxy(), UUID.randomUUID().toString());
     }
 
+    // I need to use a new ClientToken otherwise the MC Auth service won't know how to handle a UUID change
+    private YggdrasilAuthenticationService alt_login = null;
+    
     @Override
-    public YggdrasilAuthenticationService getAuthenticationService() {
-        if (returnLoginService) {
-            return loginService;
-        }
-        return super.getAuthenticationService();
-    }
+    public YggdrasilAuthenticationService getAuthenticationService() { return alt_login; }
 
-    public boolean login(String user, String password) throws AuthenticationException {
-      boolean result = false;
-      setUsername(user);
-      setPassword(password);
-      try {
-        returnLoginService = true;
-        logInWithPassword(); // Use a different loginService to provide a new client token!
-        returnLoginService = false;
-        Session session = new Session(getSelectedProfile().getName(),
-                              UUIDTypeAdapter.fromUUID(getSelectedProfile().getId()),
-                              getAuthenticatedToken(), getUserType().getName());
-        session.setProperties(getUserProperties());
-        logOut();
-        setSession(session);
-        result = true;
-      } catch (AuthenticationException e) {
-        LOGGER.warn("Login failed : " + e.getMessage());
-      } finally {
-        returnLoginService = false;
-        logOut();
-      }
-      return result;
+    public void login(String usr, String pwd) throws AuthenticationException, IllegalAccessException {
+      setUsername(usr);
+      setPassword(pwd);
+      logInWithPassword();
+      Session sess = new Session(getSelectedProfile().getName(),
+                            UUIDTypeAdapter.fromUUID(getSelectedProfile().getId()),
+                            getAuthenticatedToken(), getUserType().getName());
+      sess.setProperties(getUserProperties());
+      logOut();
+      session.set(MC, sess);
     }
   }
 }
