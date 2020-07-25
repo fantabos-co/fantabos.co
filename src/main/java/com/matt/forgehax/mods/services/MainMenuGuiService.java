@@ -10,6 +10,7 @@ import static org.lwjgl.input.Keyboard.KEY_RETURN;
 import static org.lwjgl.input.Keyboard.KEY_UP;
 
 import com.google.common.util.concurrent.AtomicDouble;
+import com.matt.forgehax.gui.ClickGui;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.ServiceMod;
@@ -73,7 +74,6 @@ public class MainMenuGuiService extends ServiceMod {
     GuiButton backButton;
     GuiTextField inputField;
     GuiButton modeButton;
-    ClientMode mode = ClientMode.FORGEHAX;
     Deque<String> messageHistory = new LinkedList<>();
     
     // ordered from oldest to newest
@@ -94,7 +94,7 @@ public class MainMenuGuiService extends ServiceMod {
       this.buttonList.add(
           modeButton =
               new GuiButton(
-                  0, this.width - 100 - 2, this.height - 20 - 2, 100, 20, mode.getName()));
+                  0, this.width - 100 - 2, this.height - 20 - 2, 100, 20, "ForgeHax"));
     }
     
     @Override
@@ -111,17 +111,13 @@ public class MainMenuGuiService extends ServiceMod {
     @Override
     public void updateScreen() {
       this.inputField.updateCursorCounter();
-      this.modeButton.displayString = mode.getName();
+      this.modeButton.displayString = "ForgeHax";
     }
     
     @Override
     protected void actionPerformed(GuiButton button) {
       if (button == modeButton) {
-        if (mode.ordinal() == ClientMode.values().length - 1) {
-          mode = ClientMode.values()[0];
-        } else {
-          mode = ClientMode.values()[mode.ordinal() + 1];
-        }
+        MC.displayGuiScreen(ClickGui.getInstance());
       }
       if (button == backButton) {
         MC.displayGuiScreen(null);
@@ -217,33 +213,10 @@ public class MainMenuGuiService extends ServiceMod {
     
     private void runCommand(String s) {
       try {
-        // TODO: Future client api
-        switch (mode) {
-          case FORGEHAX:
-            ChatCommandService.handleCommand(s);
-            break;
-          case FUTURE:
-            print(RED + "Unsupported");
-            break;
-        }
+        ChatCommandService.handleCommand(s);
       } catch (Throwable t) {
         print(RED + t.toString());
       }
-    }
-  }
-  
-  private enum ClientMode {
-    FORGEHAX("Forgehax"),
-    FUTURE("Future");
-    
-    private final String name;
-    
-    public String getName() {
-      return this.name;
-    }
-    
-    ClientMode(String nameIn) {
-      this.name = nameIn;
     }
   }
 }
