@@ -13,14 +13,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.util.text.TextFormatting;
+
+import java.util.Random;
 
 import static com.matt.forgehax.Helper.getPlayerDirection;
 
 @RegisterMod
 public class CoordsHud extends HudMod {
+
+  public CoordsHud() {
+    super(Category.GUI, "Coords", false, "Displays your current coordinates");
+  }
+
+  private Random rand = new Random();
 
   private final Setting<Boolean> translate =
       getCommandStub()
@@ -58,9 +66,14 @@ public class CoordsHud extends HudMod {
           .defaultTo(false)
           .build();
 
-  public CoordsHud() {
-    super(Category.GUI, "Coords", false, "Displays your current coordinates");
-  }
+  public final Setting<Boolean> spoof =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("spoof")
+          .description("Hide true coordinates")
+          .defaultTo(false)
+          .build();
 
   @Override
   protected Align getDefaultAlignment() {
@@ -94,16 +107,24 @@ public class CoordsHud extends HudMod {
       return;
     }
 
-    Entity entity = getEntity();
-    thisX = entity.posX;
-    thisY = entity.posY;
-    thisZ = entity.posZ;
+    if (spoof.get()) {
+      thisX = rand.nextInt(999999);
+      thisY = rand.nextInt(99);
+      thisZ = rand.nextInt(999999);
+      otherX = rand.nextInt(999999);
+      otherZ = rand.nextInt(999999);
+    } else {
+      Entity entity = getEntity();
+      thisX = entity.posX;
+      thisY = entity.posY;
+      thisZ = entity.posZ;
 
-    double thisFactor = MC.world.provider.getMovementFactor();
-    double otherFactor = thisFactor != 1d ? 1d : 8d;
-    double travelFactor = thisFactor / otherFactor;
-    otherX = thisX * travelFactor;
-    otherZ = thisZ * travelFactor;
+      double thisFactor = MC.world.provider.getMovementFactor();
+      double otherFactor = thisFactor != 1d ? 1d : 8d;
+      double travelFactor = thisFactor / otherFactor;
+      otherX = thisX * travelFactor;
+      otherZ = thisZ * travelFactor;
+    }
   }
 
   @SubscribeEvent
@@ -111,42 +132,59 @@ public class CoordsHud extends HudMod {
     List<String> text = new ArrayList<>();
 
     // Direction
-    String facingAndDirection = String.format("%s " + TextFormatting.GRAY + "[" + TextFormatting.WHITE +
-        "%s"  + TextFormatting.GRAY + "]" + TextFormatting.WHITE, facingTable[getPlayerDirection()], towardsTable[getPlayerDirection()]);
-
-    // Nether coords
-    String coordsTranslated = String.format(TextFormatting.GRAY + "(" + TextFormatting.WHITE +"%01.1f, %01.1f" +
-        TextFormatting.GRAY + ")" + TextFormatting.WHITE, otherX, otherZ);
-
+    String facingNormal = String.format("%s " + TextFormatting.GRAY + "[%s]" + TextFormatting.WHITE,
+                                  facingTable[getPlayerDirection()], towardsTable[getPlayerDirection()]);
+    // Multiline coords + direction
+    String facingWithTCoords = String.format(
+      TextFormatting.GRAY + "[ " + TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "\u23d0 " +
+      TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "] - " + TextFormatting.WHITE + "%s " +
+      TextFormatting.GRAY + "[%s]" + TextFormatting.WHITE, otherX, otherZ,
+          facingTable[getPlayerDirection()], towardsTable[getPlayerDirection()]);
     // Only OW coords
-    String coordsNormal = String.format("%01.1f, %01.1f, %01.1f", thisX, thisY, thisZ);
+    String coordsNormal = String.format(
+      TextFormatting.GRAY + "[ " + TextFormatting.DARK_GRAY + "X " + TextFormatting.WHITE +
+      "%.1f " + TextFormatting.GRAY + "\u23d0 " + TextFormatting.WHITE + "%.1f " +
+      TextFormatting.DARK_GRAY + "Z " + TextFormatting.GRAY + "] (" + TextFormatting.WHITE + "%.0f " +
+      TextFormatting.DARK_GRAY + "Y" + TextFormatting.GRAY + ")" + TextFormatting.WHITE, thisX, thisZ, thisY);
+    // Multiline Nether coords
+    String coordsMultiTranslated = String.format(
+      TextFormatting.GRAY + "[ " + TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "\u23d0 " +
+      TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "] - " + TextFormatting.WHITE, otherX, otherZ);
+    // Single line OW + Nether coords
+    String coordsTranslated = String.format(
+      "%s  %.1f " + TextFormatting.GRAY + "\u23d0 " + TextFormatting.WHITE + "%.1f", coordsNormal, otherX, otherZ);
 
-    if (!translate.get()
-        || (translate.get() && multiline.get())
-        || (translate.get() && MC.player.dimension == 1)) {
-      text.add(coordsNormal); // x, y, z
-
+    if (!translate.get() || MC.player.dimension == 1) {
+      text.add(coordsNormal);
       if (direction.get()) {
-        if (!multiline.get()
-            || !translate.get() && multiline.get()
-            || (translate.get() && MC.player.dimension == 1)) {
-          text.add(facingAndDirection); // Facing [f]
-        }
+        text.add(facingNormal);
       }
-    }
-
-    if (translate.get() && MC.player.dimension != 1) {
+    } else if (MC.player.dimension == -1) {
       if (multiline.get()) {
         if (direction.get()) {
-          text.add(facingAndDirection + " " + coordsTranslated); // Facing (tx, tz)
+          text.add(facingWithTCoords);
         } else {
-          text.add(coordsTranslated); // (tx, tz)
+          text.add(coordsTranslated);
+        }
+        text.add(coordsNormal);
+      } else {
+        if (direction.get()) {
+          text.add(facingNormal);
+        }
+        text.add(coordsTranslated);
+      }
+    } else {
+      if (multiline.get()) {
+        text.add(coordsNormal);
+        if (direction.get()) {
+          text.add(facingWithTCoords);
+        } else {
+          text.add(coordsTranslated);
         }
       } else {
-        text.add(coordsNormal + " " + coordsTranslated); // x, y, z (tx, tz)
-
+        text.add(coordsTranslated);
         if (direction.get()) {
-          text.add(facingAndDirection); // Facing [f]
+          text.add(facingNormal);
         }
       }
     }
