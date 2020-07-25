@@ -38,6 +38,13 @@ public class NoWeather extends ToggleMod {
           .defaultTo(true)
           .build();
   
+  @Override
+  public boolean isVisible() {
+    if (showStatus.get() && isRaining) return true;
+    return super.isVisible();
+  }
+
+
   private void saveState(World world) {
     if (world != null) {
       setState(world.getWorldInfo().isRaining(), world.rainingStrength, world.prevRainingStrength);
