@@ -14,9 +14,11 @@ import com.matt.forgehax.util.mod.loader.RegisterMod;
 import com.matt.forgehax.util.serialization.ISerializableJson;
 
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.io.IOException;
@@ -67,38 +69,59 @@ public class FriendService extends ServiceMod {
     return false;
   }
 
+
+  private ITextComponent replaceInComponent(ITextComponent source, String name) {
+    ITextComponent out;
+    if (source.getUnformattedComponentText().contains(name)) {
+      out = isolateName(source, name);
+    } else {
+      out = new TextComponentString(source.getUnformattedComponentText()).setStyle(source.getStyle());
+    }
+    for (ITextComponent sibling : source.getSiblings()) {
+      out.appendSibling(replaceInComponent(sibling, name));
+    }
+    return out;
+  }
+
+  private ITextComponent isolateName(ITextComponent source, String name) {
+    if (source.getUnformattedComponentText().equals(name) ||
+        source.getUnformattedComponentText().equals(name + " ") ||
+        source.getUnformattedComponentText().equals(" " + name)) {
+      return new TextComponentString(source.getUnformattedComponentText())
+                    .setStyle(source.getStyle().setColor(TextFormatting.LIGHT_PURPLE));
+    } else {
+      ITextComponent out;
+      String[] split_text = source.getUnformattedComponentText().split(name);
+      if (split_text.length <= 0) return new TextComponentString(""); // nothing to do!
+      if (split_text.length > 1) { // before and after
+        out = new TextComponentString(split_text[0]).setStyle(source.getStyle());
+        out.appendSibling(new TextComponentString(name).setStyle(source.getStyle().createDeepCopy().setColor(TextFormatting.LIGHT_PURPLE)));
+        out.appendSibling(new TextComponentString(split_text[1]).setStyle(source.getStyle()));
+      } else if (source.getUnformattedComponentText().startsWith(name)) {
+        out = new TextComponentString(name).setStyle(source.getStyle().createDeepCopy().setColor(TextFormatting.LIGHT_PURPLE));
+        out.appendSibling(new TextComponentString(split_text[0]).setStyle(source.getStyle()));
+      } else {
+        out = new TextComponentString(split_text[0]).setStyle(source.getStyle());
+        out.appendSibling(new TextComponentString(name).setStyle(source.getStyle().createDeepCopy().setColor(TextFormatting.LIGHT_PURPLE)));
+      }
+      return out;
+    }
+  }
+
   @SubscribeEvent
   public void onChat(ClientChatReceivedEvent event) {
     if (!color_chat.get()) return;
-    final String message = event.getMessage().getFormattedText();
     final String message_raw = event.getMessage().getUnformattedText();
-    ITextComponent text = event.getMessage();
     for (FriendEntry f : friendList) {
-      if (isActualUsername(message_raw, f.getName())) {       // Maybe it's not in a chat message? 
-        // The following block is just to find the previous formatting
-        String format_pre = TextFormatting.RESET.toString();
-        if (isActualUsername(text.getUnformattedComponentText(), f.getName())) {
-          format_pre = text.getStyle().getFormattingCode();
-        } else {
-          for (ITextComponent t : text.getSiblings()) {
-            if (isActualUsername(t.getUnformattedComponentText(), f.getName())) {
-              format_pre = t.getStyle().getFormattingCode();
-              break;
-            }
-          }
-        }
-        // 
-        TextComponentString out = new TextComponentString(
-          message.replace(f.getName(), TextFormatting.RESET.toString() + TextFormatting.LIGHT_PURPLE + 
-                                                f.getName() + TextFormatting.RESET + format_pre));
-        event.setMessage(out);
+      if (isActualUsername(message_raw, f.getName())) {
+        event.setMessage(replaceInComponent(event.getMessage(), f.getName()));
         break;
       }
     }
   }
 
-  @SubscribeEvent
-  public void onTabUpdate(RenderTabNameEvent event) {
+  @SubscribeEvent(priority = EventPriority.LOW) // So that, if name is recolored somewhere else,
+  public void onTabUpdate(RenderTabNameEvent event) {  //   it gets overridden as friend
     if (!color_tab.get()) return;
 
     FriendEntry f = friendList.stream()
