@@ -203,7 +203,7 @@ public class ChunkLogger extends ToggleMod {
               break;
           }
           
-          int color = chunk.isNewChunk() ? Colors.WHITE.toBuffer() : Colors.RED.toBuffer();
+          int color = chunk.isNewChunk() ? Colors.BETTER_PINK.toBuffer() : Colors.WHITE.toBuffer();
           
           GeometryTessellator.drawQuads(
               event.getBuffer(),

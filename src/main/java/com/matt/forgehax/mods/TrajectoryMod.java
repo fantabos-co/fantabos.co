@@ -40,7 +40,7 @@ public class TrajectoryMod extends ToggleMod {
           .description("Red amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(191)
           .build();
   private final Setting<Integer> green =
       getCommandStub()
@@ -50,7 +50,7 @@ public class TrajectoryMod extends ToggleMod {
           .description("Green amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(97)
           .build();
   private final Setting<Integer> blue =
       getCommandStub()
@@ -60,7 +60,7 @@ public class TrajectoryMod extends ToggleMod {
           .description("Blue amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(106)
           .build();
   
   private final Setting<Float> width =

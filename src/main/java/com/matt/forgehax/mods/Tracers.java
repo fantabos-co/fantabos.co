@@ -20,6 +20,7 @@ import java.util.Objects;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
@@ -76,6 +77,15 @@ public class Tracers extends ToggleMod implements Colors {
           .<Boolean>newSettingBuilder()
           .name("antialias")
           .description("Antialiasing for the tracer, may hurt performance.")
+          .defaultTo(true)
+          .build();
+
+  public final Setting<Boolean> friend_highlight =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("friends")
+          .description("Color friends differently")
           .defaultTo(true)
           .build();
 
@@ -311,11 +321,16 @@ public class Tracers extends ToggleMod implements Colors {
 
     private final Entity entity;
     private final MobTypeEnum relationship;
+    private boolean isfriend = false;
 
     public EntityRelations(Entity entity) {
       Objects.requireNonNull(entity);
       this.entity = entity;
       this.relationship = EntityUtils.getRelationship(entity);
+      if (entity instanceof EntityPlayer) {
+        if (getModManager().get(FriendService.class).get().isFriend(entity.getName()))
+          isfriend = true;
+      }
     }
 
     public Entity getEntity() {
@@ -329,7 +344,8 @@ public class Tracers extends ToggleMod implements Colors {
     public Color getColor() {
       switch (relationship) {
         case PLAYER:
-          return YELLOW;
+          if (this.isfriend) return DARK_AQUA;
+          return BETTER_PINK;
         case HOSTILE:
           return RED;
         case NEUTRAL:
@@ -375,7 +391,7 @@ public class Tracers extends ToggleMod implements Colors {
     public boolean isOptionEnabled() {
       switch (relationship) {
         case PLAYER:
-          if (friend_filter.get() && getModManager().get(FriendService.class).get().isFriend(entity.getName()))
+          if (this.isfriend && friend_filter.get())
             return false;
           return players.get();
         case HOSTILE:

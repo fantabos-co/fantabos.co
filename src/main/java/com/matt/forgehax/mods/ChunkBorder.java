@@ -18,7 +18,7 @@ public class ChunkBorder extends ToggleMod {
 
 
   public ChunkBorder() {
-    super(Category.RENDER, "ChunkBorder", false, "Shows a border at the border around the chunk you are in.");
+    super(Category.WORLD, "ChunkBorder", false, "Shows a border at the border around the chunk you are in.");
   }
 
   /**
@@ -32,7 +32,7 @@ public class ChunkBorder extends ToggleMod {
     BlockPos from = new BlockPos(MC.player.chunkCoordX * 16, 0, MC.player.chunkCoordZ * 16);
     BlockPos to = new BlockPos(from.getX() + 15, 256, from.getZ() + 15);
 
-    int color = Colors.YELLOW.toBuffer();
+    int color = Colors.BETTER_PINK.toBuffer();
     GeometryTessellator.drawCuboid(event.getBuffer(), from, to, GeometryMasks.Line.ALL, color);
 
     event.getTessellator().draw();

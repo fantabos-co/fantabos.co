@@ -27,7 +27,6 @@ import net.minecraft.client.gui.ScaledResolution;
 
 /**
  * Created by Babbaj on 9/10/2017.
- * tonio made it save positions
  */
 @RegisterMod
 public class GuiService extends ServiceMod {
@@ -50,7 +49,7 @@ public class GuiService extends ServiceMod {
           .description("Red amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(128)
+          .defaultTo(191)
           .build();
   public final Setting<Integer> green =
       getCommandStub()
@@ -60,7 +59,7 @@ public class GuiService extends ServiceMod {
           .description("Green amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(128)
+          .defaultTo(97)
           .build();
   public final Setting<Integer> blue =
       getCommandStub()
@@ -70,7 +69,7 @@ public class GuiService extends ServiceMod {
           .description("Blue amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(128)
+          .defaultTo(106)
           .build();
 
   public final Setting<Float> max_height =
@@ -81,7 +80,7 @@ public class GuiService extends ServiceMod {
           .description("Max percent of the screen, from 0 to 1")
           .min(0F)
           .max(1F)
-          .defaultTo(0.4F)
+          .defaultTo(0.75F)
           .build();
   
   public GuiService() {
