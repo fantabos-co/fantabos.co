@@ -15,6 +15,8 @@ import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import com.matt.forgehax.util.serialization.ISerializableJson;
+
+import net.minecraft.client.gui.GuiChat;
 import net.minecraft.network.play.server.SPacketChat;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -56,7 +58,7 @@ public class ChatFilterMod extends ToggleMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + filtered + "]");
+    return (getModName() + " [" + TextFormatting.DARK_GRAY + filtered + TextFormatting.WHITE + "]");
   }
 
   @SubscribeEvent
@@ -143,10 +145,10 @@ public class ChatFilterMod extends ToggleMod {
         .name("list")
         .description("List all the filters")
         .processor(data -> {
-          Helper.printMessage("Filters (%d):", filterList.size());
           for (FilterEntry entry : filterList) {
             data.write(entry.name + ": " + "\"" + entry.regex + "\"");
           }
+          data.write(String.format("number: %d", filterList.size()));
         })
         .build();
   }

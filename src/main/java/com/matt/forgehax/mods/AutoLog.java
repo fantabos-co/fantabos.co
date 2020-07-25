@@ -55,7 +55,7 @@ public class AutoLog extends ToggleMod {
   @Override
   public String getDisplayText() {
     if (disconnectOnNewPlayer.get())
-      return (super.getDisplayText() + " [" + "!" + "]");
+      return (super.getDisplayText() + " [" + TextFormatting.DARK_AQUA + "!" + TextFormatting.WHITE + "]");
     return super.getDisplayText();
   }
   

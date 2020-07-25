@@ -5,6 +5,7 @@ import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.util.math.VectorUtils.distance;
 import static com.matt.forgehax.Helper.getModManager;
 
+import com.matt.forgehax.asm.events.RenderTabNameEvent;
 import com.matt.forgehax.mods.services.FriendService;
 import com.matt.forgehax.util.entity.EntityUtils;
 import com.matt.forgehax.util.entity.PlayerUtils;
@@ -21,6 +22,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.text.TextFormatting;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RegisterMod
 public class PlayerList extends HudMod {
@@ -51,6 +53,15 @@ public class PlayerList extends HudMod {
         .name("sorting")
         .description("Sorting mode")
         .defaultTo(ListSorter.LENGTH)
+        .build();
+
+  public final Setting<Boolean> color_tab =
+    getCommandStub()
+        .builders()
+        .<Boolean>newSettingBuilder()
+        .name("tab-color")
+        .description("Change TabList color of players in render distance")
+        .defaultTo(true)
         .build();
 
   public PlayerList() {
@@ -93,6 +104,8 @@ public class PlayerList extends HudMod {
   public boolean isInfoDisplayElement() { return false; }
 
   private int count = 0;
+  List<String> text = new ArrayList<>();
+  List<EntityPlayer> players = new ArrayList<>();
 
   @Override
   public String getDisplayText() {
@@ -100,14 +113,23 @@ public class PlayerList extends HudMod {
   }
 
   @SubscribeEvent
+  public void onTabUpdate(RenderTabNameEvent event) {
+    if (!color_tab.get()) return;
+    if (null != players.stream()
+          .map(player -> player.getName())
+          .filter(name -> name.equals(event.getName()))
+          .findAny()
+          .orElse(null))
+      event.setColor(Colors.GOLD.toBuffer());
+  }
+
+  @SubscribeEvent
   public void onRenderScreen(RenderGameOverlayEvent.Text event) {
     if (!MC.gameSettings.showDebugInfo) {
       int align = alignment.get().ordinal();
-	    List<String> text = new ArrayList<>();
+	    text.clear();
 
-      getWorld()
-        .loadedEntityList
-        .stream()
+      players = getWorld().loadedEntityList.stream()
         .filter(EntityUtils::isPlayer)
         .filter(e -> e.getDistance(getLocalPlayer()) < maxdist.get())
         .filter(
@@ -115,6 +137,9 @@ public class PlayerList extends HudMod {
             !Objects.equals(getLocalPlayer(), entity) && !EntityUtils.isFakeLocalPlayer(entity))
         .map(entity -> (EntityPlayer) entity)
         .sorted(sortMode.get().getComparator())
+        .collect(Collectors.toList());
+        
+      players.stream()
         .map(entity -> (getDistanceColor(getLocalPlayer().getDistance(entity)) +
                         getNameColor(entity) + " [" +
                         getHPColor(entity.getHealth() + entity.getAbsorptionAmount()) + TextFormatting.GRAY + "] " +

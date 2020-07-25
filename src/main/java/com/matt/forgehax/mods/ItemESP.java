@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -40,7 +41,7 @@ public class ItemESP extends ToggleMod {
       .map(EntityItem.class::cast)
       .filter(entity -> entity.ticksExisted > 1)
       .count();
-    return (getModName() + " [" + count + "]");
+    return (getModName() + " [" + TextFormatting.DARK_GREEN + count + TextFormatting.WHITE + "]");
   }
   public final Setting<Double> scale =
       getCommandStub()

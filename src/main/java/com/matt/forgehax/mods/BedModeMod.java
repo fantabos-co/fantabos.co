@@ -50,6 +50,12 @@ public class BedModeMod extends ToggleMod {
   }
 
   @Override
+  public boolean isVisible() {
+    if (sleeping) return true;
+    return super.isVisible();
+  }
+
+  @Override
   public void onDisabled() {
     if (getLocalPlayer() != null && sleeping) {
       sleeping = false;
@@ -60,7 +66,6 @@ public class BedModeMod extends ToggleMod {
 
   @SubscribeEvent
   public void onPacketInbound(PacketEvent.Incoming.Pre event) {
-    if (getLocalPlayer() == null) return;
     if (event.getPacket() instanceof SPacketPlayerPosLook) {
       sleeping = false;
     } 

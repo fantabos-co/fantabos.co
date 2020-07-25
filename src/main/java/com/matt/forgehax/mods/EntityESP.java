@@ -2,9 +2,11 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getWorld;
+import static com.matt.forgehax.Helper.getModManager;
 import static com.matt.forgehax.util.draw.SurfaceHelper.drawOutlinedRect;
 
 import com.matt.forgehax.events.RenderEvent;
+import com.matt.forgehax.mods.services.FriendService;
 import com.matt.forgehax.events.Render2DEvent;
 import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
@@ -98,7 +100,7 @@ public class EntityESP extends ToggleMod {
           .description("red")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(191)
           .build();
 
   private final Setting<Integer> green =
@@ -109,7 +111,7 @@ public class EntityESP extends ToggleMod {
           .description("green")
           .min(0)
           .max(255)
-          .defaultTo(255)
+          .defaultTo(97)
           .build();
 
   private final Setting<Integer> blue =
@@ -120,7 +122,7 @@ public class EntityESP extends ToggleMod {
           .description("blue")
           .min(0)
           .max(255)
-          .defaultTo(255)
+          .defaultTo(106)
           .build();
   
   public EntityESP() {
@@ -189,9 +191,12 @@ public class EntityESP extends ToggleMod {
       .map(entity -> (EntityLivingBase) entity)
       .forEach(
         living -> {
+          int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
           switch (EntityUtils.getRelationship(living)) {
             case PLAYER:
-			        if (!players.get()) return;
+              if (!players.get()) return;
+              if (getModManager().get(FriendService.class).get().isFriend(living.getName()))
+                color = Colors.DARK_AQUA.toBuffer(); // color should be customizable!
               break;
             case HOSTILE:
 			        if (!mobs_hostile.get()) return;
@@ -201,8 +206,6 @@ public class EntityESP extends ToggleMod {
 			        if (!mobs_friendly.get()) return;
               break;
           }
-
-	  	    int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
           AxisAlignedBB bb = living.getEntityBoundingBox();
           Vec3d minVec = new Vec3d(bb.minX, bb.minY, bb.minZ);
           Vec3d maxVec = new Vec3d(bb.maxX, bb.maxY, bb.maxZ);

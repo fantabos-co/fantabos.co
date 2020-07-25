@@ -9,6 +9,7 @@ import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraft.network.play.server.SPacketTimeUpdate;
 import net.minecraft.util.Timer;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 /**
@@ -87,10 +88,10 @@ public class TimerMod extends ToggleMod {
       TickRateService.TickRateData data = TickRateService.getTickData();
       if (data.getSampleSize() > 0) {
         TickRateService.TickRateData.CalculationData point = data.getPoint();
-        return String.format("%s[%.2f]", super.getDisplayText(), point.getAverage() / 20);
+        return String.format("%s [" + TextFormatting.AQUA + "%.2f" + TextFormatting.WHITE + "]", super.getDisplayText(), point.getAverage() / 20);
       }
     } else {
-      return String.format("%s[%.2f]", super.getDisplayText(), factor.get());
+      return String.format("%s [" + TextFormatting.AQUA + "%.2f" + TextFormatting.WHITE + "]", super.getDisplayText(), factor.get());
     }
     return super.getDisplayText();
   }

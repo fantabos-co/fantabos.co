@@ -59,6 +59,12 @@ public class NoDeathScreen extends ToggleMod {
     return (getModName());
   }
 
+  @Override
+  public boolean isVisible() {
+    if (dead) return true;
+    return super.isVisible();
+  }
+
   @SubscribeEvent
   public void onOutgoingPacketSent(PacketEvent.Outgoing.Pre event) {
     if (MC.player == null) {
