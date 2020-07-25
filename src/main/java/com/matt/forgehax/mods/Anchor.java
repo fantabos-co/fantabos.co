@@ -21,7 +21,9 @@ public class Anchor extends ToggleMod {
       .<Double>newSettingBuilder()
       .name("range")
       .description("Distance from the center to trigger at")
-      .defaultTo(0.2D)
+      .min(0D)
+      .max(0.5D)
+      .defaultTo(0.3D)
       .build();
       
   public Anchor() {
@@ -32,7 +34,7 @@ public class Anchor extends ToggleMod {
   public void onLocalPlayerUpdateMovement(LocalPlayerUpdateMovementEvent event) {
     if (getLocalPlayer() == null) return;
     if (getLocalPlayer().capabilities.isFlying || getLocalPlayer().capabilities.isCreativeMode) return;
-    for (BlockPos pos : HoleService.holes) {
+    for (BlockPos pos : HoleService.getAllHoles()) {
       if (HoleService.isAboveHole(pos, getLocalPlayer(), range.get())) {
         if (!MC.gameSettings.keyBindJump.isKeyDown()) {
           if (!HoleService.isAboveHole(pos, getLocalPlayer())) { // hitbox won't fit

@@ -1,13 +1,13 @@
 package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getModManager;
-
-import com.matt.forgehax.mods.services.ForgeHaxService;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.math.AlignHelper.Align;
+import com.matt.forgehax.util.color.Colors;
+import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.mod.BaseMod;
 import com.matt.forgehax.util.mod.Category;
-import com.matt.forgehax.util.mod.WatermarkListMod;
+import com.matt.forgehax.util.mod.ListMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 
 import java.util.ArrayList;
@@ -18,8 +18,7 @@ import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterMod
-public class ActiveModList extends WatermarkListMod {
-
+public class ActiveModList extends ListMod {
   private final Setting<Boolean> showDebugText =
       getCommandStub()
           .builders()
@@ -44,7 +43,7 @@ public class ActiveModList extends WatermarkListMod {
           .<Boolean>newSettingBuilder()
           .name("condense")
           .description("Condense ModList when chat is open")
-          .defaultTo(true)
+          .defaultTo(false)
           .build();
 
   public ActiveModList() {
@@ -63,7 +62,7 @@ public class ActiveModList extends WatermarkListMod {
 
   @Override
   protected int getDefaultOffsetX() {
-    return 2;
+    return 1;
   }
 
   @Override
@@ -72,18 +71,8 @@ public class ActiveModList extends WatermarkListMod {
   }
 
   @Override
-  protected int getDefaultWatermarkOffsetY() {
-    return 1;
-  }
-
-  @Override
   protected double getDefaultScale() {
-    return 1;
-  }
-
-  @Override
-  public boolean watermarkDefault() {
-    return false;
+    return 1d;
   }
 
   @Override
@@ -95,7 +84,7 @@ public class ActiveModList extends WatermarkListMod {
   public void onRenderScreen(RenderGameOverlayEvent.Text event) {
     List<String> text = new ArrayList<>();
 
-    if (condense.get() && (MC.currentScreen instanceof GuiChat || MC.gameSettings.showDebugInfo)) {
+    if ((condense.get() && MC.currentScreen instanceof GuiChat) || MC.gameSettings.showDebugInfo) {
 
       // Total number of service mods
       long serviceMods = getModManager()
@@ -137,12 +126,8 @@ public class ActiveModList extends WatermarkListMod {
           .forEach(text::add);
     }
 
-    // Prints the watermark
-    if (showWatermark.get()) {
-      ForgeHaxService.INSTANCE.drawWatermark(getPosX(0), getPosY(watermarkOffsetY.get()), alignment.get().ordinal());
-    }
-
     // Prints on screen
-    printListWithWatermark(text, alignment.get().ordinal());
+    SurfaceHelper.drawTextAlign(text, getPosX(0), getPosY(0),
+        Colors.WHITE.toBuffer(), scale.get(), true, alignment.get().ordinal());
   }
 }

@@ -3,9 +3,15 @@ package com.matt.forgehax.mods.services;
 import static com.matt.forgehax.Helper.getWorld;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.ServiceMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
@@ -41,17 +47,44 @@ public class HoleService extends ServiceMod {
       .min(0D)
       .defaultTo(20D)
       .build();
+
+  public final Setting<Double> save_threshold =
+    getCommandStub()
+      .builders()
+      .<Double>newSettingBuilder()
+      .name("threshold")
+      .description("How much before Y 0 to trigger void save")
+      .min(0D)
+      .defaultTo(0.2D)
+      .build();
   
   public HoleService() {
     super("HoleService");
   }
 
-  public static Queue<BlockPos> holes = new ConcurrentLinkedQueue<BlockPos>();
+  public enum HoleQuality {
+    NOTHOLE,
+    TEMPORARY,
+    SAFE
+  }
+
+  public static Queue<BlockPos> safe_holes = new ConcurrentLinkedQueue<BlockPos>();
+  public static Queue<BlockPos> temp_holes = new ConcurrentLinkedQueue<BlockPos>();
+  public static Queue<BlockPos> voids = new ConcurrentLinkedQueue<BlockPos>();
+
+  public static List<BlockPos> getAllHoles() {
+    return Stream.concat(safe_holes.stream(), temp_holes.stream())
+                             .collect(Collectors.toList());
+  }
 
   @SubscribeEvent(priority = EventPriority.LOW)
   public void onClientTick(TickEvent.ClientTickEvent event) {
     if (getLocalPlayer() == null || getWorld() == null) return;
-    holes.clear();
+    safe_holes.clear();
+    temp_holes.clear();
+    voids.clear();
+
+    if (!enabled.get()) return;
 
     int maxX = (int) Math.round(getLocalPlayer().posX + (radius.get()/2));
     int maxY = (int) Math.round(getLocalPlayer().posY + (radius.get()/2));
@@ -61,25 +94,47 @@ public class HoleService extends ServiceMod {
       for (int y = (int) Math.round(getLocalPlayer().posY - (radius.get()/2)); y < maxY; y++) {
         for (int z = (int) Math.round(getLocalPlayer().posZ - (radius.get()/2)); z < maxZ; z++) {
           BlockPos pos = new BlockPos(x, y, z);
-          if (isHole(pos)) {
-            holes.add(pos);
+          if (isVoid(pos)) {
+            voids.add(pos);
+          }
+          switch (isHole(pos)) {
+            case SAFE:
+              safe_holes.add(pos);
+              break;
+            case TEMPORARY:
+              temp_holes.add(pos);
+              break;
+            default: // do nothing
           }
         }
       }
     }
   }
 
-  public static boolean isHole(BlockPos pos) {
+  public static boolean isVoid(BlockPos pos) {
+    if (pos.getY() == 0 && getWorld().getBlockState(pos).getBlock().equals(Blocks.AIR))
+      return true;
+    return false;
+  }
+
+  // Returns hole quality, 0 is not hole, 1 is breakable hole, 2 is perfect hole
+  public static HoleQuality isHole(BlockPos pos) {
     if (!getWorld().getBlockState(pos).getBlock().equals(Blocks.AIR) ||
-        !getWorld().getBlockState(pos.offset(EnumFacing.UP)).getBlock().equals(Blocks.AIR))
-            return false;
+        !getWorld().getBlockState(pos.offset(EnumFacing.UP)).getBlock().equals(Blocks.AIR) || 
+        !getWorld().getBlockState(pos.offset(EnumFacing.UP).offset(EnumFacing.UP)).getBlock().equals(Blocks.AIR))
+            return HoleQuality.NOTHOLE;
+    int obi = 0;
     for (EnumFacing off : Offsets.HOLE) {
-      if (!getWorld().getBlockState(pos.offset(off)).getBlock().equals(Blocks.BEDROCK) &&
-          !getWorld().getBlockState(pos.offset(off)).getBlock().equals(Blocks.OBSIDIAN)) {
-              return false;
+      if (getWorld().getBlockState(pos.offset(off)).getBlock().equals(Blocks.BEDROCK)) {
+        // great, continue
+      } else if (getWorld().getBlockState(pos.offset(off)).getBlock().equals(Blocks.OBSIDIAN)) {
+        obi++;
+      } else {
+        return HoleQuality.NOTHOLE;
       }
     }
-    return true;
+    if (obi > 0) return HoleQuality.TEMPORARY;
+    else return HoleQuality.SAFE;
   }
 
   public static boolean isAboveHole(BlockPos hole, Entity entity) {
@@ -95,7 +150,7 @@ public class HoleService extends ServiceMod {
     double zp = player.z;
     double xh = hole.getX() + 0.5;
     double zh = hole.getZ() + 0.5;
-    if (Math.abs(xp - xh) < 0.2 && Math.abs(zp - zh) < distance)
+    if (Math.abs(xp - xh) < distance && Math.abs(zp - zh) < distance)
       return true;
     return false;
   }
