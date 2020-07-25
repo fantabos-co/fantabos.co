@@ -8,13 +8,11 @@ import com.matt.forgehax.util.math.AlignHelper.Align;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.command.Setting;
-
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.awt.datatransfer.StringSelection;
 
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntitySign;
 import net.minecraft.util.ResourceLocation;
@@ -43,8 +41,14 @@ public class SignTextMod extends HudMod {
           .description("Show pointed sign text on screen")
           .defaultTo(true)
           .build();
-
-  static final Align alignment = Align.TOP;
+  private final Setting<Boolean> texture =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("texture")
+          .description("Show texture behind signs drawn on screen")
+          .defaultTo(true)
+          .build();
 
   @Override
   protected Align getDefaultAlignment() { return Align.TOP; }
@@ -66,15 +70,16 @@ public class SignTextMod extends HudMod {
     if (!display.get() || text.isEmpty()) {
       return;
     }
+    int align = alignment.get().ordinal();
 
-    MC.getTextureManager().bindTexture(SIGN_TEXTURE);
-
-    SurfaceHelper.drawTexturedRect(getPosX(-50), getPosY(-5), 0, 20, 100, 45, 500);
-
-    int align = alignment.ordinal();
+    if (texture.get()) {
+      MC.getTextureManager().bindTexture(SIGN_TEXTURE);
+      SurfaceHelper.drawTexturedRect(getPosX(-50), getPosY(-5), 0, 20, 100, 45, 500);
+    }
 
     SurfaceHelper.drawTextAlign(text, getPosX(0), getPosY(0),
-        Colors.BLACK.toBuffer(), scale.get(), false, align);
+        (texture.get() ? Colors.BLACK.toBuffer() : Colors.WHITE.toBuffer()),
+        scale.get(), false, align);
   }
 
   @SubscribeEvent
@@ -109,7 +114,7 @@ public class SignTextMod extends HudMod {
 
         if (event.getButton() == 2 && Mouse.getEventButtonState()) { // on middle click
           String fullText = String.join("\n", text);
-          Helper.printMessage("Copied sign");
+          Helper.printInform("Copied sign");
           setClipboardString(fullText);
         }
       }
