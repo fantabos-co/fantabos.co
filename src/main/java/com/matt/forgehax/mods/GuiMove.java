@@ -1,7 +1,11 @@
 package com.matt.forgehax.mods;
 
+import java.awt.event.KeyEvent;
+import static com.matt.forgehax.Helper.getLocalPlayer;
+
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.gui.ClickGui;
+import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
@@ -19,9 +23,18 @@ import org.lwjgl.input.Keyboard;
  */
 @RegisterMod
 public class GuiMove extends ToggleMod {
+
+  public final Setting<Double> rotate_speed =
+    getCommandStub()
+      .builders()
+      .<Double>newSettingBuilder()
+      .name("speed-rotation")
+      .description("Speed at which screen rotates with arrows")
+      .defaultTo(5D)
+      .build();
   
   public GuiMove() {
-    super(Category.MISC, "GuiMove", false, "move with a gui open");
+    super(Category.MISC, "GuiMove", false, "move with a gui open, tilt camera with arrows");
   }
   
   @SubscribeEvent
@@ -43,6 +56,22 @@ public class GuiMove extends ToggleMod {
       for (KeyBinding bind : keys) {
         KeyBinding.setKeyBindState(bind.getKeyCode(), Keyboard.isKeyDown(bind.getKeyCode()));
       }
+
+      // this block is ugly, I *may* refactor in the future
+
+      if (Keyboard.isKeyDown(203)) {
+        getLocalPlayer().rotationYaw -= rotate_speed.get();
+      }
+      if (Keyboard.isKeyDown(205)) {
+        getLocalPlayer().rotationYaw += rotate_speed.get();
+      }
+      if (Keyboard.isKeyDown(208)) {
+        getLocalPlayer().rotationPitch += rotate_speed.get();
+      }
+      if (Keyboard.isKeyDown(200)) {
+        getLocalPlayer().rotationPitch -= rotate_speed.get();
+      }
+
     } else if (MC.currentScreen == null) {
       for (KeyBinding bind : keys) {
         if (!Keyboard.isKeyDown(bind.getKeyCode())) {
