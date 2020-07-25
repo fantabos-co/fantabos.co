@@ -85,6 +85,18 @@ public interface TypesHook {
         .setName("doPreventGhostBlocksBreak")
         .setType(boolean.class)
         .build();
+
+    ASMField ForgeHaxHooks_doPreventMaxChatSize =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doPreventChatSizeLimit")
+        .setType(boolean.class)
+        .build();
+
+    ASMField ForgeHaxHooks_doHideChatBackground =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doHideChatBackground")
+        .setType(boolean.class)
+        .build();
   }
   
   interface Methods {
@@ -490,6 +502,18 @@ public interface TypesHook {
         .setName("onDrawBoundingBoxPost")
         .setReturnType(void.class)
         .emptyParameters()
+        .build();
+
+    ASMMethod ForgeHaxHooks_onDrawPing =
+      Classes.ForgeHaxHooks.childMethod()
+        .setName("onDrawPing")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(int.class)
+        .add(int.class)
+        .add(int.class)
+        .add(TypesMc.Classes.NetworkPlayerInfo)
+        .finish()
         .build();
   }
 }

@@ -15,6 +15,7 @@ import com.matt.forgehax.asm.events.ComputeVisibilityEvent;
 import com.matt.forgehax.asm.events.DeleteGlResourcesEvent;
 import com.matt.forgehax.asm.events.DoBlockCollisionsEvent;
 import com.matt.forgehax.asm.events.DrawBlockBoundingBoxEvent;
+import com.matt.forgehax.asm.events.DrawPingEvent;
 import com.matt.forgehax.asm.events.EntityBlockSlipApplyEvent;
 import com.matt.forgehax.asm.events.EntityBlockSlipApplyEvent.Stage;
 import com.matt.forgehax.asm.events.HurtCamEffectEvent;
@@ -48,7 +49,9 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.chunk.ChunkCompileTaskGenerator;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -102,6 +105,8 @@ public class ForgeHaxHooks implements ASMCommon {
   public static boolean doIncreaseTabListSize = false;
   public static boolean doPreventGhostBlocksBreak = false;
   public static boolean doPreventGhostBlocksPlace = false;
+  public static boolean doPreventChatSizeLimit = false;
+  public static boolean doHideChatBackground = false;
   
   /** static hooks */
   
@@ -828,5 +833,14 @@ public class ForgeHaxHooks implements ASMCommon {
     } else {
       return defaultSlipperiness;
     }
+  }
+
+  /**
+   * onDrawPing
+   */
+  public static boolean onDrawPing(int x1, int x2, int y, NetworkPlayerInfo player) {
+    DrawPingEvent event = new DrawPingEvent(x1, x2, y, player);
+    MinecraftForge.EVENT_BUS.post(event);
+    return event.isCanceled();
   }
 }

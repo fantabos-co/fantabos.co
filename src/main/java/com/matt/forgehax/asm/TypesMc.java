@@ -243,6 +243,12 @@ public interface TypesMc {
         .setClassName("net/minecraft/network/NetworkManager")
         .autoAssign()
         .build();
+
+    ASMClass NetworkPlayerInfo =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/client/network/NetworkPlayerInfo")
+        .autoAssign()
+        .build();
     
     ASMClass GuiScreen =
       ASMBuilders.newClassBuilder()
@@ -253,6 +259,12 @@ public interface TypesMc {
     ASMClass GuiMainMenu =
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/client/gui/GuiMainMenu")
+        .autoAssign()
+        .build();
+
+    ASMClass GuiNewChat =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/client/gui/GuiNewChat")
         .autoAssign()
         .build();
     
@@ -313,6 +325,12 @@ public interface TypesMc {
     ASMClass PlayerControllerMP =
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/client/multiplayer/PlayerControllerMP")
+        .autoAssign()
+        .build();
+
+    ASMClass ITextComponent = 
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/util/text/ITextComponent")
         .autoAssign()
         .build();
   }
@@ -757,6 +775,42 @@ public interface TypesMc {
         .add(int.class)
         .add(Classes.Scoreboard)
         .add(Classes.ScoreObjective)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod PlayerTabOverlay_drawPing =
+      Classes.GuiPlayerTabOverlay.childMethod()
+        .setName("drawPing")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(int.class)
+        .add(int.class)
+        .add(int.class)
+        .add(Classes.NetworkPlayerInfo)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod GuiNewChat_setChatLine =
+      Classes.GuiNewChat.childMethod()
+        .setName("setChatLine")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(Classes.ITextComponent)
+        .add(int.class)
+        .add(int.class)
+        .add(boolean.class)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod GuiNewChat_drawChat =
+      Classes.GuiNewChat.childMethod()
+        .setName("drawChat")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(int.class)
         .finish()
         .autoAssign()
         .build();

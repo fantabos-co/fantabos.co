@@ -210,4 +210,31 @@ public class PlayerTabOverlayPatch extends ClassTransformer {
       method.instructions.insert(location, list);
     }
   }
+
+   // Tonio
+  @RegisterMethodTransformer
+  private class RenderPlayerlist_drawPing extends MethodTransformer {
+    
+    @Override
+    public ASMMethod getMethod() {
+      return Methods.PlayerTabOverlay_drawPing;
+    }
+    
+    @Inject(description = "Add hook to modify ping icon")
+    public void inject(MethodNode main) {      
+      LabelNode jump = new LabelNode();
+      
+      InsnList insnList = new InsnList();
+      insnList.add(new VarInsnNode(ILOAD, 1)); // Load back all arguments on the stack
+      insnList.add(new VarInsnNode(ILOAD, 2));
+      insnList.add(new VarInsnNode(ILOAD, 3));
+      insnList.add(new VarInsnNode(ALOAD, 4));
+      insnList.add(ASMHelper.call(INVOKESTATIC, TypesHook.Methods.ForgeHaxHooks_onDrawPing));
+      insnList.add(new JumpInsnNode(IFEQ, jump)); // Check returned value, which is event.isCanceled()
+      insnList.add(new InsnNode(RETURN)); // If event is canceled, don't render normal icon
+      insnList.add(jump);
+      
+      main.instructions.insert(insnList); // Insert at top of method
+    }
+  }
 }
