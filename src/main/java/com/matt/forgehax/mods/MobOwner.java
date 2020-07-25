@@ -8,6 +8,8 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
+import com.matt.forgehax.util.SimpleTimer;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.entity.PlayerInfo;
 
@@ -62,10 +64,8 @@ public class MobOwner extends ToggleMod {
     if (getWorld() == null) return;
     for (Entity ent : getWorld().loadedEntityList) {
       if (ent instanceof EntityTameable) {
-        
         setName((EntityTameable) ent);
       } else if (ent instanceof EntityHorse) {
-        if (nametag.get()) ent.setAlwaysRenderNameTag(true);
         setName((EntityHorse) ent); 
       }
     }
@@ -77,7 +77,6 @@ public class MobOwner extends ToggleMod {
     for (Entity mob : getWorld().loadedEntityList) {
       if (mob instanceof EntityTameable || mob instanceof EntityHorse)
         mob.setAlwaysRenderNameTag(false);
-        mob.setCustomNameTag("");
     }
   }
 
@@ -92,22 +91,24 @@ public class MobOwner extends ToggleMod {
   }
 
   private Map<UUID, PlayerInfo> UUIDcache = new ConcurrentHashMap<UUID, PlayerInfo>();
+  private SimpleTimer cooldown = new SimpleTimer();
 
   private void setName(EntityHorse mob) {
     if (mob.getOwnerUniqueId() != null) {
-      if (mob.getCustomNameTag() == "") {
-        if (UUIDcache.get(mob.getOwnerUniqueId()) != null) {
-          mob.setCustomNameTag(String.format("%s (%s)", mob.getName(),color.get() +
-                        UUIDcache.get(mob.getOwnerUniqueId()).getName() + TextFormatting.RESET));
-        } else {
-          try {
-            PlayerInfo owner = new PlayerInfo(mob.getOwnerUniqueId());
-            UUIDcache.put(mob.getOwnerUniqueId(), owner);
-            mob.setCustomNameTag(String.format("%s (%s)", mob.getName(), color.get() + owner.getName() + TextFormatting.RESET));
-            if (nametag.get()) mob.setAlwaysRenderNameTag(true);
-          } catch (Exception e) {
-            // ignore
-          }
+      if (nametag.get()) mob.setAlwaysRenderNameTag(true);
+      if (UUIDcache.get(mob.getOwnerUniqueId()) != null) {
+        mob.setCustomNameTag(String.format("%s (%s)", mob.getName(), color.get() +
+                      UUIDcache.get(mob.getOwnerUniqueId()).getName() + TextFormatting.RESET));
+        mob.setOwnerUniqueId(null);
+      } else if (cooldown.hasTimeElapsed(lookup_cooldown.get() * 1000)) {
+        try {
+          cooldown.start();
+          PlayerInfo owner = new PlayerInfo(mob.getOwnerUniqueId());
+          UUIDcache.put(mob.getOwnerUniqueId(), owner);
+          mob.setCustomNameTag(String.format("%s (%s)", mob.getName(), color.get() + owner.getName() + TextFormatting.RESET));
+          mob.setOwnerUniqueId(null);
+        } catch (Exception e) {
+          LOGGER.warn("Could not set nametag: {}", e.getMessage());
         }
       }
     }
@@ -115,19 +116,20 @@ public class MobOwner extends ToggleMod {
 
   private void setName(EntityTameable mob) {
     if (mob.getOwnerId() != null) {
-      if (mob.getCustomNameTag() == "") {
-        if (UUIDcache.get(mob.getOwnerId()) != null) {
-          mob.setCustomNameTag(String.format("%s (%s)", mob.getName(),color.get() +
-                        UUIDcache.get(mob.getOwnerId()).getName() + TextFormatting.RESET));
-        } else {
-          try {
-            PlayerInfo owner = new PlayerInfo(mob.getOwnerId());
-            UUIDcache.put(mob.getOwnerId(), owner);
-            mob.setCustomNameTag(String.format("%s (%s)", mob.getName(), color.get() + owner.getName() + TextFormatting.RESET));
-            if (nametag.get()) mob.setAlwaysRenderNameTag(true);
-          } catch (Exception e) {
-            // ignore
-          }
+      if (nametag.get()) mob.setAlwaysRenderNameTag(true);
+      if (UUIDcache.get(mob.getOwnerId()) != null) {
+        mob.setCustomNameTag(String.format("%s (%s)", mob.getName(), color.get() +
+                      UUIDcache.get(mob.getOwnerId()).getName() + TextFormatting.RESET));
+        mob.setOwnerId(null);
+      } else if (cooldown.hasTimeElapsed(lookup_cooldown.get() * 1000)){
+        try {
+          cooldown.start();
+          PlayerInfo owner = new PlayerInfo(mob.getOwnerId());
+          UUIDcache.put(mob.getOwnerId(), owner);
+          mob.setCustomNameTag(String.format("%s (%s)", mob.getName(), color.get() + owner.getName() + TextFormatting.RESET));
+          mob.setOwnerId(null);
+        } catch (Exception e) {
+          LOGGER.warn("Could not set nametag: {}", e.getMessage());
         }
       }
     }
