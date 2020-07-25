@@ -13,6 +13,7 @@ public enum Category {
   MISC("Misc", "Miscellaneous"),
   CHAT("Chat", "Mods related to chat"),
   GUI("GUI", "User Interface modules"),
+  EXPLOIT("Exploit", "Mess with server"),
   SERVICE("Service", "Background mods"),
   ;
   

@@ -4,7 +4,6 @@ import static com.matt.forgehax.Helper.getFileManager;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getWorld;
 import static com.matt.forgehax.Helper.printInform;
-import static com.matt.forgehax.util.math.VectorUtils.distance;
 import static java.util.Objects.isNull;
 
 import com.matt.forgehax.asm.events.PacketEvent;
@@ -99,7 +98,7 @@ public class CoordsFinder extends ToggleMod {
   private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
   
   public CoordsFinder() {
-    super(Category.WORLD, "CoordsFinder", false,
+    super(Category.EXPLOIT, "CoordsFinder", false,
         "Logs coordinates of lightning strikes and teleports");
   }
   

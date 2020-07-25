@@ -79,7 +79,7 @@ public class ExtraInventory extends ToggleMod {
   
   public ExtraInventory() {
     super(
-        Category.PLAYER,
+        Category.EXPLOIT,
         "ExtraInventory",
         false,
         "Allows one to carry up to 5 extra items in their inventory");
