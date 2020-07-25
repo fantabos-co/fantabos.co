@@ -17,6 +17,7 @@ import net.minecraft.inventory.ClickType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -29,7 +30,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 public class AutoBucketFallMod extends ToggleMod {
   
   public AutoBucketFallMod() {
-    super(Category.MOVEMENT, "AutoBucket", false, "Automatically place bucket to reset fall damage");
+    super(Category.WORLD, "AutoBucket", false, "Automatically place bucket to reset fall damage");
   }
   
   public final Setting<Double> preHeight =
@@ -47,6 +48,14 @@ public class AutoBucketFallMod extends ToggleMod {
           .name("height")
           .description("minimum fall distance to work")
           .defaultTo(15D)
+          .build();
+  public final Setting<Boolean> autoCenter =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("autocenter")
+          .description("try to snap to center of block")
+          .defaultTo(true)
           .build();
   
   private ItemStack WATER_BUCKET = new ItemStack(Items.WATER_BUCKET);
@@ -71,6 +80,12 @@ public class AutoBucketFallMod extends ToggleMod {
     
     RayTraceResult result = MC.world.rayTraceBlocks(playerPos, rayTraceBucket, true);
     RayTraceResult resultPre = MC.world.rayTraceBlocks(playerPos, rayTracePre, true);
+
+    if (autoCenter.get()) {
+      BlockPos round = new BlockPos(getLocalPlayer().getPositionVector());
+      getLocalPlayer().motionX = ((round.getX() + 0.5D) - getLocalPlayer().posX) / 5;
+      getLocalPlayer().motionZ = ((round.getZ() + 0.5D) - getLocalPlayer().posZ) / 5;
+    }
     
     if (resultPre != null
         && resultPre.typeOfHit.equals(Type.BLOCK)
