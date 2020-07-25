@@ -82,9 +82,6 @@ public class DesktopNotify extends ToggleMod {
 
   @Override
   protected void onLoad() {
-    super.onLoad();
-    tray = SystemTray.getSystemTray();
-
     getCommandStub()
         .builders()
         .newCommandBuilder()
@@ -92,14 +89,9 @@ public class DesktopNotify extends ToggleMod {
         .description("Fire a test notification")
         .processor(
             data -> {
-                  displayNotification("Hello", "fgt");
+                  displayNotification("Hello", "world");
             })
         .build();
-  }
-
-  @Override
-  public void onUnload() {
-    tray.remove(icon);
   }
 
   @Override
@@ -109,24 +101,19 @@ public class DesktopNotify extends ToggleMod {
       this.disable(false);
       return;
     }
-    Image image = Toolkit.getDefaultToolkit().createImage("icon.png");
-    this.icon = new TrayIcon(image, "FHtonio");
-    //Alternative (if the icon is on the classpath):
-    //Image image = Toolkit.getDefaultToolkit().createImage(getClass().getResource("icon.png"));  
+    tray = SystemTray.getSystemTray();
+    Image image = Toolkit.getDefaultToolkit().createImage(
+                getClass().getClassLoader().getResource("icon.png"));
+    this.icon = new TrayIcon(image, "ForgeHax");
     icon.setImageAutoSize(true);
     //Set tooltip text for the tray icon
-    icon.setToolTip("It's just ForgeHax, dumbass");
+    icon.setToolTip("It's just ForgeHax");
     try {
       tray.add(icon); 
     } catch (AWTException e) {
       LOGGER.warn("Failed to add icon to system tray : ", e.getMessage());
       this.disable(false);
     }
-  }
-
-  @Override
-  public void onDisabled() {
-    tray.remove(icon);
   }
 
   public void displayNotification(String title, String message) {
