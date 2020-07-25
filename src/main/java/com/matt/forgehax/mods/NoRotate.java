@@ -5,6 +5,7 @@ import static com.matt.forgehax.Helper.getLocalPlayer;
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.asm.reflection.FastReflection;
 import com.matt.forgehax.mods.managers.PositionRotationManager;
+import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.entity.LocalPlayerUtils;
 import com.matt.forgehax.util.math.Angle;
 import com.matt.forgehax.util.mod.Category;
@@ -14,19 +15,40 @@ import java.util.Arrays;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.network.play.server.SPacketPlayerPosLook.EnumFlags;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterMod
 public class NoRotate extends ToggleMod {
+
+  private final Setting<Boolean> allow_once =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("allow-once")
+      .description("Allow the server to set viewangles after world unload")
+      .defaultTo(true)
+      .build();
   
   public NoRotate() {
     super(Category.PLAYER, "NoRotate", false,
         "Prevent server from setting client viewangles");
   }
+
+  private boolean once = false;
+
+  @SubscribeEvent
+  public void onWorldUnload(WorldEvent.Unload event) {
+    once = true;
+  }
   
   @SubscribeEvent
   public void onPacketReceived(PacketEvent.Incoming.Pre event) {
     if (event.getPacket() instanceof SPacketPlayerPosLook) {
+      if (allow_once.get() && once) {
+        once = false;
+        return;
+      }
       SPacketPlayerPosLook packet = event.getPacket();
       if (getLocalPlayer() != null) {
         Angle angle = LocalPlayerUtils.getViewAngles();
