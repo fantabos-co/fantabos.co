@@ -104,7 +104,7 @@ public class AutoKey extends ToggleMod {
         .processor(
             data -> {
               if (data.getArgumentCount() > 0) {
-                Helper.printMessage("Unexpected arguments!");
+                Helper.printError("Unexpected arguments!");
                 return;
               }
               activeKeys.clear();
@@ -125,7 +125,7 @@ public class AutoKey extends ToggleMod {
               if (mode != null) {
                 Helper.printMessage("Removed key: %s", key.getBinding().getKeyDescription());
               } else {
-                Helper.printMessage("Unknown key");
+                Helper.printError("Unknown key");
               }
             })
         .build();

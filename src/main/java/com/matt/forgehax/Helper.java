@@ -2,6 +2,7 @@ package com.matt.forgehax;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
+import com.matt.forgehax.mods.BetterChat;
 import com.matt.forgehax.mods.services.MainMenuGuiService.CommandInputGui;
 import com.matt.forgehax.util.FileManager;
 import com.matt.forgehax.util.command.CommandGlobal;
@@ -23,6 +24,9 @@ import net.minecraftforge.fml.client.FMLClientHandler;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -123,6 +127,25 @@ public class Helper implements Globals {
       }
     }
   }
+
+  // Check if timestamps should be added and returns a formatted timestamp string or an empty string
+  // Making this in outputMessage() would have added a timestamp for every line, I want
+  //      one for every command or warning: just one for multiline cmds!
+  // I don't really like this but it should not matter much anyway
+  private static String timestamp() {
+    String timestamp = "";
+    try {
+      if (getModManager().get(BetterChat.class).get().isEnabled() &&
+          getModManager().get(BetterChat.class).get().timestamps.get()) {
+        timestamp = new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + " \u23d0 ";
+        timestamp = TextFormatting.DARK_GRAY + timestamp + TextFormatting.RESET;
+      }
+    } catch (Exception e) {
+      // ignore, default to no timestamps, maybe mod not loaded? Maybe this whole try is unnecessary?
+      LOGGER.warn("Could not get BetterChat! Make better code!");
+    }
+    return timestamp;
+  }
   
   // private function that is ultimately used to output the message
   private static void outputMessage(String text) {
@@ -141,8 +164,8 @@ public class Helper implements Globals {
     printMessageNaked(
         append,
         message,
-        new Style().setColor(TextFormatting.WHITE),
-        new Style().setColor(TextFormatting.GRAY));
+        new Style().setColor(TextFormatting.GRAY),
+        new Style().setColor(TextFormatting.DARK_GRAY));
   }
   
   public static void printMessageNaked(String message) {
@@ -169,10 +192,20 @@ public class Helper implements Globals {
             .setItalic(italic)
         );
   }
+
+  public static void printLog(String format, Object... args) {
+    outputMessage(timestamp() +
+        getFormattedText("[FH]", TextFormatting.DARK_GRAY, true, false)
+            .appendSibling(
+                getFormattedText(" " + String.format(format, args).trim(),
+                    TextFormatting.GRAY, false, false)
+            ).getFormattedText()
+    );
+  }
   
   public static void printInform(String format, Object... args) {
-    outputMessage(
-        getFormattedText("[ForgeHax]", TextFormatting.GREEN, true, false)
+    outputMessage(timestamp() +
+        getFormattedText("[FH]", TextFormatting.DARK_AQUA, true, false)
             .appendSibling(
                 getFormattedText(" " + String.format(format, args).trim(),
                     TextFormatting.GRAY, false, false)
@@ -181,8 +214,8 @@ public class Helper implements Globals {
   }
   
   public static void printWarning(String format, Object... args) {
-    outputMessage(
-        getFormattedText("[ForgeHax]", TextFormatting.YELLOW, true, false)
+    outputMessage(timestamp() +
+        getFormattedText("[FH]", TextFormatting.GOLD, true, false)
             .appendSibling(
                 getFormattedText(" " + String.format(format, args).trim(),
                     TextFormatting.GRAY, false, false)
@@ -191,8 +224,8 @@ public class Helper implements Globals {
   }
   
   public static void printError(String format, Object... args) {
-    outputMessage(
-        getFormattedText("[ForgeHax]", TextFormatting.RED, true, false)
+    outputMessage(timestamp() +
+        getFormattedText("[FH]", TextFormatting.DARK_RED, true, false)
             .appendSibling(
                 getFormattedText(" " + String.format(format, args).trim(),
                     TextFormatting.GRAY, false, false)
