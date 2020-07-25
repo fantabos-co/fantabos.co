@@ -92,17 +92,7 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
               () -> {
                 Set<BlockEntry> contents = Sets.newHashSet();
                 BlockEntry entry;
-                try {
-                  // chest
-                  entry = new BlockEntry(Blocks.CHEST, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(255, 128, 0, 255);
-                  contents.add(entry);
-                  
-                  // trapped chest
-                  entry = new BlockEntry(Blocks.TRAPPED_CHEST, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(255, 92, 0, 255);
-                  contents.add(entry);
-                  
+                try {                  
                   // ender chest
                   entry = new BlockEntry(Blocks.ENDER_CHEST, -1, true);
                   entry.getWritableProperty(ColorProperty.class).set(64, 0, 128, 255);
@@ -123,65 +113,10 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
                   entry.getWritableProperty(ColorProperty.class).set(255, 0, 0, 255);
                   contents.add(entry);
                   
-                  // dispenser
-                  entry = new BlockEntry(Blocks.DISPENSER, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(0, 255, 0, 100);
-                  contents.add(entry);
-                  
-                  // dropper
-                  entry = new BlockEntry(Blocks.DROPPER, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(0, 128, 0, 150);
-                  contents.add(entry);
-                  
-                  // hopper
-                  entry = new BlockEntry(Blocks.HOPPER, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(0, 64, 128, 75);
-                  contents.add(entry);
-                  
-                  // furnace
-                  entry = new BlockEntry(Blocks.FURNACE, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(128, 128, 128, 150);
-                  contents.add(entry);
-                  
-                  // furnace
-                  entry = new BlockEntry(Blocks.LIT_FURNACE, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(128, 128, 128, 150);
-                  contents.add(entry);
-                  
                   // beacon
                   entry = new BlockEntry(Blocks.BEACON, -1, true);
                   entry.getWritableProperty(ColorProperty.class).set(0, 255, 255, 150);
                   contents.add(entry);
-                  
-                  // mob_spawner
-                  entry = new BlockEntry(Blocks.MOB_SPAWNER, -1, true);
-                  entry.getWritableProperty(ColorProperty.class).set(255, 64, 64, 255);
-                  contents.add(entry);
-                  
-                  // shulker boxes
-                  for (Block shulker :
-                      new Block[]{
-                          Blocks.WHITE_SHULKER_BOX,
-                          Blocks.ORANGE_SHULKER_BOX,
-                          Blocks.MAGENTA_SHULKER_BOX,
-                          Blocks.LIGHT_BLUE_SHULKER_BOX,
-                          Blocks.YELLOW_SHULKER_BOX,
-                          Blocks.LIME_SHULKER_BOX,
-                          Blocks.PINK_SHULKER_BOX,
-                          Blocks.GRAY_SHULKER_BOX,
-                          Blocks.SILVER_SHULKER_BOX,
-                          Blocks.CYAN_SHULKER_BOX,
-                          Blocks.PURPLE_SHULKER_BOX,
-                          Blocks.BLUE_SHULKER_BOX,
-                          Blocks.BROWN_SHULKER_BOX,
-                          Blocks.GREEN_SHULKER_BOX,
-                          Blocks.RED_SHULKER_BOX,
-                          Blocks.BLACK_SHULKER_BOX
-                      }) {
-                    entry = new BlockEntry(shulker, -1, true);
-                    entry.getWritableProperty(ColorProperty.class).set(255, 255, 0, 255);
-                    contents.add(entry);
-                  }
                 } catch (Throwable t) {
                   // ignore
                   getLog().warn(t.getMessage());
