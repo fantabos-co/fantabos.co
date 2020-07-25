@@ -14,6 +14,7 @@ import com.matt.forgehax.util.Utils;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.common.PriorityEnum;
 import com.matt.forgehax.util.entity.EntityUtils;
+import com.matt.forgehax.util.entity.LocalPlayerInventory;
 import com.matt.forgehax.util.key.Bindings;
 import com.matt.forgehax.util.math.Angle;
 import com.matt.forgehax.util.math.AngleHelper;
@@ -24,7 +25,10 @@ import com.matt.forgehax.util.projectile.Projectile;
 import java.util.Comparator;
 import java.util.Optional;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Items;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.Vec3d;
 
@@ -201,6 +205,33 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
           .description("The method used to select a target from a group")
           .defaultTo(Selector.CROSSHAIR)
           .build();
+
+  public final Setting<Boolean> stop_on_eating =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("eating")
+          .description("Stop attacking when eating")
+          .defaultTo(true)
+          .build();
+
+  public final Setting<Boolean> stop_on_mining =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("mining-stop")
+          .description("Stop attacking when mining")
+          .defaultTo(true)
+          .build();
+
+  public final Setting<Boolean> attack_everything =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("everything")
+          .description("Don't just attack living entities")
+          .defaultTo(false)
+          .build();
   
   public Aimbot() {
     super(Category.COMBAT, "Aimbot", false, "Automatically attack entities and players");
@@ -252,8 +283,8 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
   private boolean filterTarget(Vec3d pos, Vec3d viewNormal, Angle angles, Entity entity) {
     final Vec3d tpos = getAttackPosition(entity);
     return Optional.of(entity)
-        .filter(EntityUtils::isLiving)
-        .filter(EntityUtils::isAlive)
+        .filter(e -> !(e instanceof EntityItem) && !(e instanceof EntityXPOrb)) // Server kicks if attacked!
+        .filter(e -> attack_everything.get() || (EntityUtils.isLiving(e) && EntityUtils.isAlive(e)))
         .filter(EntityUtils::isValidEntity)
         .filter(ent -> !ent.equals(getLocalPlayer()))
         .filter(this::isFiltered)
@@ -322,7 +353,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
   
   @Override
   protected void onEnabled() {
-    PositionRotationManager.getManager().register(this, PriorityEnum.HIGHEST);
+    PositionRotationManager.getManager().register(this, PriorityEnum.DEFAULT);
   }
   
   @Override
@@ -332,6 +363,17 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
   
   @Override
   public void onLocalPlayerMovementUpdate(RotationState.Local state) {
+    if (stop_on_eating.get() && MC.gameSettings.keyBindUseItem.isKeyDown() && 
+        (LocalPlayerInventory.getSelected().getItem().equals(Items.GOLDEN_APPLE) ||
+        LocalPlayerInventory.getSelected().getItem().equals(Items.CHORUS_FRUIT) ||
+        LocalPlayerInventory.getSelected().getItem().equals(Items.POTIONITEM) ||
+        LocalPlayerInventory.getSelected().getItem().equals(Items.EXPERIENCE_BOTTLE)))
+      return;
+
+    if (stop_on_mining.get() && MC.gameSettings.keyBindAttack.isKeyDown() && 
+        (LocalPlayerInventory.getSelected().getItem().equals(Items.DIAMOND_PICKAXE)))
+      return;
+
     Vec3d pos = EntityUtils.getEyePos(getLocalPlayer());
     Vec3d look = getLocalPlayer().getLookVec();
     Angle angles = AngleHelper.getAngleFacingInDegrees(look);
