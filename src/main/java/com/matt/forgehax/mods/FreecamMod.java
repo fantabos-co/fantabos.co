@@ -2,6 +2,7 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getWorld;
+import static com.matt.forgehax.Helper.getModManager;
 
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
@@ -13,6 +14,7 @@ import com.matt.forgehax.util.math.Angle;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
+import com.matt.forgehax.mods.NoCaveCulling;//TODO Implement ???
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
 import net.minecraft.entity.Entity;
@@ -39,6 +41,24 @@ public class FreecamMod extends ToggleMod {
           .description("Movement speed")
           .defaultTo(0.05D)
           .build();
+
+  private final Setting<Boolean> toggle_culling =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("toggle-culling")
+          .description("Automatically toggle NoCaveCulling")
+          .defaultTo(false)
+          .build();
+
+  private final Setting<Boolean> cancel_packets =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("cancel-packets")
+          .description("Cancel Player moving and steering packets")
+          .defaultTo(true)
+          .build();
   
   private final Handle flying = LocalPlayerUtils.getFlySwitch().createHandle(getModName());
   
@@ -58,6 +78,10 @@ public class FreecamMod extends ToggleMod {
   public void onEnabled() {
     if (getLocalPlayer() == null || getWorld() == null) {
       return;
+    }
+
+    if (toggle_culling.get()) {
+      getModManager().get(NoCaveCulling.class).get().enable(false);
     }
     
     if (isRidingEntity = getLocalPlayer().isRiding()) {
@@ -83,6 +107,10 @@ public class FreecamMod extends ToggleMod {
     
     if (getLocalPlayer() == null || originalPlayer == null) {
       return;
+    }
+
+    if (toggle_culling.get()) {
+      getModManager().get(NoCaveCulling.class).get().disable(false);
     }
     
     getLocalPlayer().setPositionAndRotation(pos.x, pos.y, pos.z, angle.getYaw(), angle.getPitch());
@@ -122,6 +150,7 @@ public class FreecamMod extends ToggleMod {
   
   @SubscribeEvent
   public void onPacketSend(PacketEvent.Outgoing.Pre event) {
+    if (!cancel_packets.get()) return;
     if (event.getPacket() instanceof CPacketPlayer || event.getPacket() instanceof CPacketInput) {
       event.setCanceled(true);
     }
