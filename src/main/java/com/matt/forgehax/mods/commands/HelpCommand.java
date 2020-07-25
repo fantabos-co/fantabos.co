@@ -270,4 +270,18 @@ public class HelpCommand extends CommandMod {
         )
         .build();
   }
+
+  @RegisterCommand
+  public Command setfov(CommandBuilders builders) {
+    return builders
+      .newCommandBuilder()
+      .name("fov")
+      .description("Set fov to amount")
+      .processor(
+        data -> {
+          data.requiredArguments(1);
+          MC.gameSettings.fovSetting = Float.parseFloat(data.getArgumentAsString(0));
+        })
+      .build();
+  }
 }
