@@ -2,9 +2,11 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getWorld;
+import static com.matt.forgehax.Helper.getModManager;
 
 import com.google.common.util.concurrent.AtomicDouble;
 import com.matt.forgehax.events.Render2DEvent;
+import com.matt.forgehax.mods.services.FriendService;
 import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
@@ -29,19 +31,13 @@ import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.init.Enchantments;
-import net.minecraft.client.network.NetworkPlayerInfo;//TODO Implement PlayerInfo???
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import com.google.gson.JsonParser;
-import org.apache.commons.io.IOUtils;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 @RegisterMod
 public class ESP extends ToggleMod implements Fonts {
@@ -314,7 +310,7 @@ public class ESP extends ToggleMod implements Fonts {
               .task(SurfaceBuilder::clearColor)
               .task(SurfaceBuilder::enableItemRendering)
               .item(stack, xx, y)
-              .itemOverlay(stack, xx, y)
+              .itemTextOverlay(stack, xx, y)
               .task(SurfaceBuilder::disableItemRendering)
               .pop();
             if (details) {
@@ -331,7 +327,7 @@ public class ESP extends ToggleMod implements Fonts {
                     .push()
                     .task(SurfaceBuilder::enableBlend)
                     .task(SurfaceBuilder::enableFontRendering)
-                    .fontRenderer(ARIAL)
+                    // .fontRenderer(ARIAL)
                     .color(Colors.WHITE.toBuffer())
                     .scale(0.5D)
                     .text(text, xx * 2.D, ty * 2.D)
@@ -398,7 +394,7 @@ public class ESP extends ToggleMod implements Fonts {
           .task(SurfaceBuilder::enableTexture2D)
           .pop();
         
-        return HEALTHBAR_HEIGHT + 1.D;
+        return HEALTHBAR_HEIGHT + 3.D;
       }
       
       @Override
@@ -420,26 +416,31 @@ public class ESP extends ToggleMod implements Fonts {
         double height,
         boolean details) {
         String text = living.getDisplayName().getUnformattedText();
-        
+        String f_text;
+
         double x = topX - ((double) builder.getFontWidth(text) / 2.D);
         double y = topY - (double) builder.getFontHeight() - 1.D;
+
+        if (getModManager().get(FriendService.class).get().isFriend(text))
+          f_text = TextFormatting.LIGHT_PURPLE + text;
+        else f_text = text;
         
         builder
           .reset()
           .push()
           .task(SurfaceBuilder::enableBlend)
           .task(SurfaceBuilder::enableFontRendering)
-          .task(SurfaceBuilder::enableTexture2D) // enable texture
-          .fontRenderer(ARIAL)
+          // .task(SurfaceBuilder::enableTexture2D) // enable texture
+          // .fontRenderer(ARIAL)
           .color(Colors.BLACK.toBuffer())
           .text(text, x + 1, y + 1)
           .color(Colors.WHITE.toBuffer())
-          .text(text, x, y)
+          .text(f_text, x, y)
           .task(SurfaceBuilder::disableBlend)
           .task(SurfaceBuilder::disableFontRendering)
           .pop();
         
-        return SurfaceHelper.getTextHeight() + 1.D;
+        return SurfaceHelper.getTextHeight();
       }
       
       @Override

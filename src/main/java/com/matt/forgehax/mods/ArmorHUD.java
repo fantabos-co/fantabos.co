@@ -2,10 +2,14 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
+// This is nice because it doesn't change the original list but shows it in reverse
+import com.google.common.collect.Lists;
+
 import com.matt.forgehax.util.mod.HudMod;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.color.Color;
+import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.math.AlignHelper.Align;
@@ -56,16 +60,25 @@ public class ArmorHUD extends HudMod {
   @Override
   protected double getDefaultScale() { return 1d; }
 
+  private boolean inWater = false;
+
+  @SubscribeEvent
+  public void onRenderOverlay(RenderGameOverlayEvent event) {
+    if (event.getType() == RenderGameOverlayEvent.ElementType.AIR)
+      inWater = true;
+  }
 
   @SubscribeEvent
   public void onRenderScreen(RenderGameOverlayEvent.Text event) {
     GlStateManager.enableTexture2D();
     int slot = 0;
     int bubble_offset;
-    
-    if (water_offset.get() && getLocalPlayer().isInWater()) bubble_offset = 12;
+
+    if (!getLocalPlayer().isInWater()) inWater = false;   
+    if (water_offset.get() && inWater) bubble_offset = 12;
     else bubble_offset = 0;
-    for (ItemStack i : MC.player.inventory.armorInventory) {
+
+    for (ItemStack i : Lists.reverse(getLocalPlayer().inventory.armorInventory)) {
       if (!i.equals(ItemStack.EMPTY) && i.getItem() != null) {
         // int x = i - 90 + (9 - iteration) * 20 + 2;
         GlStateManager.enableDepth();
@@ -76,17 +89,16 @@ public class ArmorHUD extends HudMod {
         GlStateManager.disableLighting();
         GlStateManager.disableDepth();
 
-        if (damage.get()) {
-          int color;
+        if (i.getCount() > 1)
+          SurfaceHelper.drawText(String.format("%d", i.getCount()),
+                  getPosX(slot*20 +5), getPosY(bubble_offset - 10), Colors.WHITE.toBuffer());
+
+        if (damage.get() && i.getItemDamage() != 0) {
+          int color = i.getItem().getRGBDurabilityForDisplay(i);
           int dmg = i.getMaxDamage() - i.getItemDamage();
-          if (i.getMaxDamage() == 0) {
-            color = Color.of(0, 255, 0, 255).toBuffer(); // Zero max damage, always repaired?
-          } else {
-            int green = (int) (((float) dmg / (float) i.getMaxDamage()) * 255F); // This is smart! Thanks 086!
-            int red = 255 - green;
-	          color = Color.of(red, green, 0, 255).toBuffer();
-          }
-          SurfaceHelper.drawText(String.format("%d", dmg), getPosX((slot*20)+6), getPosY(bubble_offset-13), color, (scale.get()/2F), false);
+          SurfaceHelper.drawText(String.format("%d", dmg),
+                                  getPosX((slot*20)+6), getPosY(bubble_offset-13),
+                                  color, (scale.get()/2F), true);
         }
       }
       slot++;

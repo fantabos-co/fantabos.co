@@ -270,6 +270,17 @@ public class SurfaceBuilder {
         current().hasScale() ? current().getScale3d()[0] : 16.D);
     return this;
   }
+
+  public SurfaceBuilder itemTextOverlay(ItemStack stack, double x, double y) {
+    SurfaceHelper.renderItemTextOverlayIntoGUI(
+        MC.fontRenderer,
+        stack,
+        x,
+        y,
+        null,
+        current().hasScale() ? current().getScale3d()[0] : 16.D);
+    return this;
+  }
   
   public SurfaceBuilder head(ResourceLocation resource, double x, double y) {
     MC.renderEngine.bindTexture(resource);

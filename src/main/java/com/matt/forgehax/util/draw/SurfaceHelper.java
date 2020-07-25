@@ -462,6 +462,70 @@ public class SurfaceHelper implements Globals {
       }
     }
   }
+
+  // I wanted just the text damage but this previously rendered perfect vanilla items! I wanted to keep original too
+  protected static void renderItemTextOverlayIntoGUI(
+      FontRenderer fr,
+      ItemStack stack,
+      double xPosition,
+      double yPosition,
+      @Nullable String text,
+      double scale) {
+    final double SCALE_RATIO = 1.23076923077D;
+    
+    if (!stack.isEmpty()) {
+      if (stack.getCount() != 1 || text != null) {
+        String s = text == null ? String.valueOf(stack.getCount()) : text;
+        GlStateManager.disableLighting();
+        GlStateManager.disableDepth();
+        GlStateManager.disableBlend();
+        fr.drawStringWithShadow(
+            s,
+            (float) (xPosition + 19 - 2 - fr.getStringWidth(s)),
+            (float) (yPosition + 6 + 3),
+            16777215);
+        GlStateManager.enableLighting();
+        GlStateManager.enableDepth();
+        // Fixes opaque cooldown overlay a bit lower
+        // TODO: check if enabled blending still screws things up down the line.
+        GlStateManager.enableBlend();
+      }
+      
+      if (stack.getItem().showDurabilityBar(stack)) {
+        GlStateManager.pushMatrix();
+        GlStateManager.disableDepth();
+        GlStateManager.disableBlend();
+        GlStateManager.scale(0.5D, 0.5D, 0.5D);
+        int rgbfordisplay = stack.getItem().getRGBDurabilityForDisplay(stack);
+        fr.drawStringWithShadow(
+          String.format("%d", stack.getMaxDamage() - stack.getItemDamage()),
+          (float) (2*(xPosition + 6)),
+          (float) (2*(yPosition + 12)),
+          rgbfordisplay);
+        GlStateManager.enableBlend();
+        GlStateManager.enableDepth();
+        GlStateManager.popMatrix();
+      }
+      
+      EntityPlayerSP entityplayersp = Minecraft.getMinecraft().player;
+      float f3 =
+          entityplayersp == null
+              ? 0.0F
+              : entityplayersp
+                  .getCooldownTracker()
+                  .getCooldown(stack.getItem(), Minecraft.getMinecraft().getRenderPartialTicks());
+      
+      if (f3 > 0.0F) {
+        GlStateManager.disableLighting();
+        GlStateManager.disableDepth();
+        GlStateManager.disableTexture2D();
+        draw(xPosition, yPosition + scale * (1.0F - f3), 16, scale * f3, 255, 255, 255, 127);
+        GlStateManager.enableTexture2D();
+        GlStateManager.enableLighting();
+        GlStateManager.enableDepth();
+      }
+    }
+  }
   
   private static void draw(
       double x, double y, double width, double height, int red, int green, int blue, int alpha) {
