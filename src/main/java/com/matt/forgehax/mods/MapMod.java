@@ -78,7 +78,7 @@ public class MapMod extends ToggleMod {
     
     BufferedImage image = getImageFromUrl(url);
     if (image == null) {
-      Helper.printMessage("Failed to download image");
+      Helper.printError("Failed to download image");
       return;
     }
     

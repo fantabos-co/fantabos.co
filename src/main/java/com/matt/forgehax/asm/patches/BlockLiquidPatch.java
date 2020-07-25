@@ -42,13 +42,15 @@ public class BlockLiquidPatch extends ClassTransformer {
       Objects.requireNonNull(node, "Find pattern failed for node");
       
       InsnList insnList = new InsnList();
-      final LabelNode jmp = new LabelNode();
       
       insnList.add(ASMHelper.call(GETSTATIC, TypesHook.Fields.ForgeHaxHooks_isLiquidInteractEnabled));
+      final LabelNode jmp = new LabelNode();
       insnList.add(new JumpInsnNode(IFEQ, jmp));
       insnList.add(new InsnNode(ICONST_1));
       insnList.add(new InsnNode(IRETURN));
       insnList.add(jmp);
+      
+      // now our result is on the stack
       
       main.instructions.insertBefore(node, insnList);
     }

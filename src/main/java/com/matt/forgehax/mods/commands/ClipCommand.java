@@ -93,7 +93,7 @@ public class ClipCommand extends CommandMod {
                 break;
               }
               default:
-                Helper.printMessage("Invalid number of arguments: expected 1 or 3");
+                Helper.printError("Invalid number of arguments: expected 1 or 3");
             }
           } catch (NumberFormatException e) {
             Helper.printMessage("Failed to parse input");
