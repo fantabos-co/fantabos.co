@@ -67,6 +67,7 @@ public class ExtraInventory extends ToggleMod {
           .description("Delay between window clicks (in MS)")
           .defaultTo(500L)
           .min(0L)
+          .max(10000L)
           .build();
   
   private TaskChain nextClickTask = null;

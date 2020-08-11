@@ -31,6 +31,7 @@ public class Blink extends ToggleMod {
       .name("limit")
       .description("Max number of packets to hold, 0 to disable")
       .min(0)
+      .max(1000)
       .defaultTo(0)
       .build();
   private final Setting<Boolean> reenable =

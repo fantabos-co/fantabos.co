@@ -87,6 +87,8 @@ public class BookBot extends ToggleMod {
           .<Long>newSettingBuilder()
           .name("sleep")
           .description("Sleep time in ms")
+          .min(0L)
+          .max(10000L)
           .defaultTo(300L)
           .build();
   

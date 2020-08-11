@@ -39,6 +39,8 @@ public class AutoBucketFallMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("PreHeight")
           .description("how far below to check before preparing")
+          .min(0D)
+          .max(100D)
           .defaultTo(10D)
           .build();
   public final Setting<Double> settingFallHeight =
@@ -47,6 +49,8 @@ public class AutoBucketFallMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("height")
           .description("minimum fall distance to work")
+          .min(0D)
+          .max(100D)
           .defaultTo(15D)
           .build();
   public final Setting<Boolean> autoCenter =

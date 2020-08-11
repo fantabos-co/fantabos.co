@@ -8,7 +8,6 @@ import static com.matt.forgehax.Helper.getModManager;
 import com.matt.forgehax.mods.managers.PositionRotationManager;
 import com.matt.forgehax.mods.managers.PositionRotationManager.RotationState;
 import com.matt.forgehax.mods.services.FriendService;
-import com.matt.forgehax.mods.services.GuiService;
 import com.matt.forgehax.mods.services.TickRateService;
 import com.matt.forgehax.util.Utils;
 import com.matt.forgehax.util.command.Setting;
@@ -149,6 +148,8 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
           .name("range")
           .description("Aimbot range")
           .defaultTo(4.5D)
+          .min(0D)
+          .max(10D)
           .build();
   
   private final Setting<Float> cooldown_percent =
@@ -159,6 +160,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
           .description("Minimum cooldown percent for next strike")
           .defaultTo(100F)
           .min(0F)
+          .max(100F)
           .build();
   
   private final Setting<Boolean> projectile_aimbot =
@@ -194,6 +196,8 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
           .<Double>newSettingBuilder()
           .name("projectile-range")
           .description("Projectile aimbot range")
+          .min(0D)
+          .max(10000D)
           .defaultTo(100D)
           .build();
   
@@ -287,6 +291,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
         .filter(e -> attack_everything.get() || (EntityUtils.isLiving(e) && EntityUtils.isAlive(e)))
         .filter(EntityUtils::isValidEntity)
         .filter(ent -> !ent.equals(getLocalPlayer()))
+        .filter(ent -> !EntityUtils.isFakeLocalPlayer(entity))
         .filter(this::isFiltered)
         .filter(ent -> isInRange(tpos, pos))
         .filter(ent -> isInFov(angles, tpos.subtract(pos)))
@@ -297,7 +302,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
   private boolean isFiltered(Entity entity) {
     switch (EntityUtils.getRelationship(entity)) {
       case PLAYER:
-        if (friend_filter.get() && getModManager().get(FriendService.class).get().isFriend(entity.getName()))
+        if (friend_filter.get() && getModManager().get(FriendService.class).get().isFriendly(entity.getName()))
           return false;
         return target_players.get();
       case FRIENDLY:

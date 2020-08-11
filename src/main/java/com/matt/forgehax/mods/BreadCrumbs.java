@@ -44,6 +44,7 @@ public class BreadCrumbs extends ToggleMod {
           .description("rendering smoothness")
           .defaultTo(1)
           .min(1)
+          .max(50)
           .build();
 
   /*public final Setting<Integer> maxpoints =

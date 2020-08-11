@@ -5,7 +5,6 @@ import static com.matt.forgehax.Helper.getWorld;
 
 import com.matt.forgehax.mods.managers.PositionRotationManager;
 import com.matt.forgehax.mods.managers.PositionRotationManager.RotationState;
-import com.matt.forgehax.util.SafeConverter;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.common.PriorityEnum;
 import com.matt.forgehax.util.entity.LocalPlayerUtils;

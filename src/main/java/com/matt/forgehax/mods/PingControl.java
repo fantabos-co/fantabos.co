@@ -25,6 +25,7 @@ public class PingControl extends ToggleMod {
       .name("amount")
       .description("Number of ms to add to ping")
       .min(0)
+      .max(9999)
       .defaultTo(300)
       .build();
   

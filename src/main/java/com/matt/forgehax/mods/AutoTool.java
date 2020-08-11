@@ -86,6 +86,7 @@ public class AutoTool extends ToggleMod {
           .description("Delay in ticks beore reverting tool")
           .defaultTo(5)
           .min(0)
+          .max(100)
           .build();
 
   public final Setting<Integer> cooldown_weapon =
@@ -96,6 +97,7 @@ public class AutoTool extends ToggleMod {
           .description("Keep weapon in hand this many ticks")
           .defaultTo(30)
           .min(0)
+          .max(100)
           .build();
 
   private final Setting<Boolean> crystal_aura =
@@ -225,11 +227,15 @@ public class AutoTool extends ToggleMod {
   
   @SubscribeEvent
   public void onBlockBreak(PlayerDamageBlockEvent event) {
-    selectBestTool(event.getPos());
+    if (!event.isCanceled())
+      selectBestTool(event.getPos());
   }
   
   @SubscribeEvent
   public void onAttackEntity(PlayerAttackEntityEvent event) {
+    if (crystal_aura.get() && event.getVictim() instanceof EntityEnderCrystal &&
+        !getLocalPlayer().isPotionActive(MobEffects.WEAKNESS))
+      return;
     selectBestWeapon(event.getVictim());
   }
 }

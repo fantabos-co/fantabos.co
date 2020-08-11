@@ -1,8 +1,8 @@
 package com.matt.forgehax.mods;
 
-import java.awt.event.KeyEvent;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
+import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.gui.ClickGui;
 import com.matt.forgehax.util.command.Setting;
@@ -15,6 +15,7 @@ import net.minecraft.client.gui.GuiScreenOptionsSounds;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.network.play.client.CPacketCloseWindow;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
 
@@ -30,11 +31,28 @@ public class GuiMove extends ToggleMod {
       .<Double>newSettingBuilder()
       .name("speed-rotation")
       .description("Speed at which screen rotates with arrows")
+      .min(0D)
+      .max(20D)
       .defaultTo(5D)
+      .build();
+
+  public final Setting<Boolean> secret_close =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("secret-close")
+      .description("Cancel the close-window packet")
+      .defaultTo(false)
       .build();
   
   public GuiMove() {
     super(Category.MISC, "GuiMove", false, "move with a gui open, tilt camera with arrows");
+  }
+
+  @SubscribeEvent
+  public void onPacketSending(PacketEvent.Outgoing.Pre event) {
+    if (secret_close.get() && event.getPacket() instanceof CPacketCloseWindow)
+      event.setCanceled(true);
   }
   
   @SubscribeEvent

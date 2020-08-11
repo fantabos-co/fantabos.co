@@ -52,6 +52,8 @@ public class AutoHotbarReplenish extends ToggleMod {
           .name("tick-delay")
           .description("Number of ticks between each window click packet. 0 will have no limit and a negative value will send n packets per tick")
           .defaultTo(1)
+          .min(0)
+          .max(60)
           .build();
 
   private final Setting<Boolean> no_gui =

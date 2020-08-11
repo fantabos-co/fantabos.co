@@ -31,6 +31,8 @@ public class AutoLog extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("threshold")
           .description("Health to go down to to disconnect\"")
+          .min(0)
+          .max(40)
           .defaultTo(0)
           .build();
 

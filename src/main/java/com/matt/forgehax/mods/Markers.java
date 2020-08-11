@@ -150,6 +150,8 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
           .name("antialiasing_max")
           .description(
               "Maximum number of render elements allowed in a render chunk until antialiasing is disabled")
+          .min(0)
+          .max(1000)
           .defaultTo(0)
           .build();
   

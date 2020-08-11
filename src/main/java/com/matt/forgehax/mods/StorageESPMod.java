@@ -67,7 +67,8 @@ public class StorageESPMod extends ToggleMod {
           .<Float>newSettingBuilder()
           .name("width")
           .description("The width value for the outline")
-          .min(0.5f)
+          .min(0f)
+          .max(10f)
           .defaultTo(1.0f)
           .build();
 
@@ -150,6 +151,7 @@ public class StorageESPMod extends ToggleMod {
           .name("stash-warn")
           .description("Number of chests needed for warning, set 0 for always on, a very large number for always off")
           .min(0)
+          .max(1000)
           .defaultTo(20)
           .build();
 

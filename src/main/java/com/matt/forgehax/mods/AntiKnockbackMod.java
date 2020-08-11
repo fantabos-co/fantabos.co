@@ -21,6 +21,7 @@ import net.minecraft.network.play.server.SPacketEntityStatus;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterMod
@@ -32,6 +33,8 @@ public class AntiKnockbackMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("x-multiplier")
           .description("Multiplier for X axis")
+          .min(0D)
+          .max(10D)
           .defaultTo(0.D)
           .build();
   
@@ -41,6 +44,8 @@ public class AntiKnockbackMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("y-multiplier")
           .description("Multiplier for Y axis")
+          .min(0D)
+          .max(10D)
           .defaultTo(0.D)
           .build();
   
@@ -50,6 +55,8 @@ public class AntiKnockbackMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("z-multiplier")
           .description("Multiplier for Z axis")
+          .min(0D)
+          .max(10D)
           .defaultTo(0.D)
           .build();
   
@@ -239,7 +246,7 @@ public class AntiKnockbackMod extends ToggleMod {
     }
   }
   
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.HIGH)
   public void onBlockSlip(EntityBlockSlipApplyEvent event) {
     if (slipping.get()
         && getLocalPlayer() != null

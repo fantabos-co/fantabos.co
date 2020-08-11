@@ -14,9 +14,9 @@ import com.matt.forgehax.util.math.Angle;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
-import com.matt.forgehax.mods.NoCaveCulling;//TODO Implement ???
 import com.mojang.authlib.GameProfile;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
+import net.minecraft.client.gui.GuiDownloadTerrain;
 import net.minecraft.entity.Entity;
 import net.minecraft.network.play.client.CPacketInput;
 import net.minecraft.network.play.client.CPacketPlayer;
@@ -39,6 +39,8 @@ public class FreecamMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("speed")
           .description("Movement speed")
+          .min(0D)
+          .max(2D)
           .defaultTo(0.05D)
           .build();
 
@@ -158,7 +160,8 @@ public class FreecamMod extends ToggleMod {
   
   @SubscribeEvent
   public void onPacketReceived(PacketEvent.Incoming.Pre event) {
-    if (originalPlayer == null || getLocalPlayer() == null) {
+    if (originalPlayer == null || getLocalPlayer() == null ||
+        MC.currentScreen instanceof GuiDownloadTerrain) {
       return;
     }
     

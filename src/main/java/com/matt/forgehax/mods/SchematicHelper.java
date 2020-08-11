@@ -34,7 +34,8 @@ public class SchematicHelper extends ToggleMod {
           .name("width")
           .description("Line width")
           .defaultTo(5f)
-          .min(1f)
+          .min(0f)
+          .max(10f)
           .build();
   
   public SchematicHelper() {

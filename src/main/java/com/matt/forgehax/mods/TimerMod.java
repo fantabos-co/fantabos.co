@@ -30,6 +30,7 @@ public class TimerMod extends ToggleMod {
           .description("how fast to make the game run")
           .defaultTo(0.33f)
           .min(0f)
+          .max(10f)
           .success(__ -> {
             if (this.isEnabled()) {
               updateTimer();

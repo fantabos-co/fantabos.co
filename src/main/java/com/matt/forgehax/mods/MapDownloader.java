@@ -45,6 +45,8 @@ public class MapDownloader extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("resolution")
           .description("resolution of the downloaded image (default 128)")
+          .min(1)
+          .max(1024)
           .defaultTo(128)
           .build();
 

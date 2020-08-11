@@ -8,6 +8,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import com.matt.forgehax.events.Render2DEvent;
 import com.matt.forgehax.mods.services.FriendService;
 import com.matt.forgehax.util.color.Color;
+import com.matt.forgehax.util.color.ColorClamp;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceBuilder;
@@ -31,10 +32,10 @@ import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.init.Enchantments;
+import net.minecraft.init.MobEffects;
 import net.minecraftforge.client.event.RenderLivingEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -46,10 +47,10 @@ public class ESP extends ToggleMod implements Fonts {
   private static final int HEALTHBAR_HEIGHT = 3;
   
   public enum DrawOptions {
-    DISABLED,
+    NONE,
     NAME,
-    SIMPLE,
-    ADVANCED,
+    BAR,
+    FULL,
   }
   
   public enum ArmorOptions {
@@ -116,7 +117,7 @@ public class ESP extends ToggleMod implements Fonts {
       .<DrawOptions>newSettingEnumBuilder()
       .name("players")
       .description("Enables players")
-      .defaultTo(DrawOptions.NAME)
+      .defaultTo(DrawOptions.FULL)
       .build();
   
   public final Setting<DrawOptions> mobs_hostile =
@@ -125,7 +126,7 @@ public class ESP extends ToggleMod implements Fonts {
       .<DrawOptions>newSettingEnumBuilder()
       .name("hostile")
       .description("Enables hostile mobs")
-      .defaultTo(DrawOptions.NAME)
+      .defaultTo(DrawOptions.NONE)
       .build();
   
   public final Setting<DrawOptions> mobs_friendly =
@@ -134,7 +135,7 @@ public class ESP extends ToggleMod implements Fonts {
       .<DrawOptions>newSettingEnumBuilder()
       .name("friendly")
       .description("Enables friendly mobs")
-      .defaultTo(DrawOptions.NAME)
+      .defaultTo(DrawOptions.NONE)
       .build();
   
   public final Setting<DrawOptions> mob_tameable =
@@ -143,7 +144,7 @@ public class ESP extends ToggleMod implements Fonts {
       .<DrawOptions>newSettingEnumBuilder()
       .name("tamed")
       .description("Specific rule for Tameable mobs")
-      .defaultTo(DrawOptions.NAME)
+      .defaultTo(DrawOptions.NONE)
       .build();
 
   public final Setting<Boolean> ench_display =
@@ -154,6 +155,15 @@ public class ESP extends ToggleMod implements Fonts {
       .description("Draw enchants over armor")
       .defaultTo(false)
       .build();
+
+  private final Setting<Boolean> percentage =
+   getCommandStub()
+       .builders()
+       .<Boolean>newSettingBuilder()
+       .name("percentage")
+       .description("Show pleb % damage instead of chad absolute damage")
+       .defaultTo(false)
+       .build();
   
   public ESP() {
     super(Category.RENDER, "ESP", false, "Shows entity locations and info");
@@ -168,13 +178,13 @@ public class ESP extends ToggleMod implements Fonts {
   
   @SubscribeEvent(priority = EventPriority.LOW)
   public void onRender2D(final Render2DEvent event) {
+    if (getWorld() == null) return;
+
     getWorld()
       .loadedEntityList
       .stream()
       .filter(EntityUtils::isLiving)
-      .filter(
-        entity ->
-          !Objects.equals(getLocalPlayer(), entity) && !EntityUtils.isFakeLocalPlayer(entity))
+      .filter(entity -> !Objects.equals(getLocalPlayer(), entity))
       .filter(EntityUtils::isAlive)
       .filter(EntityUtils::isValidEntity)
       .map(entity -> (EntityLivingBase) entity)
@@ -202,7 +212,7 @@ public class ESP extends ToggleMod implements Fonts {
             }
           }
 
-          if (setting == null || DrawOptions.DISABLED.equals(setting.get())) {
+          if (setting == null || DrawOptions.NONE.equals(setting.get())) {
             return;
           }
           
@@ -243,7 +253,8 @@ public class ESP extends ToggleMod implements Fonts {
                     botY,
                     width,
                     height,
-                    ench_display.get()));
+                    ench_display.get(),
+                    percentage.get()));
               });
         });
   }
@@ -271,7 +282,8 @@ public class ESP extends ToggleMod implements Fonts {
       double botY,
       double width,
       double height,
-      boolean details);
+      boolean details,
+      boolean percentage);
     
     /**
      * Check if the draw component is valid for this setting
@@ -291,7 +303,8 @@ public class ESP extends ToggleMod implements Fonts {
         double botY,
         double width,
         double height,
-        boolean details) {
+        boolean details,
+        boolean percentage) {
         List<ItemStack> items =
           StreamSupport.stream(living.getEquipmentAndArmor().spliterator(), false)
             .filter(Objects::nonNull)
@@ -310,7 +323,7 @@ public class ESP extends ToggleMod implements Fonts {
               .task(SurfaceBuilder::clearColor)
               .task(SurfaceBuilder::enableItemRendering)
               .item(stack, xx, y)
-              .itemTextOverlay(stack, xx, y)
+              .itemTextOverlay(stack, xx, y, percentage)
               .task(SurfaceBuilder::disableItemRendering)
               .pop();
             if (details) {
@@ -346,7 +359,7 @@ public class ESP extends ToggleMod implements Fonts {
       
       @Override
       public boolean valid(Setting<DrawOptions> setting) {
-        return DrawOptions.ADVANCED.compareTo(setting.get())
+        return DrawOptions.FULL.compareTo(setting.get())
           <= 0; // ADVANCED less than or equal to SETTING
       }
     },
@@ -361,7 +374,8 @@ public class ESP extends ToggleMod implements Fonts {
         double botY,
         double width,
         double height,
-        boolean details) {
+        boolean details,
+        boolean percentage) {
         float hp =
           MathHelper.clamp(living.getHealth(), 0, living.getMaxHealth()) / living.getMaxHealth();
         double x = topX - (HEALTHBAR_WIDTH / 2);
@@ -399,7 +413,7 @@ public class ESP extends ToggleMod implements Fonts {
       
       @Override
       public boolean valid(Setting<DrawOptions> setting) {
-        return DrawOptions.SIMPLE.compareTo(setting.get())
+        return DrawOptions.BAR.compareTo(setting.get())
           <= 0; // SIMPLE less than or equal to SETTING
       }
     },
@@ -414,16 +428,22 @@ public class ESP extends ToggleMod implements Fonts {
         double botY,
         double width,
         double height,
-        boolean details) {
+        boolean details,
+        boolean percentage) {
         String text = living.getDisplayName().getUnformattedText();
         String f_text;
 
         double x = topX - ((double) builder.getFontWidth(text) / 2.D);
         double y = topY - (double) builder.getFontHeight() - 1.D;
 
-        if (getModManager().get(FriendService.class).get().isFriend(text))
-          f_text = TextFormatting.LIGHT_PURPLE + text;
+        FriendService mod = getModManager().get(FriendService.class).get();
+        if (mod != null && mod.isFriend(text))
+          f_text = ColorClamp.getClampedColor(mod.getFriendColor(text)) + text;
         else f_text = text;
+
+        if (living.isPotionActive(MobEffects.STRENGTH)) {
+          f_text += " [!]";
+        }
         
         builder
           .reset()
@@ -445,7 +465,7 @@ public class ESP extends ToggleMod implements Fonts {
       
       @Override
       public boolean valid(Setting<DrawOptions> setting) {
-        return DrawOptions.DISABLED.compareTo(setting.get()) < 0; // DISABLED less than SETTING
+        return DrawOptions.NONE.compareTo(setting.get()) < 0; // DISABLED less than SETTING
       }
     };
     

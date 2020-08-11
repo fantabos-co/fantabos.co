@@ -4,7 +4,6 @@ import static com.matt.forgehax.Helper.getWorld;
 
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 
-import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -20,7 +19,6 @@ import net.minecraft.util.text.TextFormatting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +32,8 @@ public class MobOwner extends ToggleMod {
       .<Integer>newSettingBuilder()
       .name("cooldown")
       .description("Seconds to wait before looking up an username again")
+      .min(0)
+      .max(300)
       .defaultTo(10)
       .build();
 

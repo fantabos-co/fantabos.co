@@ -2,6 +2,7 @@ package com.matt.forgehax.mods;
 
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.events.Render2DEvent;
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
@@ -14,6 +15,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 /**
  * Created by Babbaj on 10/28/2017.
  */
+//I shouldn't say it here, but this Mod is OP -Fleyr
 @RegisterMod
 public class CompassMod extends ToggleMod {
   
@@ -23,6 +25,8 @@ public class CompassMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("scale")
           .description("size of the compass")
+          .min(0D)
+          .max(10D)
           .defaultTo(3.D)
           .build();
 
@@ -33,6 +37,37 @@ public class CompassMod extends ToggleMod {
           .name("axis")
           .description("Shows axis instead of cardinal directions")
           .defaultTo(false)
+          .build();
+      
+  private final Setting<Integer> red =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("red")
+          .description("Red amount, 0-255")
+          .min(0)
+          .max(255)
+          .defaultTo(191)
+          .build();
+  private final Setting<Integer> green =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("green")
+          .description("Green amount, 0-255")
+          .min(0)
+          .max(255)
+          .defaultTo(97)
+          .build();
+  private final Setting<Integer> blue =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("blue")
+          .description("Blue amount, 0-255")
+          .min(0)
+          .max(255)
+          .defaultTo(106)
           .build();
   
   private static final double HALF_PI = Math.PI / 2;
@@ -70,7 +105,7 @@ public class CompassMod extends ToggleMod {
           dir_name,
           (float) (centerX + getX(rad)),
           (float) (centerY + getY(rad)),
-          dir == Direction.N ? Colors.RED.toBuffer() : Colors.WHITE.toBuffer());
+          dir == Direction.N ? Color.of(red.get(), green.get(), blue.get(), 255).toBuffer() : Colors.WHITE.toBuffer());
       
     }
     

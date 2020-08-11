@@ -37,6 +37,8 @@ public class ScoreboardListenerService extends ServiceMod {
           .<Integer>newSettingBuilder()
           .name("wait")
           .description("Time to wait after joining world")
+          .min(0)
+          .max(10000)
           .defaultTo(5000)
           .build();
   private final Setting<Integer> retries =
@@ -45,6 +47,8 @@ public class ScoreboardListenerService extends ServiceMod {
           .<Integer>newSettingBuilder()
           .name("retries")
           .description("Number of times to attempt retries on failure")
+          .min(0)
+          .max(10)
           .defaultTo(1)
           .build();
   

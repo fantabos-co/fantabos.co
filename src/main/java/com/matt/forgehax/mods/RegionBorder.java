@@ -22,8 +22,10 @@ public class RegionBorder extends ToggleMod {
       .builders()
       .<Integer>newSettingBuilder()
       .name("chunk-distance")
-      .description("how many chunks in front of the region the border should be drawn. I you don't want it just set it to 0 so it is like the normal region border.")
+      .description("how many chunks in front of the region border should be drawn. Set it to 0 for normal region border")
       .defaultTo(5)
+      .min(0)
+      .max(100)
       .build();
 
   private final Setting<Boolean> drawRegionBorder = getCommandStub().builders().<Boolean>newSettingBuilder()

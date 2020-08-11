@@ -19,6 +19,7 @@ public class FPSLock extends ToggleMod {
           .description("default FPS to revert to")
           .defaultTo(MC.gameSettings.limitFramerate)
           .min(1)
+          .max(240)
           .build();
   
   private final Setting<Integer> fps =
@@ -28,6 +29,7 @@ public class FPSLock extends ToggleMod {
           .name("fps")
           .description("FPS to use when the world is loaded. Set to 0 to disable.")
           .min(0)
+          .max(240)
           .defaultTo(0)
           .build();
   private final Setting<Integer> menu_fps =
@@ -37,6 +39,7 @@ public class FPSLock extends ToggleMod {
           .name("menu-fps")
           .description("FPS when the GUI is opened. Set to 0 to disable.")
           .min(0)
+          .max(240)
           .defaultTo(60)
           .build();
   
@@ -47,6 +50,7 @@ public class FPSLock extends ToggleMod {
           .name("no-focus-fps")
           .description("FPS when the game window doesn't have focus. Set to 0 to disable.")
           .min(0)
+          .max(240)
           .defaultTo(3)
           .build();
   

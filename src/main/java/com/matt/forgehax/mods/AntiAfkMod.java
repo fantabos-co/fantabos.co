@@ -52,6 +52,7 @@ public class AntiAfkMod extends ToggleMod {
           .description("Delay time (in MS) between tasks")
           .defaultTo(10_000L)
           .min(0L)
+          .max(1000000L)
           .build();
   private final Setting<Long> runtime =
       getCommandStub()
@@ -61,6 +62,7 @@ public class AntiAfkMod extends ToggleMod {
           .description("Time to run each task")
           .defaultTo(5_000L)
           .min(0L)
+          .max(1000000L)
           .build();
   private final Setting<Boolean> silent =
       getCommandStub()

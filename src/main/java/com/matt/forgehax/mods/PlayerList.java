@@ -2,7 +2,6 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getWorld;
 import static com.matt.forgehax.Helper.getLocalPlayer;
-import static com.matt.forgehax.util.math.VectorUtils.distance;
 import static com.matt.forgehax.Helper.getModManager;
 
 import com.matt.forgehax.asm.events.RenderTabNameEvent;
@@ -10,6 +9,7 @@ import com.matt.forgehax.mods.services.FriendService;
 import com.matt.forgehax.util.entity.EntityUtils;
 import com.matt.forgehax.util.entity.PlayerUtils;
 import com.matt.forgehax.util.color.Colors;
+import com.matt.forgehax.util.color.ColorClamp;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.math.AlignHelper;
@@ -41,9 +41,10 @@ public class PlayerList extends HudMod {
         .builders()
         .<Float>newSettingBuilder()
         .name("maxdist")
-        .description("Don't show players further than this")
+        .description("Don't show players further than this, set 0 to disable")
         .min(0F)
-        .defaultTo(500F)
+        .max(1000F)
+        .defaultTo(0F)
         .build();
 
   private final Setting<ListSorter> sortMode =
@@ -55,13 +56,13 @@ public class PlayerList extends HudMod {
         .defaultTo(ListSorter.LENGTH)
         .build();
 
-  public final Setting<Boolean> color_tab =
+  public final Setting<TextFormatting> tab_mark =
     getCommandStub()
         .builders()
-        .<Boolean>newSettingBuilder()
-        .name("tab-color")
-        .description("Change TabList color of players in render distance")
-        .defaultTo(true)
+        .<TextFormatting>newSettingEnumBuilder()
+        .name("tab-mark")
+        .description("Apply extra formatting to players in render distance, set to RESET to disable")
+        .defaultTo(TextFormatting.UNDERLINE)
         .build();
 
   public PlayerList() {
@@ -114,13 +115,13 @@ public class PlayerList extends HudMod {
 
   @SubscribeEvent
   public void onTabUpdate(RenderTabNameEvent event) {
-    if (!color_tab.get()) return;
+    if (tab_mark.get().equals(TextFormatting.RESET)) return;
     if (null != players.stream()
           .map(player -> player.getName())
           .filter(name -> name.equals(event.getName()))
           .findAny()
           .orElse(null))
-      event.setColor(Colors.GOLD.toBuffer());
+      event.setName(tab_mark.get() + event.getName());
   }
 
   @SubscribeEvent
@@ -131,10 +132,8 @@ public class PlayerList extends HudMod {
 
       players = getWorld().loadedEntityList.stream()
         .filter(EntityUtils::isPlayer)
-        .filter(e -> e.getDistance(getLocalPlayer()) < maxdist.get())
-        .filter(
-          entity ->
-            !Objects.equals(getLocalPlayer(), entity) && !EntityUtils.isFakeLocalPlayer(entity))
+        .filter(e -> maxdist.get() == 0 || e.getDistance(getLocalPlayer()) <= maxdist.get())
+        .filter(e -> !Objects.equals(getLocalPlayer(), e))
         .map(entity -> (EntityPlayer) entity)
         .sorted(sortMode.get().getComparator())
         .collect(Collectors.toList());
@@ -177,8 +176,11 @@ public class PlayerList extends HudMod {
   }
 
   private String getNameColor(EntityPlayer entity) {
-    if (getModManager().get(FriendService.class).get().isFriend(entity.getName()))
-      return TextFormatting.LIGHT_PURPLE + entity.getName() + TextFormatting.GRAY;
+    FriendService mod = getModManager().get(FriendService.class).get(); 
+    if (mod.isFriend(entity.getName())) {
+      TextFormatting clr = ColorClamp.getClampedColor(mod.getFriendColor(entity.getName()));
+      return clr + entity.getName() + TextFormatting.GRAY;
+    }
     if (color.get()) {
       return PlayerUtils.getGearColor(entity).getFormattedText() + TextFormatting.GRAY;
     }

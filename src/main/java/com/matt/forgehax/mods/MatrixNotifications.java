@@ -128,6 +128,8 @@ public class MatrixNotifications extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("queue-notify-pos")
           .description("Position to start sending notifications at")
+          .min(1)
+          .max(100)
           .defaultTo(5)
           .build();
   

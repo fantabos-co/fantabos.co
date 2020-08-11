@@ -45,6 +45,7 @@ public class ExtraTab extends ToggleMod {
       .name("offset-number")
       .description("Offset of number from corner")
       .min(0)
+      .max(20)
       .defaultTo(2)
       .build();
       
@@ -55,6 +56,7 @@ public class ExtraTab extends ToggleMod {
       .name("scale-number")
       .description("Scale of ping numbers")
       .min(0D)
+      .max(3D)
       .defaultTo(0.5D)
       .build();
 

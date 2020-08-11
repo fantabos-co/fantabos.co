@@ -31,6 +31,8 @@ public class HorseStats extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("JumpHeight")
           .description("Modified horse jump height attribute. Default: 1")
+          .min(0D)
+          .max(10D)
           .defaultTo(1.0D)
           .build();
   private final Setting<Double> speed =
@@ -39,6 +41,8 @@ public class HorseStats extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("Speed")
           .description("Modified horse speed attribute. Default: 0.3375")
+          .min(0D)
+          .max(2D)
           .defaultTo(0.3375D)
           .build();
   
@@ -48,6 +52,8 @@ public class HorseStats extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("multiplier")
           .description("multiplier while sprinting")
+          .min(0D)
+          .max(5D)
           .defaultTo(1.0D)
           .build();
   
