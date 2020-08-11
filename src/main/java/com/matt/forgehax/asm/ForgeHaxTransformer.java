@@ -59,7 +59,7 @@ public class ForgeHaxTransformer implements IClassTransformer, ASMCommon {
     registerTransformer(new EntityLivingBasePatch());
     registerTransformer(new EntityPatch());
     registerTransformer(new EntityPlayerSPPatch());
-    registerTransformer(new EntityRendererPatch());
+	registerTransformer(new EntityRendererPatch());
     registerTransformer(new MinecraftPatch());
     registerTransformer(new NetManagerPatch());
     registerTransformer(new NetManager$4Patch());
