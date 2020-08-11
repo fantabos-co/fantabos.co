@@ -7,10 +7,13 @@ import com.matt.forgehax.asm.utils.transforming.ClassTransformer;
 import com.matt.forgehax.asm.utils.transforming.Inject;
 import com.matt.forgehax.asm.utils.transforming.MethodTransformer;
 import com.matt.forgehax.asm.utils.transforming.RegisterMethodTransformer;
+
 import java.util.Objects;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
@@ -50,10 +53,7 @@ public class EntityLivingBasePatch extends ClassTransformer {
           FDIV,
           FSTORE,
           NONE,
-          NONE,
-          ALOAD,
-          GETFIELD,
-          IFEQ);
+          NONE);
       
       Objects.requireNonNull(first, "Could not find first slip motion node");
       
@@ -109,6 +109,82 @@ public class EntityLivingBasePatch extends ClassTransformer {
       // top of stack should be a modified or unmodified slippery float
       
       node.instructions.insert(second, list); // insert after
+    }
+
+    @Inject(description = "Add hook before changing base speed if entity is not on ground")
+    public void injecThird(MethodNode main) {
+      // Between 2 getSlipperiness, the onGround check for AIMoveSpeed
+      AbstractInsnNode isOnGroundNode =
+      ASMHelper.findPattern(
+        main.instructions.getFirst(),
+        new int[]{ALOAD, GETFIELD, IFEQ, 0x00, 0x00, ALOAD, INVOKEVIRTUAL, FLOAD, FMUL, FSTORE},
+        "xxx??xxxxx");
+
+      Objects.requireNonNull(isOnGroundNode, "Could not find isOnGround check node");
+      AbstractInsnNode after = isOnGroundNode.getNext().getNext();
+      
+      LabelNode jump = new LabelNode();
+  
+      InsnList list = new InsnList();
+      list.add(new VarInsnNode(ALOAD, 0));
+      list.add(ASMHelper.call(INVOKESTATIC, TypesHook.Methods.ForgeHaxHooks_onEntityGroundCheck));
+      list.add(new JumpInsnNode(IFNE, jump));
+      // top of stack should be a modified or unmodified slippery float
+      
+      main.instructions.insertBefore(isOnGroundNode, list);
+      main.instructions.insert(after, jump); // insert after
+    }
+
+    @Inject(description = "Add hook before multiplying for slipperiness if entity is on ground")
+    public void injecFourth(MethodNode main) {
+      // Between 2 getSlipperiness, the onGround check for AIMoveSpeed
+      AbstractInsnNode isOnGroundNode =
+      ASMHelper.findPattern(
+        main.instructions.getFirst(),
+        new int[]{ALOAD, GETFIELD, IFEQ, 0x00, 0x00, ALOAD, GETFIELD, ALOAD, ALOAD,
+          GETFIELD, ALOAD, INVOKEVIRTUAL, GETFIELD, DCONST_1, DSUB},
+        "xxx??xxxxxxxxxx");
+
+      Objects.requireNonNull(isOnGroundNode, "Could not find isOnGround check node");
+      AbstractInsnNode after = isOnGroundNode.getNext().getNext();
+      
+      LabelNode jump = new LabelNode();
+  
+      InsnList list = new InsnList();
+      list.add(new VarInsnNode(ALOAD, 0));
+      list.add(ASMHelper.call(INVOKESTATIC, TypesHook.Methods.ForgeHaxHooks_onEntityGroundCheck));
+      list.add(new JumpInsnNode(IFNE, jump));
+      // top of stack should be a modified or unmodified slippery float
+      
+      main.instructions.insertBefore(isOnGroundNode, list);
+      main.instructions.insert(after, jump); // insert after
+      // for (AbstractInsnNode i : main.instructions.toArray())
+      //   LOGGER.warn(insnToString(i));
+    }
+
+    @Inject(description = "Add hook before multiplying for slipperiness if entity is on ground the first time")
+    public void injecFifth(MethodNode main) {
+      // Between 2 getSlipperiness, the onGround check for AIMoveSpeed
+      AbstractInsnNode isOnGroundNode =
+      ASMHelper.findPattern(
+        main.instructions.getFirst(),
+        new int[]{ALOAD, GETFIELD, IFEQ, 0x00, 0x00, ALOAD, GETFIELD, ALOAD, INVOKEVIRTUAL,
+          ASTORE, 0x00, 0x00, ALOAD, INVOKEINTERFACE, ALOAD, ALOAD, GETFIELD},
+        "xxx??xxxxx??xxxxx");
+
+      Objects.requireNonNull(isOnGroundNode, "Could not find isOnGround check node");
+      AbstractInsnNode after = isOnGroundNode.getNext().getNext();
+      
+      LabelNode jump = new LabelNode();
+  
+      InsnList list = new InsnList();
+      list.add(new VarInsnNode(ALOAD, 0));
+      list.add(ASMHelper.call(INVOKESTATIC, TypesHook.Methods.ForgeHaxHooks_onEntityGroundCheck));
+      list.add(new JumpInsnNode(IFNE, jump));
+      // top of stack should be a modified or unmodified slippery float
+      
+      main.instructions.insertBefore(isOnGroundNode, list);
+      main.instructions.insert(after, jump); // insert after
     }
   }
 }

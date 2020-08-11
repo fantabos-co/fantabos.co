@@ -478,6 +478,15 @@ public interface TypesHook {
         .add(int.class)
         .finish()
         .build();
+
+    ASMMethod ForgeHaxHooks_onEntityGroundCheck =
+      Classes.ForgeHaxHooks.childMethod()
+        .setName("onEntityGroundCheck")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(TypesMc.Classes.EntityLivingBase)
+        .finish()
+        .build();
     
     ASMMethod ForgeHaxHooks_fireEvent_v =
       Classes.ForgeHaxHooks.childMethod()
@@ -513,6 +522,15 @@ public interface TypesHook {
         .add(int.class)
         .add(int.class)
         .add(TypesMc.Classes.NetworkPlayerInfo)
+        .finish()
+        .build();
+
+    ASMMethod ForgeHaxHooks_onGetBlockSound =
+      Classes.ForgeHaxHooks.childMethod()
+        .setName("onGetBlockSound")
+        .setReturnType(TypesMc.Classes.SoundType)
+        .beginParameters()
+        .add(TypesMc.Classes.SoundType)
         .finish()
         .build();
   }

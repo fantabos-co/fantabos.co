@@ -45,6 +45,12 @@ public interface TypesMc {
         .setClassName("net/minecraft/block/material/Material")
         .autoAssign()
         .build();
+
+    ASMClass SoundType =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/block/SoundType")
+        .autoAssign()
+        .build();
     
     ASMClass Entity =
       ASMBuilders.newClassBuilder()
@@ -303,6 +309,12 @@ public interface TypesMc {
         .setClassName("net/minecraft/item/ItemStack")
         .autoAssign()
         .build();
+
+    ASMClass ItemBlock =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/item/ItemBlock")
+        .autoAssign()
+        .build();
     
     ASMClass EnumFacing =
       ASMBuilders.newClassBuilder()
@@ -331,6 +343,12 @@ public interface TypesMc {
     ASMClass ITextComponent = 
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/util/text/ITextComponent")
+        .autoAssign()
+        .build();
+
+    ASMClass EnumActionResult = 
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/util/EnumActionResult")
         .autoAssign()
         .build();
   }
@@ -865,6 +883,23 @@ public interface TypesMc {
         .setReturnType(boolean.class)
         .beginParameters()
         .add(Classes.BlockPos)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod ItemBlock_onItemUse =
+      Classes.ItemBlock.childMethod()
+        .setName("onItemUse")
+        .setReturnType(Classes.EnumActionResult)
+        .beginParameters()
+        .add(Classes.EntityPlayer)
+        .add(Classes.World)
+        .add(Classes.BlockPos)
+        .add(Classes.EnumHand)
+        .add(Classes.EnumFacing)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
         .finish()
         .autoAssign()
         .build();

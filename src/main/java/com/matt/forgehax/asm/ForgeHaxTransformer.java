@@ -13,6 +13,7 @@ import com.matt.forgehax.asm.patches.EntityPatch;
 import com.matt.forgehax.asm.patches.EntityPlayerSPPatch;
 import com.matt.forgehax.asm.patches.EntityRendererPatch;
 import com.matt.forgehax.asm.patches.GuiNewChatPatch;
+import com.matt.forgehax.asm.patches.ItemBlockPatch;
 import com.matt.forgehax.asm.patches.KeyBindingPatch;
 import com.matt.forgehax.asm.patches.LayerRenderPatch;
 import com.matt.forgehax.asm.patches.MinecraftPatch;
@@ -80,6 +81,7 @@ public class ForgeHaxTransformer implements IClassTransformer, ASMCommon {
     registerTransformer(new BlockLiquidPatch());
     registerTransformer(new LayerRenderPatch());
     registerTransformer(new GuiNewChatPatch());
+    registerTransformer(new ItemBlockPatch());
     
     // special transformers
     
