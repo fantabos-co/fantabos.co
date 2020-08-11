@@ -17,7 +17,7 @@ import net.minecraft.client.multiplayer.GuiConnecting;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.settings.KeyBinding;
@@ -363,7 +363,17 @@ public interface FastReflection extends ASMCommon {
         .setName("currentPlayerItem")
         .autoAssign()
         .asField();
-    
+
+    /**
+     * Session
+     */
+    FastField<Session> Minecraft_session =
+      FastTypeBuilder.create()
+        .setInsideClass(Minecraft.class)
+        .setName("session")
+        .autoAssign()
+        .asField();
+
     /**
      * SPacketEntityVelocity
      */
@@ -445,8 +455,24 @@ public interface FastReflection extends ASMCommon {
      */
     FastField<ItemStack> EntityRenderer_itemActivationItem =
       FastTypeBuilder.create()
-        .setInsideClass(EntityRenderer.class)
+        .setInsideClass(ItemRenderer.class)
         .setName("itemActivationItem")
+        .autoAssign()
+        .asField();
+
+    /**
+     * ItemRenderer
+     */
+    FastField<Float> ItemRenderer_equippedProgressMainHand =
+      FastTypeBuilder.create()
+        .setInsideClass(ItemRenderer.class)
+        .setName("equippedProgressMainHand")
+        .autoAssign()
+        .asField();
+    FastField<Float> ItemRenderer_equippedProgressOffHand =
+      FastTypeBuilder.create()
+        .setInsideClass(ItemRenderer.class)
+        .setName("equippedProgressOffHand")
         .autoAssign()
         .asField();
     
