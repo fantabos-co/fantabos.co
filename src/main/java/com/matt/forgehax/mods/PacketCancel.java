@@ -145,6 +145,19 @@ public class PacketCancel extends ToggleMod {
               data.markSuccess();
             })
         .build();
+
+    blacklist
+        .builders()
+        .newCommandBuilder()
+        .name("clear")
+        .description("Remove all blacklisted packets")
+        .processor(
+            data -> {
+              data.write("Cleared " + blacklist.size() + " entries");
+              blacklist.clear();
+              data.markSuccess();
+            })
+        .build();
   }
   
   @Override

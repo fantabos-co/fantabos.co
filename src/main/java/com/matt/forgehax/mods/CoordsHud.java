@@ -9,8 +9,11 @@ import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.HudMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import net.minecraft.entity.Entity;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
@@ -77,7 +80,7 @@ public class CoordsHud extends HudMod {
 
   @Override
   protected Align getDefaultAlignment() {
-    return Align.BOTTOMRIGHT;
+    return Align.BOTTOMLEFT;
   }
 
   @Override
@@ -95,11 +98,23 @@ public class CoordsHud extends HudMod {
     return 1d;
   }
 
+  @Override
+  protected void onLoad() {
+    symbols = new DecimalFormatSymbols(Locale.US);
+    symbols.setDecimalSeparator(',');
+    symbols.setGroupingSeparator('.');
+    formatter = new DecimalFormat("##,###,##0", symbols);
+    formatter.setGroupingSize(3);
+  }
+
   double thisX;
   double thisY;
   double thisZ;
   double otherX;
   double otherZ;
+
+  private DecimalFormatSymbols symbols;
+  private DecimalFormat formatter;
 
   @SubscribeEvent
   public void onLocalPlayerUpdate(LocalPlayerUpdateEvent ev) {
@@ -136,23 +151,24 @@ public class CoordsHud extends HudMod {
                                   facingTable[getPlayerDirection()], towardsTable[getPlayerDirection()]);
     // Multiline coords + direction
     String facingWithTCoords = String.format(
-      TextFormatting.GRAY + "[ " + TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "\u23d0 " +
-      TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "] - " + TextFormatting.WHITE + "%s " +
-      TextFormatting.GRAY + "[%s]" + TextFormatting.WHITE, otherX, otherZ,
+      TextFormatting.GRAY + "[ " + TextFormatting.WHITE + "%s " + TextFormatting.GRAY + "\u23d0 " +
+      TextFormatting.WHITE + "%s " + TextFormatting.GRAY + "] - " + TextFormatting.WHITE + "%s " +
+      TextFormatting.GRAY + "[%s]" + TextFormatting.WHITE, formatter.format(otherX), formatter.format(otherZ),
           facingTable[getPlayerDirection()], towardsTable[getPlayerDirection()]);
     // Only OW coords
     String coordsNormal = String.format(
       TextFormatting.GRAY + "[ " + TextFormatting.DARK_GRAY + "X " + TextFormatting.WHITE +
-      "%.1f " + TextFormatting.GRAY + "\u23d0 " + TextFormatting.WHITE + "%.1f " +
-      TextFormatting.DARK_GRAY + "Z " + TextFormatting.GRAY + "] (" + TextFormatting.WHITE + "%.0f " +
-      TextFormatting.DARK_GRAY + "Y" + TextFormatting.GRAY + ")" + TextFormatting.WHITE, thisX, thisZ, thisY);
+      "%s " + TextFormatting.GRAY + "\u23d0 " + TextFormatting.WHITE + "%s " +
+      TextFormatting.DARK_GRAY + "Z " + TextFormatting.GRAY + "] (" + TextFormatting.WHITE + "%.1f " +
+      TextFormatting.DARK_GRAY + "Y" + TextFormatting.GRAY + ")" + TextFormatting.WHITE, 
+      formatter.format(thisX), formatter.format(thisZ), thisY);
     // Multiline Nether coords
     String coordsMultiTranslated = String.format(
-      TextFormatting.GRAY + "[ " + TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "\u23d0 " +
-      TextFormatting.WHITE + "%.1f " + TextFormatting.GRAY + "] - " + TextFormatting.WHITE, otherX, otherZ);
+      TextFormatting.GRAY + "[ " + TextFormatting.WHITE + "%s " + TextFormatting.GRAY + "\u23d0 " +
+      TextFormatting.WHITE + "%s " + TextFormatting.GRAY + "] - " + TextFormatting.WHITE, formatter.format(otherX), formatter.format(otherZ));
     // Single line OW + Nether coords
     String coordsTranslated = String.format(
-      "%s  %.1f " + TextFormatting.GRAY + "\u23d0 " + TextFormatting.WHITE + "%.1f", coordsNormal, otherX, otherZ);
+      "%s  %s " + TextFormatting.GRAY + "\u23d0 " + TextFormatting.WHITE + "%s", coordsNormal, formatter.format(otherX), formatter.format(otherZ));
 
     if (!translate.get() || MC.player.dimension == 1) {
       text.add(coordsNormal);

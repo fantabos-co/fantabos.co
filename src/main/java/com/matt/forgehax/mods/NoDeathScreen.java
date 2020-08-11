@@ -2,7 +2,6 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
-import com.matt.forgehax.Helper;
 import com.matt.forgehax.util.command.Setting;//TODO implement some settings for fancy shit
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;

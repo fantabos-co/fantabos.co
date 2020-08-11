@@ -41,6 +41,8 @@ public class AutoReconnectMod extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("delay")
           .description("Delay between each reconnect attempt")
+          .min(0D)
+          .max(1000D)
           .defaultTo(5.D)
           .build();
   

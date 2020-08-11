@@ -1,6 +1,5 @@
 package com.matt.forgehax.mods.services;
 
-import com.matt.forgehax.mods.services.ChatCommandService;
 import com.matt.forgehax.util.command.StubBuilder;
 import com.matt.forgehax.util.command.callbacks.CallbackData;
 import com.matt.forgehax.util.mod.ServiceMod;

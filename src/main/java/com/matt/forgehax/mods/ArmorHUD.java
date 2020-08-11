@@ -8,7 +8,6 @@ import com.google.common.collect.Lists;
 import com.matt.forgehax.util.mod.HudMod;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.command.Setting;
-import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import com.matt.forgehax.util.draw.SurfaceHelper;
@@ -42,6 +41,15 @@ public class ArmorHUD extends HudMod {
           .name("water-offset")
           .description("Shift HUD up when in water")
           .defaultTo(true)
+          .build();
+
+  private final Setting<Boolean> percentage =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("percentage")
+          .description("Show pleb % damage instead of chad absolute damage")
+          .defaultTo(false)
           .build();
 
   public ArmorHUD() {
@@ -95,9 +103,10 @@ public class ArmorHUD extends HudMod {
 
         if (damage.get() && i.getItemDamage() != 0) {
           int color = i.getItem().getRGBDurabilityForDisplay(i);
-          int dmg = i.getMaxDamage() - i.getItemDamage();
-          SurfaceHelper.drawText(String.format("%d", dmg),
-                                  getPosX((slot*20)+6), getPosY(bubble_offset-13),
+          String dmg;
+          if (percentage.get()) dmg = String.format("%.0f%%", 100f * (1f - ((float) i.getItemDamage() / (float) i.getMaxDamage())));
+          else dmg = String.format("%d", i.getMaxDamage() - i.getItemDamage());
+          SurfaceHelper.drawText(dmg, getPosX((slot*20)+6), getPosY(bubble_offset-13),
                                   color, (scale.get()/2F), true);
         }
       }

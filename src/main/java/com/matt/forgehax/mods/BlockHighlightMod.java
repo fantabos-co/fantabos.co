@@ -59,6 +59,7 @@ public class BlockHighlightMod extends ToggleMod {
           .name("width")
           .description("line width")
           .min(0.f)
+          .max(10f)
           .defaultTo(5.f)
           .build();
   

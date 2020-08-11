@@ -5,7 +5,6 @@ import static com.matt.forgehax.Helper.getWorld;
 import com.matt.forgehax.events.RenderEvent;
 import com.matt.forgehax.mods.services.HoleService;
 import com.matt.forgehax.util.color.Color;
-import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
@@ -93,7 +92,7 @@ public class HoleESP extends ToggleMod {
       .description("Height of the highlighted safe hole")
       .defaultTo(0.5D)
       .min(0.01D)
-      .max(1D)
+      .max(5D)
       .build();
 
   public final Setting<Integer> alpha_temp =
@@ -145,7 +144,7 @@ public class HoleESP extends ToggleMod {
       .description("Height of the highlighted temporary hole")
       .defaultTo(0.2D)
       .min(0.01D)
-      .max(1D)
+      .max(5D)
       .build();
 
   public final Setting<Integer> alpha_void =
@@ -197,7 +196,7 @@ public class HoleESP extends ToggleMod {
       .description("Height of the highlighted void block")
       .defaultTo(0.01D)
       .min(0.01D)
-      .max(1D)
+      .max(256D)
       .build();
 
   private final Setting<Float> width =
@@ -206,7 +205,8 @@ public class HoleESP extends ToggleMod {
       .<Float>newSettingBuilder()
       .name("width")
       .description("The width value for the outline")
-      .min(0.5f)
+      .min(0f)
+      .max(10f)
       .defaultTo(1.0f)
       .build();
 

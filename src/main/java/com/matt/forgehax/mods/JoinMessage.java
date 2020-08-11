@@ -76,6 +76,8 @@ public class JoinMessage extends ToggleMod {
           .<Long>newSettingBuilder()
           .name("delay")
           .description("Delay between each message in ms")
+          .min(0L)
+          .max(1000000L)
           .defaultTo(15000L)
           .build();
   
@@ -85,6 +87,8 @@ public class JoinMessage extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("message_length")
           .description("Maximum length of a custom message")
+          .min(0)
+          .max(256)
           .defaultTo(25)
           .build();
   
@@ -103,6 +107,8 @@ public class JoinMessage extends ToggleMod {
           .<Long>newSettingBuilder()
           .name("set_cooldown")
           .description("Setting cooldown for individual players in ms")
+          .min(0L)
+          .max(1000000L)
           .defaultTo(15000L)
           .build();
   

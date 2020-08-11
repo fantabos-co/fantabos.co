@@ -4,7 +4,6 @@ import static com.matt.forgehax.Helper.getLocalPlayer;
 
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.asm.reflection.FastReflection;
-import com.matt.forgehax.mods.managers.PositionRotationManager;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.entity.LocalPlayerUtils;
 import com.matt.forgehax.util.math.Angle;
@@ -12,7 +11,6 @@ import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import java.util.Arrays;
-import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.network.play.server.SPacketPlayerPosLook.EnumFlags;
 import net.minecraftforge.event.world.WorldEvent;

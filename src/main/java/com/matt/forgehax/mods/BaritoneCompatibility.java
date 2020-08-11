@@ -21,7 +21,7 @@ import net.minecraftforge.fml.common.gameevent.InputEvent;
 @RegisterMod
 public class BaritoneCompatibility extends ToggleMod {
 
-  private final KeyBinding bindMacro = new KeyBinding("Baritone Macro", Keyboard.KEY_K, "ForgeHax");
+  private final KeyBinding bindMacro = new KeyBinding("Baritone Macro", Keyboard.KEY_NONE, "ForgeHax");
 
   private final Setting<Boolean> auto_enable =
       getCommandStub()

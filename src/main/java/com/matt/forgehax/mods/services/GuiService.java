@@ -88,16 +88,7 @@ public class GuiService extends ServiceMod {
   }
 
   @Override
-  public void onUnload() {
-    super.onUnload();
-    windows.serialize();
-  }
-
-  @Override
   protected void onLoad() {
-    super.onLoad();
-    windows.deserialize();
-
     getCommandStub()
         .builders()
         .newCommandBuilder()
@@ -151,7 +142,6 @@ public class GuiService extends ServiceMod {
     return (i + 1) % 2; // Distance between windows
   }
 
-  
   @Override
   public void onBindPressed(CallbackData cb) {
     if (Helper.getLocalPlayer() != null) {

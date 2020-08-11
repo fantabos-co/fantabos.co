@@ -95,7 +95,8 @@ public class Tracers extends ToggleMod implements Colors {
           .<Float>newSettingBuilder()
           .name("width")
           .description("The width value for the tracers.")
-          .min(0.5f)
+          .min(0f)
+          .max(10f)
           .defaultTo(1.5f)
           .build();
 
@@ -328,7 +329,7 @@ public class Tracers extends ToggleMod implements Colors {
       this.entity = entity;
       this.relationship = EntityUtils.getRelationship(entity);
       if (entity instanceof EntityPlayer) {
-        if (getModManager().get(FriendService.class).get().isFriend(entity.getName()))
+        if (getModManager().get(FriendService.class).get().isFriendly(entity.getName()))
           isfriend = true;
       }
     }
