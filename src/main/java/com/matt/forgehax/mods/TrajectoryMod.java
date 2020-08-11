@@ -11,10 +11,12 @@ import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import com.matt.forgehax.util.projectile.Projectile;
 import com.matt.forgehax.util.projectile.SimulationResult;
-import com.matt.forgehax.util.draw.RenderUtils;
+import com.matt.forgehax.util.tesselation.GeometryMasks;
+import com.matt.forgehax.util.tesselation.GeometryTessellator;
 import java.util.Iterator;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
@@ -70,6 +72,7 @@ public class TrajectoryMod extends ToggleMod {
           .name("width")
           .description("line width")
           .min(0.f)
+          .max(10f)
           .defaultTo(5.f)
           .build();
 
@@ -80,6 +83,17 @@ public class TrajectoryMod extends ToggleMod {
           .name("target-box")
           .description("Draw a box at the end of the trajectory")
           .defaultTo(true)
+          .build();
+
+  private final Setting<Integer> skip =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("skip")
+          .description("Points to skip in the trajectory drawing")
+          .min(0)
+          .max(20)
+          .defaultTo(1)
           .build();
   
   public TrajectoryMod() {
@@ -114,32 +128,39 @@ public class TrajectoryMod extends ToggleMod {
         
         Iterator<Vec3d> it = result.getPathTraveled().iterator();
         Vec3d previous = it.next();
+        int count = 0; // it is incremented before checking
         while (it.hasNext()) {
           Vec3d next = it.next();
-          event
-              .getBuffer()
-              .pos(previous.x, previous.y, previous.z)
-              .color(red.get(), green.get(), blue.get(), alpha.get())
-              .endVertex();
-          event.getBuffer().pos(next.x, next.y, next.z).color(red.get(), green.get(), blue.get(), alpha.get()).endVertex();
+          if (count >= skip.get()) {
+            event
+                .getBuffer()
+                .pos(previous.x, previous.y, previous.z)
+                .color(red.get(), green.get(), blue.get(), alpha.get())
+                .endVertex();
+            event.getBuffer().pos(next.x, next.y, next.z).color(red.get(), green.get(), blue.get(), alpha.get()).endVertex();
+          }
           previous = next;
+          count++;
         }
         
         event.getTessellator().draw();
 
+        event.resetTranslation();
+
         if (target_box.get()) {
           int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
-          Vec3d target = result.getHitPos();
-          RenderUtils.drawBox(target.addVector(0.1D, 0.1D, 0.1D), target.addVector(-0.1D, -0.1D, -0.1D), color, width.get(), false);
+          event.getBuffer().begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
+          GeometryTessellator.drawCuboid(
+              event.getBuffer(),
+              new BlockPos(result.getHitPos()),
+              GeometryMasks.Line.ALL, color);
+          event.getTessellator().draw();
         }
-
 
         GL11.glDisable(GL11.GL_LINE_SMOOTH);
         
         GlStateManager.glLineWidth(1.0f);
         GlStateManager.disableDepth();
-        
-        event.resetTranslation();
       }
     }
   }
