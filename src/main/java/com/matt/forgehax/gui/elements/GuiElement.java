@@ -27,13 +27,16 @@ public class GuiElement {
   
   public void mouseReleased(int x, int y, int state) {
   }
+
+  public void handleMouseInput(int x, int y) {
+  }
   
   public void keyTyped(char typedChar, int keyCode) throws IOException {
   }
   
   public void draw(int mouseX, int mouseY) {
     this.x = getPosX() + this.subX + 1;
-    this.y = getPosY() + this.subY + 21;
+    this.y = getPosY() + this.subY + 22;
   }
   
   public int getPosX() {

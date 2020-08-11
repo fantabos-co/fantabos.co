@@ -168,12 +168,14 @@ public class ClickGui extends GuiScreen implements Globals {
   public void handleMouseInput() throws IOException {
     // used for scrolling
     super.handleMouseInput();
-    
+
     int scale = scaledRes.getScaleFactor();
+    int mouseX = Mouse.getEventX() / scale;
+    int mouseY = (MC.displayHeight - Mouse.getEventY()) / scale;
+
     for (GuiWindow window : Lists.reverse(windowList)) {
-      if (isMouseInWindow(
-        Mouse.getEventX() / scale, (MC.displayHeight - Mouse.getEventY()) / scale, window)) {
-        window.handleMouseInput();
+      if (isMouseInWindow(mouseX, mouseY, window)) {
+        window.handleMouseInput(mouseX, mouseY);
         break;
       }
     }

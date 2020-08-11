@@ -7,6 +7,8 @@ import static com.matt.forgehax.util.color.Colors.GRAY;
 import static com.matt.forgehax.util.color.Colors.WHITE;
 
 import com.matt.forgehax.gui.ClickGui;
+import com.matt.forgehax.gui.windows.GuiWindowMod;
+import com.matt.forgehax.gui.windows.GuiWindowSetting;
 import com.matt.forgehax.mods.ActiveModList;
 import com.matt.forgehax.mods.services.GuiService;
 import com.matt.forgehax.util.color.Color;
@@ -34,6 +36,17 @@ public abstract class GuiWindow {
   private boolean dragging;
 
   public int width, height; // width of the window
+
+  enum MouseButtons {
+    LEFT(0),
+    RIGHT(1),
+    MIDDLE(2);
+
+    protected final int id;
+    MouseButtons(final int mouseID) {
+      this.id = mouseID;
+    }
+  }
 
   GuiWindow(String titleIn) {
     this.title = titleIn;
@@ -73,7 +86,7 @@ public abstract class GuiWindow {
     dragging = false;
   }
 
-  public void handleMouseInput() throws IOException {
+  public void handleMouseInput(int x, int y) throws IOException {
     // scrolling
   }
 
@@ -91,8 +104,13 @@ public abstract class GuiWindow {
     drawHeader();
     windowY = headerY + 21;
     if (!isHidden) {
-      int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() * 
+      int actualHeight;
+      if (this instanceof GuiWindowMod) { // This is ugly af, TODO despaghettify!
+        actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() * 
                           getModManager().get(GuiService.class).get().max_height.get());
+      } else {
+        actualHeight = height;
+      }
       SurfaceHelper.drawOutlinedRectShaded(
         posX, windowY, width, actualHeight, color, 80, 3);
     }
