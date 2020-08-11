@@ -114,14 +114,7 @@ public class WorldPatch extends ClassTransformer {
     }
     
     @Inject(description = "Add patch to cancel setBlock calls")
-    public void inject(MethodNode main) {
-      AbstractInsnNode node =
-        ASMHelper.findPattern(main.instructions.getFirst(),
-          new int[]{ ALOAD, ALOAD },
-          "xx");
-      
-      Objects.requireNonNull(node, "Find pattern failed for node");
-      
+    public void inject(MethodNode main) {      
       InsnList insnList = new InsnList();
       
       insnList.add(ASMHelper.call(GETSTATIC, TypesHook.Fields.ForgeHaxHooks_doPreventGhostBlocksPlace));
@@ -135,7 +128,7 @@ public class WorldPatch extends ClassTransformer {
       insnList.add(new InsnNode(IRETURN));
       insnList.add(jmp);
       
-      main.instructions.insertBefore(node, insnList);
+      main.instructions.insert(insnList);
     }
   }
 }
