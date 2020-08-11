@@ -271,14 +271,15 @@ public class SurfaceBuilder {
     return this;
   }
 
-  public SurfaceBuilder itemTextOverlay(ItemStack stack, double x, double y) {
+  public SurfaceBuilder itemTextOverlay(ItemStack stack, double x, double y, boolean percentage) {
     SurfaceHelper.renderItemTextOverlayIntoGUI(
         MC.fontRenderer,
         stack,
         x,
         y,
         null,
-        current().hasScale() ? current().getScale3d()[0] : 16.D);
+        current().hasScale() ? current().getScale3d()[0] : 16.D,
+        percentage);
     return this;
   }
   

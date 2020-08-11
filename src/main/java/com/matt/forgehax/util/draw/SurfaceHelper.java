@@ -470,7 +470,8 @@ public class SurfaceHelper implements Globals {
       double xPosition,
       double yPosition,
       @Nullable String text,
-      double scale) {
+      double scale,
+      boolean percentage) {
     final double SCALE_RATIO = 1.23076923077D;
     
     if (!stack.isEmpty()) {
@@ -497,8 +498,11 @@ public class SurfaceHelper implements Globals {
         GlStateManager.disableBlend();
         GlStateManager.scale(0.5D, 0.5D, 0.5D);
         int rgbfordisplay = stack.getItem().getRGBDurabilityForDisplay(stack);
+        String dmg;
+        if (percentage) dmg = String.format("%.0f%%", 100f * (1f - ((float) stack.getItemDamage() / (float) stack.getMaxDamage())));
+        else dmg = String.format("%d", stack.getMaxDamage() - stack.getItemDamage());
         fr.drawStringWithShadow(
-          String.format("%d", stack.getMaxDamage() - stack.getItemDamage()),
+          dmg,
           (float) (2*(xPosition + 6)),
           (float) (2*(yPosition + 12)),
           rgbfordisplay);
