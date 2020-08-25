@@ -232,7 +232,18 @@ public class Helper implements Globals {
             ).getFormattedText()
     );
   }
-  
+
+  // I should make a function inside IRC module but handling toggleable timestamps would be hell
+  public static void printIRC(String format, Object... args) {
+    outputMessage(timestamp() +
+        getFormattedText("[IRC]", TextFormatting.DARK_PURPLE, true, false)
+            .appendSibling(
+                getFormattedText(" " + String.format(format, args).trim(),
+                    TextFormatting.GRAY, false, false)
+            ).getFormattedText()
+    );
+  }
+
   public static void printStackTrace(Throwable t) {
     getLog().error(Throwables.getStackTraceAsString(t));
   }
