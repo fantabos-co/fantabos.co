@@ -279,7 +279,7 @@ public class IRC extends ToggleMod {
   @Override
   protected void onDisabled() {
     if (connected.get()) {
-      if (Helper.getCurrentScreen() instanceof GuiMainMenu)
+      if (MC.currentScreen instanceof GuiMainMenu)
         quit("Quit Minecraft");
       else
         quit("Disabled IRC mod");
