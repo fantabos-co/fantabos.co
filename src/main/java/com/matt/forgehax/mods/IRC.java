@@ -7,6 +7,8 @@ import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
+
+import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -29,7 +31,7 @@ public class IRC extends ToggleMod {
           .<String>newSettingBuilder()
           .name("server")
           .description("Server to connect to")
-          .defaultTo("")
+          .defaultTo("irc.2b2t.it")
           .build();
   private final Setting<String> nick =
       getCommandStub()
@@ -47,20 +49,20 @@ public class IRC extends ToggleMod {
           .description("Login name, leave empty to use MC name")
           .defaultTo("")
           .build();
-  private final Setting<String> real_name =
-      getCommandStub()
-          .builders()
-          .<String>newSettingBuilder()
-          .name("real-name")
-          .description("Real name, leave empty to use account name")
-          .defaultTo("")
-          .build();
   public final Setting<String> channel =
       getCommandStub()
           .builders()
           .<String>newSettingBuilder()
           .name("channel")
           .description("Channel to join on login")
+          .defaultTo("#fhchat")
+          .build();
+  public final Setting<String> default_channel_password =
+      getCommandStub()
+          .builders()
+          .<String>newSettingBuilder()
+          .name("password")
+          .description("If your default channel has a password, you can put it here")
           .defaultTo("")
           .build();
   public final Setting<String> prefix =
@@ -103,11 +105,21 @@ public class IRC extends ToggleMod {
           .description("Show system messages too in chat")
           .defaultTo(false)
           .build();
+  private final Setting<Boolean> strip_whitespace =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("strip-whitespace")
+          .description("Remove Zero-Width-White-Space characters")
+          .defaultTo(false)
+          .build();
   
   public IRC() {
     super(Category.CHAT, "IRC", false, "IRC client built inside minecraft chat");
+    INSTANCE = this;
   }
 
+  public static IRC INSTANCE;
   private Socket socket;
   private BufferedWriter writer;
   private AtomicBoolean connected = new AtomicBoolean(); 
@@ -121,26 +133,37 @@ public class IRC extends ToggleMod {
     private BufferedReader reader;
     private String buf;
 
-    public ServerHandler() throws IOException {
-      reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-    }
-
     public void run() {
       keep_running.set(true);
-      while (keep_running.get()) {
-        try {
+      try {
+        socket = new Socket(server.get(), 6667);
+        writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        String nick_name = (nick.get().equals("") ? MC.getSession().getProfile().getName() : nick.get());
+        String login_name = (login.get().equals("") ? MC.getSession().getProfile().getName() : login.get());
+        String real_name_displayed = MC.getSession().getProfile().getName();
+        writer.write("NICK " + nick_name + "\r\n");
+        writer.write("USER " + login_name + " FH-IRC " + "TONIOinc :" + real_name_displayed + "\r\n");
+        writer.flush();
+        used_nick = nick_name; // ewww but works for now ig
+        LOGGER.warn("Connecting to IRC with nick " + used_nick);
+
+        while (keep_running.get()) {
           buf = reader.readLine();
           if (buf == null) { // Connection ended
             break;
           }
           if (log_everything.get()) LOGGER.info(buf);
+          if (strip_whitespace.get()) buf = buf.replace("\u200b", "");
           if (buf.startsWith("PING ")) { // Reply to ping
             writer.write("PONG " + buf.substring(5) + "\r\n");
             writer.flush();
           } else if (!connected.get()) { // We sent our login but we still need confirmation
             if (buf.startsWith(String.format(":%s 004", server.get()))) { // Server accepted it and sent back login info
               connected.set(true);
-              join_channel(channel.get());
+              if (default_channel_password.get().equals(""))
+                join_channel(channel.get());
+              else join_channel(channel.get(), default_channel_password.get());
               Helper.printInform("Connected to IRC successfully");
             } else if (buf.startsWith(String.format(":%s 433", server.get()))) { // Server rejected our login
               Helper.printError("IRC Nickname already in use");
@@ -149,9 +172,9 @@ public class IRC extends ToggleMod {
           } else { // We are connected to the server
             messages.add(buf);
           }
-        } catch (IOException e) {
-          break;
         }
+      } catch (IOException e) {
+        e.printStackTrace();
       }
       Helper.printError("Disconnected from IRC");
       connected.set(false);
@@ -177,12 +200,13 @@ public class IRC extends ToggleMod {
         .name("join")
         .description("Join a channel")
         .processor(
-            data -> {
-              if (data.getArgumentCount() > 0) {
+            data -> { // maybe there's a nicer way to do this?
+              if (data.getArgumentCount() > 1)
+                join_channel(data.getArgumentAsString(0), data.getArgumentAsString(1));
+              else if (data.getArgumentCount() > 0)
                 join_channel(data.getArgumentAsString(0));
-              } else {
+              else
                 join_channel(channel.get());
-              }
             })
         .build();
 
@@ -195,7 +219,9 @@ public class IRC extends ToggleMod {
             data -> {
               data.requiredArguments(2);
               String target = data.getArgumentAsString(0);
-              String msg = data.getArgumentAsString(1);
+              String msg = "";
+              for (int i=1; i< data.getArgumentCount(); i++)
+                msg += data.getArgumentAsString(i) + " ";
               sendMessage(target, msg);
             })
         .build();
@@ -210,6 +236,21 @@ public class IRC extends ToggleMod {
               if (!show_system.get()) Helper.printWarning("You need to enable \"system\" to see the output of this command");
               data.requiredArguments(1);
               sendRaw("WHOIS " + data.getArgumentAsString(0));
+            })
+        .build();
+
+    getCommandStub()
+        .builders()
+        .newCommandBuilder()
+        .name("names")
+        .description("List connected users")
+        .processor(
+            data -> {
+              if (!show_system.get()) Helper.printWarning("You need to enable \"system\" to see the output of this command");
+              if (data.getArgumentCount() > 0)
+                sendRaw("NAMES " + channel.get());
+              else
+                sendRaw("NAMES " + data.getArgumentAsString(0));
             })
         .build();
 
@@ -238,7 +279,10 @@ public class IRC extends ToggleMod {
   @Override
   protected void onDisabled() {
     if (connected.get()) {
-      quit("Disabled IRC mod");
+      if (Helper.getCurrentScreen() instanceof GuiMainMenu)
+        quit("Quit Minecraft");
+      else
+        quit("Disabled IRC mod");
       connected.set(false);
     }
   }
@@ -248,22 +292,12 @@ public class IRC extends ToggleMod {
       Helper.printWarning("Already connected or connecting");
       return;
     }
-    try {
-      socket = new Socket(server.get(), 6667);
-      writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-      String nick_name = (nick.get().equals("") ? MC.getSession().getProfile().getName() : nick.get());
-      String login_name = (login.get().equals("") ? MC.getSession().getProfile().getName() : login.get());
-      String real_name_displayed = (real_name.get().equals("") ? MC.getSession().getProfile().getName() : real_name.get());
-      writer.write("NICK " + nick_name + "\r\n");
-      writer.write("USER " + login_name + " FH-IRC " + "TONIOinc :" + real_name_displayed + "\r\n");
-      writer.flush();
-      server_thread = new ServerHandler();
-      server_thread.start();
-      used_nick = nick_name; // ewww but works for now ig
-      LOGGER.warn("Connecting to IRC with nick " + used_nick);
-    } catch (IOException e) {
-      Helper.printError("Could not connect to %s", server.get());
+    if (!this.isEnabled()) {
+      Helper.printWarning("Please enable IRC mod");
+      return;
     }
+    server_thread = new ServerHandler();
+    server_thread.start();
   }
 
   private void quit() { quit(""); }
@@ -272,6 +306,10 @@ public class IRC extends ToggleMod {
     if (server_thread != null && server_thread.isAlive()) {
       server_thread.keep_running.set(false);
     }
+  }
+
+  private void join_channel(String channel, String password) {
+    sendRaw("JOIN " + channel + " " + password);
   }
 
   private void join_channel(String channel) {
@@ -294,6 +332,10 @@ public class IRC extends ToggleMod {
   private boolean sendRaw(String content) {
     if (!connected.get()) {
       Helper.printWarning("Not connected to IRC");
+      return false;
+    }
+    if (!this.isEnabled()) {
+      Helper.printWarning("Please enable IRC mod");
       return false;
     }
     try {
