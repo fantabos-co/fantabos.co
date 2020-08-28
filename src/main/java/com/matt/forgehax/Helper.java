@@ -7,6 +7,7 @@ import com.matt.forgehax.mods.services.MainMenuGuiService.CommandInputGui;
 import com.matt.forgehax.util.FileManager;
 import com.matt.forgehax.util.command.CommandGlobal;
 import com.matt.forgehax.util.mod.loader.ModManager;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
@@ -34,6 +35,10 @@ import java.util.Scanner;
  * Created on 4/25/2017 by fr1kin
  */
 public class Helper implements Globals {
+
+  public static GuiScreen getCurrentScreen() {
+	return MC.currentScreen;
+  }
   
   public static CommandGlobal getGlobalCommand() {
     return CommandGlobal.getInstance();
@@ -123,16 +128,13 @@ public class Helper implements Globals {
         TextComponentString string =
             new TextComponentString(startWith + message.replaceAll("\r", ""));
         string.setStyle(firstStyle);
-        outputMessage(string.getFormattedText());
+        outputMessage(timestamp() + string.getFormattedText());
       }
     }
   }
 
   // Check if timestamps should be added and returns a formatted timestamp string or an empty string
-  // Making this in outputMessage() would have added a timestamp for every line, I want
-  //      one for every command or warning: just one for multiline cmds!
-  // I don't really like this but it should not matter much anyway
-  private static String timestamp() {
+  public static String timestamp() {
     String timestamp = "";
     try {
       if (getModManager().get(BetterChat.class).get().isEnabled() &&
@@ -147,8 +149,7 @@ public class Helper implements Globals {
     return timestamp;
   }
   
-  // private function that is ultimately used to output the message
-  private static void outputMessage(String text) {
+  public static void outputMessage(String text) {
     if (getLocalPlayer() != null) {
       getLocalPlayer().sendMessage(new TextComponentString(text));
     } else if (MC.currentScreen instanceof CommandInputGui) {
@@ -183,7 +184,7 @@ public class Helper implements Globals {
     printMessage(String.format(format, args));
   }
   
-  private static ITextComponent getFormattedText(String text, TextFormatting color,
+  public static ITextComponent getFormattedText(String text, TextFormatting color,
       boolean bold, boolean italic) {
     return new TextComponentString(text.replaceAll("\r", ""))
         .setStyle(new Style()
@@ -226,17 +227,6 @@ public class Helper implements Globals {
   public static void printError(String format, Object... args) {
     outputMessage(timestamp() +
         getFormattedText("[FH]", TextFormatting.DARK_RED, true, false)
-            .appendSibling(
-                getFormattedText(" " + String.format(format, args).trim(),
-                    TextFormatting.GRAY, false, false)
-            ).getFormattedText()
-    );
-  }
-
-  // I should make a function inside IRC module but handling toggleable timestamps would be hell
-  public static void printIRC(String format, Object... args) {
-    outputMessage(timestamp() +
-        getFormattedText("[IRC]", TextFormatting.DARK_PURPLE, true, false)
             .appendSibling(
                 getFormattedText(" " + String.format(format, args).trim(),
                     TextFormatting.GRAY, false, false)

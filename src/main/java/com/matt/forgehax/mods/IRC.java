@@ -10,6 +10,8 @@ import com.matt.forgehax.util.mod.loader.RegisterMod;
 
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.network.play.client.CPacketChatMessage;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
@@ -40,6 +42,11 @@ public class IRC extends ToggleMod {
           .name("nick")
           .description("Nickname to use, leave empty to use MC name")
           .defaultTo("")
+          .changed(
+              cb -> {
+                sendRaw("NICK " + cb.getTo());
+                used_nick = cb.getTo();
+              })
           .build();
   private final Setting<String> login =
       getCommandStub()
@@ -47,6 +54,14 @@ public class IRC extends ToggleMod {
           .<String>newSettingBuilder()
           .name("login")
           .description("Login name, leave empty to use MC name")
+          .defaultTo("")
+          .build();
+  private final Setting<String> real_name =
+      getCommandStub()
+          .builders()
+          .<String>newSettingBuilder()
+          .name("real-name")
+          .description("Real name, leave empty to use account name")
           .defaultTo("")
           .build();
   public final Setting<String> channel =
@@ -141,7 +156,7 @@ public class IRC extends ToggleMod {
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String nick_name = (nick.get().equals("") ? MC.getSession().getProfile().getName() : nick.get());
         String login_name = (login.get().equals("") ? MC.getSession().getProfile().getName() : login.get());
-        String real_name_displayed = MC.getSession().getProfile().getName();
+        String real_name_displayed = (real_name.get().equals("") ? MC.getSession().getProfile().getName() : real_name.get());
         writer.write("NICK " + nick_name + "\r\n");
         writer.write("USER " + login_name + " FH-IRC " + "TONIOinc :" + real_name_displayed + "\r\n");
         writer.flush();
@@ -154,7 +169,7 @@ public class IRC extends ToggleMod {
             break;
           }
           if (log_everything.get()) LOGGER.info(buf);
-          if (strip_whitespace.get()) buf = buf.replace("\u200b", "");
+          if (strip_whitespace.get()) buf = buf.replace("\u200b", "").replace("\u0002", "");
           if (buf.startsWith("PING ")) { // Reply to ping
             writer.write("PONG " + buf.substring(5) + "\r\n");
             writer.flush();
@@ -248,9 +263,9 @@ public class IRC extends ToggleMod {
             data -> {
               if (!show_system.get()) Helper.printWarning("You need to enable \"system\" to see the output of this command");
               if (data.getArgumentCount() > 0)
-                sendRaw("NAMES " + channel.get());
-              else
                 sendRaw("NAMES " + data.getArgumentAsString(0));
+              else
+                sendRaw("NAMES " + channel.get());
             })
         .build();
 
@@ -279,7 +294,7 @@ public class IRC extends ToggleMod {
   @Override
   protected void onDisabled() {
     if (connected.get()) {
-      if (MC.currentScreen instanceof GuiMainMenu)
+      if (Helper.getCurrentScreen() instanceof GuiMainMenu)
         quit("Quit Minecraft");
       else
         quit("Disabled IRC mod");
@@ -322,10 +337,9 @@ public class IRC extends ToggleMod {
 
   public void sendMessage(String target, String message) {
     if (sendRaw("PRIVMSG " + target + " :" + message)) {
-      if (target.equals(channel.get()))
-        Helper.printIRC("<%s> %s", used_nick, message);
-      else
-        Helper.printIRC("<%s -> %s> %s", used_nick, target, message);
+      if (target.startsWith("#") && target.equals(channel.get()))
+        printFormattedIRC(used_nick, message);
+      else printFormattedIRC(used_nick, target, message);
     }
   }
 
@@ -348,17 +362,17 @@ public class IRC extends ToggleMod {
     }
   }
 
-  private String parseIRCchat(String msgIn) {
+  private void parseIRCchat(String msgIn) {
     try {
       String author = msgIn.split("!", 2)[0].substring(1);
       String[] buf = msgIn.split("PRIVMSG", 2)[1].split(":", 2);
       String message = buf[1];
       String dest = buf[0].replace(" ", "");
-      if (dest.equals(channel.get())) return String.format("<%s> %s", author, message);
-      else return String.format("<%s -> %s> %s", author, dest, message);
+      if (dest.equals(channel.get())) printFormattedIRC(author, message);
+      else printFormattedIRC(author, dest, message);
     } catch (RuntimeException e) {
       e.printStackTrace();
-      return msgIn;
+      printIRCSystem(msgIn);
     }
   }
 
@@ -382,20 +396,49 @@ public class IRC extends ToggleMod {
     }
   }
 
+  public static void printIRCSystem(String text) {
+    Helper.outputMessage(Helper.timestamp() +
+        Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false)
+          .appendSibling(
+            Helper.getFormattedText(text, TextFormatting.DARK_GRAY, false, true)
+          ).getFormattedText()
+    );
+  }
+
+  public static void printFormattedIRC(String author, String message) {
+    printFormattedIRC(author, "", message);
+  }
+
+  public static void printFormattedIRC(String author, String target, String message) {
+    Helper.outputMessage(Helper.timestamp() +
+      Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false)
+        .appendSibling(
+          Helper.getFormattedText(String.format("<%s%s%s>", author,
+            (!target.equals("") ? " -> " : ""), target), TextFormatting.GRAY, false, false)
+              .appendSibling(
+                Helper.getFormattedText(" ", TextFormatting.WHITE, false, false)
+                  .appendSibling(
+                    ForgeHooks.newChatWithLinks(message)
+                  )
+              )
+        ).getFormattedText()
+    );
+  }
+
   @SubscribeEvent
   public void onClientTick(TickEvent.ClientTickEvent event) {
     while (messages.size() > 0) {
       String buf = messages.poll();
       if (buf.startsWith(String.format(":%s 005", server.get()))) { // capabilities message
-        if (show_system.get()) Helper.printIRC("%s", buf); // print it without stripping anything
+        if (show_system.get()) printIRCSystem(buf); // print it without stripping anything
       } else if (buf.contains("PRIVMSG")) {
-        Helper.printIRC("%s", parseIRCchat(buf));
+        parseIRCchat(buf);
       } else if (buf.contains("JOIN")) {
-        Helper.printIRC("%s", parseIRCjoin(buf));
+        printIRCSystem(parseIRCjoin(buf));
       } else if (buf.contains("PART") || buf.contains("QUIT")) {
-        Helper.printIRC("%s", parseIRCleave(buf));
+        printIRCSystem(parseIRCleave(buf));
       } else if (show_system.get() && buf.contains(used_nick)) { // don't print NOTICE messages
-        Helper.printIRC("%s", buf.split(used_nick, 2)[1]);
+        printIRCSystem(buf.split(used_nick, 2)[1]);
       }
     }
   }
@@ -409,7 +452,6 @@ public class IRC extends ToggleMod {
 	    if (irc_only.get() || inputMessage.startsWith(prefix.get())) {
         event.setCanceled(true);
         String msg = (irc_only.get() ? inputMessage : inputMessage.replaceFirst(prefix.get(), ""));
-        String nick_name = (nick.get().equals("") ? MC.getSession().getProfile().getName() : nick.get());
         sendMessage(channel.get(), msg);
       }
     }
