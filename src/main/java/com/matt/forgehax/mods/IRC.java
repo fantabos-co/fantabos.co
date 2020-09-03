@@ -11,6 +11,9 @@ import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
+import net.minecraft.util.text.event.HoverEvent;
+import net.minecraft.util.text.event.HoverEvent.Action;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -54,14 +57,6 @@ public class IRC extends ToggleMod {
           .<String>newSettingBuilder()
           .name("login")
           .description("Login name, leave empty to use MC name")
-          .defaultTo("")
-          .build();
-  private final Setting<String> real_name =
-      getCommandStub()
-          .builders()
-          .<String>newSettingBuilder()
-          .name("real-name")
-          .description("Real name, leave empty to use account name")
           .defaultTo("")
           .build();
   public final Setting<String> channel =
@@ -128,6 +123,15 @@ public class IRC extends ToggleMod {
           .description("Remove Zero-Width-White-Space characters")
           .defaultTo(false)
           .build();
+
+  private final Setting<Boolean> convert_color_codes =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("convert-color-codes")
+          .description("Convert IRC color codes into minecraft TextFormatting")
+          .defaultTo(true)
+          .build();
   
   public IRC() {
     super(Category.CHAT, "IRC", false, "IRC client built inside minecraft chat");
@@ -141,6 +145,7 @@ public class IRC extends ToggleMod {
   private ServerHandler server_thread = null;
   private ConcurrentLinkedQueue<String> messages = new ConcurrentLinkedQueue<>();
   private String used_nick = " ";
+  private String connected_server = "";
   private boolean loaded = false; // need this because otherwise it connects before your nick/name settings are loaded
 
   private class ServerHandler extends Thread {
@@ -151,12 +156,13 @@ public class IRC extends ToggleMod {
     public void run() {
       keep_running.set(true);
       try {
+        connected_server = server.get();
         socket = new Socket(server.get(), 6667);
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String nick_name = (nick.get().equals("") ? MC.getSession().getProfile().getName() : nick.get());
         String login_name = (login.get().equals("") ? MC.getSession().getProfile().getName() : login.get());
-        String real_name_displayed = (real_name.get().equals("") ? MC.getSession().getProfile().getName() : real_name.get());
+        String real_name_displayed = MC.getSession().getProfile().getName();
         writer.write("NICK " + nick_name + "\r\n");
         writer.write("USER " + login_name + " FH-IRC " + "TONIOinc :" + real_name_displayed + "\r\n");
         writer.flush();
@@ -170,6 +176,7 @@ public class IRC extends ToggleMod {
           }
           if (log_everything.get()) LOGGER.info(buf);
           if (strip_whitespace.get()) buf = buf.replace("\u200b", "").replace("\u0002", "");
+          if (convert_color_codes.get()) buf = replaceColorCodes(buf);
           if (buf.startsWith("PING ")) { // Reply to ping
             writer.write("PONG " + buf.substring(5) + "\r\n");
             writer.flush();
@@ -206,7 +213,12 @@ public class IRC extends ToggleMod {
         .newCommandBuilder()
         .name("connect")
         .description("Connect to server")
-        .processor(data -> connect())
+        .processor(data -> {
+          if (!this.isEnabled())
+            Helper.printWarning("Please enable IRC mod");
+          else
+            connect();
+        })
         .build();
 
     getCommandStub()
@@ -221,7 +233,7 @@ public class IRC extends ToggleMod {
               else if (data.getArgumentCount() > 0)
                 join_channel(data.getArgumentAsString(0));
               else
-                join_channel(channel.get());
+                join_channel(channel.get() + " " + default_channel_password.get());
             })
         .build();
 
@@ -282,7 +294,7 @@ public class IRC extends ToggleMod {
         .build();
 
     loaded = true;
-    if (autoconnect.get()) connect();
+    if (autoconnect.get() && this.isEnabled()) connect();
   }
 
   @Override
@@ -305,10 +317,6 @@ public class IRC extends ToggleMod {
   private void connect() {
     if (connected.get() || (server_thread != null && server_thread.isAlive() && server_thread.keep_running.get())) {
       Helper.printWarning("Already connected or connecting");
-      return;
-    }
-    if (!this.isEnabled()) {
-      Helper.printWarning("Please enable IRC mod");
       return;
     }
     server_thread = new ServerHandler();
@@ -336,6 +344,8 @@ public class IRC extends ToggleMod {
   }
 
   public void sendMessage(String target, String message) {
+    if (convert_color_codes.get())
+      message = replaceUserFriendlyCodes(message);
     if (sendRaw("PRIVMSG " + target + " :" + message)) {
       if (target.startsWith("#") && target.equals(channel.get()))
         printFormattedIRC(used_nick, message);
@@ -352,6 +362,8 @@ public class IRC extends ToggleMod {
       Helper.printWarning("Please enable IRC mod");
       return false;
     }
+    if (convert_color_codes.get())
+      content = convertToIRCColor(content);
     try {
       writer.write(content + "\r\n");
       writer.flush();
@@ -397,11 +409,28 @@ public class IRC extends ToggleMod {
   }
 
   public static void printIRCSystem(String text) {
-    Helper.outputMessage(Helper.timestamp() +
+    Helper.outputMessage(Helper.timestamp()
+      .appendSibling(
         Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false)
           .appendSibling(
             Helper.getFormattedText(text, TextFormatting.DARK_GRAY, false, true)
-          ).getFormattedText()
+          )
+      )
+    );
+  }
+
+  private static HoverEvent getHover(String channel) {
+    return new HoverEvent(Action.SHOW_TEXT,
+      Helper.getFormattedText("Server : ", TextFormatting.DARK_PURPLE, true, false)
+        .appendSibling(
+          Helper.getFormattedText(INSTANCE.connected_server + "\n", TextFormatting.GRAY, false, false)
+          .appendSibling(
+            Helper.getFormattedText("Channel : ", TextFormatting.DARK_PURPLE, true, false)
+              .appendSibling(
+                Helper.getFormattedText((channel.equals("") ? INSTANCE.channel.get() : channel), TextFormatting.GRAY, false, false)
+              )
+          )
+        )
     );
   }
 
@@ -410,18 +439,21 @@ public class IRC extends ToggleMod {
   }
 
   public static void printFormattedIRC(String author, String target, String message) {
-    Helper.outputMessage(Helper.timestamp() +
-      Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false)
-        .appendSibling(
-          Helper.getFormattedText(String.format("<%s%s%s>", author,
-            (!target.equals("") ? " -> " : ""), target), TextFormatting.GRAY, false, false)
-              .appendSibling(
-                Helper.getFormattedText(" ", TextFormatting.WHITE, false, false)
-                  .appendSibling(
-                    ForgeHooks.newChatWithLinks(message)
-                  )
-              )
-        ).getFormattedText()
+    Helper.outputMessage(Helper.timestamp()
+      .appendSibling(
+        Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false, null, getHover(target))
+          .appendSibling(
+            Helper.getFormattedText(String.format("<%s%s%s>", author,
+              (!target.equals("") ? " -> " : ""), target), TextFormatting.GRAY, false, false,
+                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, ".irc msg " + author + " "), null)
+                .appendSibling(
+                  Helper.getFormattedText(" ", TextFormatting.WHITE, false, false)
+                    .appendSibling(
+                      ForgeHooks.newChatWithLinks(message)
+                    )
+                )
+          )
+      )
     );
   }
 
@@ -455,5 +487,62 @@ public class IRC extends ToggleMod {
         sendMessage(channel.get(), msg);
       }
     }
+  }
+
+  private String replaceColorCodes(String msgIn) {
+    return msgIn.replace("\u000315", TextFormatting.GRAY.toString())
+                .replace("\u000314", TextFormatting.DARK_GRAY.toString())
+                .replace("\u000313", TextFormatting.LIGHT_PURPLE.toString())
+                .replace("\u000312", TextFormatting.BLUE.toString())
+                .replace("\u000311", TextFormatting.AQUA.toString())
+                .replace("\u000310", TextFormatting.DARK_AQUA.toString())
+                .replace("\u00039", TextFormatting.GREEN.toString())
+                .replace("\u00038", TextFormatting.YELLOW.toString())
+                .replace("\u00037", TextFormatting.GOLD.toString())
+                .replace("\u00036", TextFormatting.DARK_PURPLE.toString())
+                .replace("\u00035", TextFormatting.DARK_RED.toString())
+                .replace("\u00034", TextFormatting.RED.toString())
+                .replace("\u00033", TextFormatting.DARK_GREEN.toString())
+                .replace("\u00032", TextFormatting.DARK_BLUE.toString())
+                .replace("\u00031", TextFormatting.BLACK.toString())
+                .replace("\u00030", TextFormatting.RESET.toString());
+  }
+
+  private String convertToIRCColor(String msgIn) {
+    return msgIn.replace(TextFormatting.GRAY.toString(), "\u000315")
+                .replace(TextFormatting.DARK_GRAY.toString(), "\u000314")
+                .replace(TextFormatting.LIGHT_PURPLE.toString(), "\u000313")
+                .replace(TextFormatting.BLUE.toString(), "\u000312")
+                .replace(TextFormatting.AQUA.toString(), "\u000311")
+                .replace(TextFormatting.DARK_AQUA.toString(), "\u000310")
+                .replace(TextFormatting.GREEN.toString(), "\u00039")
+                .replace(TextFormatting.YELLOW.toString(), "\u00038")
+                .replace(TextFormatting.GOLD.toString(), "\u00037")
+                .replace(TextFormatting.DARK_PURPLE.toString(), "\u00036")
+                .replace(TextFormatting.DARK_RED.toString(), "\u00035")
+                .replace(TextFormatting.RED.toString(), "\u00034")
+                .replace(TextFormatting.DARK_GREEN.toString(), "\u00033")
+                .replace(TextFormatting.DARK_BLUE.toString(), "\u00032")
+                .replace(TextFormatting.BLACK.toString(), "\u00031")
+                .replace(TextFormatting.RESET.toString(), "\u00030");
+  }
+
+  private String replaceUserFriendlyCodes(String msgIn) {
+    return msgIn.replace("&7", TextFormatting.GRAY.toString())
+                .replace("&8", TextFormatting.DARK_GRAY.toString())
+                .replace("&d", TextFormatting.LIGHT_PURPLE.toString())
+                .replace("&9", TextFormatting.BLUE.toString())
+                .replace("&b", TextFormatting.AQUA.toString())
+                .replace("&3", TextFormatting.DARK_AQUA.toString())
+                .replace("&a", TextFormatting.GREEN.toString())
+                .replace("&e", TextFormatting.YELLOW.toString())
+                .replace("&6", TextFormatting.GOLD.toString())
+                .replace("&5", TextFormatting.DARK_PURPLE.toString())
+                .replace("&4", TextFormatting.DARK_RED.toString())
+                .replace("&c", TextFormatting.RED.toString())
+                .replace("&a", TextFormatting.DARK_GREEN.toString())
+                .replace("&1", TextFormatting.DARK_BLUE.toString())
+                .replace("&0", TextFormatting.BLACK.toString())
+                .replace("&f", TextFormatting.RESET.toString());
   }
 }
