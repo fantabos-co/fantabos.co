@@ -9,6 +9,7 @@ import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.gui.ClickGui;
 import com.matt.forgehax.util.PacketHelper;
 import com.matt.forgehax.util.SimpleTimer;
+import com.matt.forgehax.util.color.ColorClamp;
 import com.matt.forgehax.util.command.Options;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
@@ -45,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RegisterMod
 public class IRC extends ToggleMod {
 
-  public static IRC INSTANCE;
+  public static IRC INSTANCE = null;
   private Socket socket;
   private BufferedWriter writer;
   private AtomicBoolean connected = new AtomicBoolean(); 
@@ -62,7 +63,7 @@ public class IRC extends ToggleMod {
           .<String>newSettingBuilder()
           .name("server")
           .description("Server to connect to")
-          .defaultTo("irc.2b2t.it")
+          .defaultTo("")
           .build();
   private final Setting<String> nick =
       getCommandStub()
@@ -155,13 +156,20 @@ public class IRC extends ToggleMod {
           .description("Remove Zero-Width-White-Space characters")
           .defaultTo(false)
           .build();
-
   private final Setting<Boolean> convert_color_codes =
       getCommandStub()
           .builders()
           .<Boolean>newSettingBuilder()
           .name("convert-color-codes")
           .description("Convert IRC color codes into minecraft TextFormatting")
+          .defaultTo(true)
+          .build();
+  private final Setting<Boolean> color_nicks =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("color-nicks")
+          .description("Color nicknames based on hash")
           .defaultTo(true)
           .build();
   
@@ -201,8 +209,8 @@ public class IRC extends ToggleMod {
             break;
           }
           if (log_everything.get()) LOGGER.info(buf);
-          if (strip_whitespace.get()) buf = buf.replace("\u200b", "").replace("\u0002", "");
           if (convert_color_codes.get()) buf = replaceColorCodes(buf);
+          if (strip_whitespace.get()) buf = buf.replace("\u200b", "").replace("\u0002", "");
           if (buf.startsWith("PING ")) { // Reply to ping
             writer.write("PONG " + buf.substring(5) + "\r\n");
             writer.flush();
@@ -465,20 +473,36 @@ public class IRC extends ToggleMod {
 
   private String parseIRCjoin(String msgIn) {
     try {
-      return msgIn.split("!", 2)[0].substring(1) + " joined";
+      String channel = "#" + msgIn.split(":#")[1];
+      return msgIn.split("!", 2)[0].substring(1) + " joined " + channel;
     } catch (Exception e) {
+      e.printStackTrace();
       return msgIn;
     }
   }
 
   private String parseIRCleave(String msgIn) {
     try {
-      String buf = msgIn.split("!", 2)[0].substring(1) + " left";
+      String buf;
       if (msgIn.contains("QUIT")) {
-        buf += ": " + msgIn.split("Quit", 2)[1].substring(2);
+        buf = msgIn.split("!", 2)[0].substring(1) + " disconnected: ";
+        buf += msgIn.split("Quit", 2)[1].substring(2);
+      } else {
+        String channel = "#" + msgIn.split("#")[1];
+        buf = msgIn.split("!", 2)[0].substring(1) + " left " + channel;
       }
       return buf;
     } catch (Exception e) {
+      e.printStackTrace();
+      return msgIn;
+    }
+  }
+
+  private String parseIRCnickChange(String msgIn) {
+    try {
+      return msgIn.replace(":", "").replace("NICK", "changed their nick to");
+    } catch (RuntimeException e) {
+      e.printStackTrace();
       return msgIn;
     }
   }
@@ -492,6 +516,7 @@ public class IRC extends ToggleMod {
   }
 
   private static HoverEvent getHover() {
+    if (INSTANCE == null) return null;
     return new HoverEvent(Action.SHOW_TEXT,
       Helper.getFormattedText("Server : ", TextFormatting.DARK_PURPLE, true, false)
         .appendSibling(
@@ -501,6 +526,9 @@ public class IRC extends ToggleMod {
   }
 
   public static void printFormattedIRC(String author, String target, String message) {
+    if (INSTANCE != null && INSTANCE.color_nicks.get()) {
+      author = ColorClamp.getClampedColor(author.hashCode()) + author + TextFormatting.GRAY;
+    }
     Helper.outputMessage(
         Helper.getFormattedText("[" + target + "] ", TextFormatting.DARK_PURPLE, true, false,
              new ClickEvent(ClickEvent.Action.RUN_COMMAND, ".irc channel-default " + target), null)
@@ -528,13 +556,17 @@ public class IRC extends ToggleMod {
       String buf = messages.poll();
       if (buf.startsWith(String.format(":%s 005", server.get()))) { // capabilities message
         printIRCSystem(buf); // print it without stripping anything
+      } else if (buf.contains("End of /NAMES list") || buf.contains("NOTICE * :***")) {
+        // ignore
       } else if (buf.contains("PRIVMSG")) {
         parseIRCchat(buf);
       } else if (buf.contains("JOIN")) {
         printIRCSystem(parseIRCjoin(buf));
       } else if (buf.contains("PART") || buf.contains("QUIT")) {
         printIRCSystem(parseIRCleave(buf));
-      } else if (buf.contains(used_nick)) { // don't print NOTICE messages
+      } else if (buf.contains("NICK")) {
+        printIRCSystem(parseIRCnickChange(buf));
+      } else if (buf.contains(used_nick)) {
         printIRCSystem(buf.split(used_nick, 2)[1]);
       }
     }
@@ -569,8 +601,24 @@ public class IRC extends ToggleMod {
                 .replace("\u00034", TextFormatting.RED.toString())
                 .replace("\u00033", TextFormatting.DARK_GREEN.toString())
                 .replace("\u00032", TextFormatting.DARK_BLUE.toString())
-                .replace("\u00031", TextFormatting.BLACK.toString())
-                .replace("\u00030", TextFormatting.RESET.toString());
+                .replace("\u00031", TextFormatting.BLACK.toString()) // Fucking js bot adding useless characters
+                .replace("\u000309", TextFormatting.GREEN.toString())
+                .replace("\u000308", TextFormatting.YELLOW.toString())
+                .replace("\u000307", TextFormatting.GOLD.toString())
+                .replace("\u000306", TextFormatting.DARK_PURPLE.toString())
+                .replace("\u000305", TextFormatting.DARK_RED.toString())
+                .replace("\u000304", TextFormatting.RED.toString())
+                .replace("\u000303", TextFormatting.DARK_GREEN.toString())
+                .replace("\u000302", TextFormatting.DARK_BLUE.toString())
+                .replace("\u000301", TextFormatting.BLACK.toString())
+                .replace("\u000300", TextFormatting.RESET.toString())
+                .replace("\u00030", TextFormatting.RESET.toString())
+                .replace("\u0003", TextFormatting.RESET.toString())
+                .replace("\u000F", TextFormatting.RESET.toString())
+                .replace("\u0002", TextFormatting.BOLD.toString())
+                .replace("\u001D", TextFormatting.ITALIC.toString())
+                .replace("\u001F", TextFormatting.UNDERLINE.toString());
+                // .replace("\u001E", TextFormatting.STRIKETHROUGH.toString()); // unsupported
   }
 
   private String convertToIRCColor(String msgIn) {
@@ -589,7 +637,11 @@ public class IRC extends ToggleMod {
                 .replace(TextFormatting.DARK_GREEN.toString(), "\u00033")
                 .replace(TextFormatting.DARK_BLUE.toString(), "\u00032")
                 .replace(TextFormatting.BLACK.toString(), "\u00031")
-                .replace(TextFormatting.RESET.toString(), "\u00030");
+                .replace(TextFormatting.RESET.toString(), "\u000F")
+                .replace(TextFormatting.BOLD.toString(), "\u0002")
+                .replace(TextFormatting.ITALIC.toString(), "\u001D")
+                .replace(TextFormatting.UNDERLINE.toString(), "\u001F");
+                // .replace(TextFormatting.STRIKETHROUGH.toString(), "\u001E"); // unsupported
   }
 
   private String replaceUserFriendlyCodes(String msgIn) {
@@ -609,7 +661,11 @@ public class IRC extends ToggleMod {
                 .replace("&1", TextFormatting.DARK_BLUE.toString())
                 .replace("&0", TextFormatting.BLACK.toString())
                 .replace("&f", TextFormatting.RESET.toString())
-                .replace("&r", TextFormatting.RESET.toString());
+                .replace("&r", TextFormatting.RESET.toString())
+                .replace("&l", TextFormatting.BOLD.toString())
+                .replace("&o", TextFormatting.ITALIC.toString())
+                .replace("&n", TextFormatting.UNDERLINE.toString());
+                // .replace("&m", TextFormatting.STRIKETHROUGH.toString()); // unsupported
   }
 
   private String getStateFromLastScreen(GuiScreen in) {
