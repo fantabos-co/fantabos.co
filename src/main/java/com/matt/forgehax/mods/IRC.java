@@ -1,14 +1,29 @@
 package com.matt.forgehax.mods;
 
+import com.google.common.collect.Sets;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.asm.events.PacketEvent;
+import com.matt.forgehax.gui.ClickGui;
 import com.matt.forgehax.util.PacketHelper;
+import com.matt.forgehax.util.SimpleTimer;
+import com.matt.forgehax.util.command.Options;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
+import com.matt.forgehax.util.serialization.ISerializableJson;
 
+import net.minecraft.client.gui.GuiChat;
+import net.minecraft.client.gui.GuiDisconnected;
+import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.gui.GuiScreenServerList;
+import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.client.multiplayer.GuiConnecting;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.event.ClickEvent;
@@ -30,6 +45,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RegisterMod
 public class IRC extends ToggleMod {
 
+  public static IRC INSTANCE;
+  private Socket socket;
+  private BufferedWriter writer;
+  private AtomicBoolean connected = new AtomicBoolean(); 
+  private ServerHandler server_thread = null;
+  private ConcurrentLinkedQueue<String> messages = new ConcurrentLinkedQueue<>();
+  private String used_nick = " ";
+  private String connected_server = "";
+  private GuiScreen last_screen = null;
+  private SimpleTimer timer = new SimpleTimer();
+
   private final Setting<String> server =
       getCommandStub()
           .builders()
@@ -47,7 +73,8 @@ public class IRC extends ToggleMod {
           .defaultTo("")
           .changed(
               cb -> {
-                sendRaw("NICK " + cb.getTo());
+                if (connected.get())
+                  sendRaw("NICK " + cb.getTo());
                 used_nick = cb.getTo();
               })
           .build();
@@ -59,22 +86,25 @@ public class IRC extends ToggleMod {
           .description("Login name, leave empty to use MC name")
           .defaultTo("")
           .build();
-  public final Setting<String> channel =
+  private final Setting<String> default_channel =
       getCommandStub()
           .builders()
           .<String>newSettingBuilder()
-          .name("channel")
-          .description("Channel to join on login")
+          .name("channel-default")
+          .description("Where to send messages")
           .defaultTo("#fhchat")
           .build();
-  public final Setting<String> default_channel_password =
-      getCommandStub()
-          .builders()
-          .<String>newSettingBuilder()
-          .name("password")
-          .description("If your default channel has a password, you can put it here")
-          .defaultTo("")
-          .build();
+
+  public final Options<ChannelEntry> channel_list =
+    getCommandStub()
+        .builders()
+        .<ChannelEntry>newOptionsBuilder()
+        .name("saved-channels")
+        .description("Contains channels to autoconnect to")
+        .factory(ChannelEntry::new)
+        .supplier(Sets::newConcurrentHashSet)
+        .build();
+
   public final Setting<String> prefix =
       getCommandStub()
           .builders()
@@ -96,8 +126,18 @@ public class IRC extends ToggleMod {
           .builders()
           .<Boolean>newSettingBuilder()
           .name("autoconnect")
-          .description("Automatically connect when mod is enabled")
+          .description("Automatically connect to server")
           .defaultTo(true)
+          .build();
+  private final Setting<Integer> autoconnect_timer =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("reconnect-timer")
+          .description("Seconds to wait before reconnecting")
+          .min(0)
+          .max(120)
+          .defaultTo(10)
           .build();
   private final Setting<Boolean> log_everything =
       getCommandStub()
@@ -106,14 +146,6 @@ public class IRC extends ToggleMod {
           .name("log-all")
           .description("Write everything received from IRC into MC log")
           .defaultTo(true)
-          .build();
-  private final Setting<Boolean> show_system =
-      getCommandStub()
-          .builders()
-          .<Boolean>newSettingBuilder()
-          .name("system")
-          .description("Show system messages too in chat")
-          .defaultTo(false)
           .build();
   private final Setting<Boolean> strip_whitespace =
       getCommandStub()
@@ -138,15 +170,9 @@ public class IRC extends ToggleMod {
     INSTANCE = this;
   }
 
-  public static IRC INSTANCE;
-  private Socket socket;
-  private BufferedWriter writer;
-  private AtomicBoolean connected = new AtomicBoolean(); 
-  private ServerHandler server_thread = null;
-  private ConcurrentLinkedQueue<String> messages = new ConcurrentLinkedQueue<>();
-  private String used_nick = " ";
-  private String connected_server = "";
-  private boolean loaded = false; // need this because otherwise it connects before your nick/name settings are loaded
+  public boolean isConnected() { return connected.get(); }
+  public String getDefaultChannel() { return default_channel.get(); }
+  public String getServer() { return connected_server; }
 
   private class ServerHandler extends Thread {
     public AtomicBoolean keep_running = new AtomicBoolean();
@@ -157,7 +183,7 @@ public class IRC extends ToggleMod {
       keep_running.set(true);
       try {
         connected_server = server.get();
-        socket = new Socket(server.get(), 6667);
+        socket = new Socket(connected_server, 6667);
         writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
         reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String nick_name = (nick.get().equals("") ? MC.getSession().getProfile().getName() : nick.get());
@@ -183,12 +209,12 @@ public class IRC extends ToggleMod {
           } else if (!connected.get()) { // We sent our login but we still need confirmation
             if (buf.startsWith(String.format(":%s 004", server.get()))) { // Server accepted it and sent back login info
               connected.set(true);
-              if (default_channel_password.get().equals(""))
-                join_channel(channel.get());
-              else join_channel(channel.get(), default_channel_password.get());
+              for (ChannelEntry channel : channel_list) {
+                join_channel(channel.getUniqueHeader(), channel.getPassword());
+              }
               Helper.printInform("Connected to IRC successfully");
             } else if (buf.startsWith(String.format(":%s 433", server.get()))) { // Server rejected our login
-              Helper.printError("IRC Nickname already in use");
+              printIRCSystem("Nick " + used_nick + " is already in use");
               break;
             }
           } else { // We are connected to the server
@@ -198,7 +224,8 @@ public class IRC extends ToggleMod {
       } catch (IOException e) {
         e.printStackTrace();
       }
-      Helper.printError("Disconnected from IRC");
+      printIRCSystem("Disconnected from server");
+      timer.start();
       connected.set(false);
       keep_running.set(false);
     }
@@ -206,6 +233,7 @@ public class IRC extends ToggleMod {
 
   @Override
   protected void onLoad() {
+    timer.start();
     connected.set(false);
 
     getCommandStub()
@@ -225,15 +253,33 @@ public class IRC extends ToggleMod {
         .builders()
         .newCommandBuilder()
         .name("join")
-        .description("Join a channel")
+        .description("Join a channel, or all default if none is provided")
         .processor(
             data -> { // maybe there's a nicer way to do this?
               if (data.getArgumentCount() > 1)
                 join_channel(data.getArgumentAsString(0), data.getArgumentAsString(1));
               else if (data.getArgumentCount() > 0)
                 join_channel(data.getArgumentAsString(0));
-              else
-                join_channel(channel.get() + " " + default_channel_password.get());
+              else {
+                for (ChannelEntry channel : channel_list) {
+                  join_channel(channel.getUniqueHeader(), channel.getPassword());
+                }
+              }
+            })
+        .build();
+
+    getCommandStub()
+        .builders()
+        .newCommandBuilder()
+        .name("part")
+        .description("Leave a channel, or default channel if none is provided")
+        .processor(
+            data -> { // maybe there's a nicer way to do this?
+              if (data.getArgumentCount() > 0)
+                sendRaw("PART " + data.getArgumentAsString(0));
+              else {
+                sendRaw("PART " + default_channel.get());
+              }
             })
         .build();
 
@@ -260,7 +306,6 @@ public class IRC extends ToggleMod {
         .description("Shows details about a user")
         .processor(
             data -> {
-              if (!show_system.get()) Helper.printWarning("You need to enable \"system\" to see the output of this command");
               data.requiredArguments(1);
               sendRaw("WHOIS " + data.getArgumentAsString(0));
             })
@@ -273,11 +318,10 @@ public class IRC extends ToggleMod {
         .description("List connected users")
         .processor(
             data -> {
-              if (!show_system.get()) Helper.printWarning("You need to enable \"system\" to see the output of this command");
               if (data.getArgumentCount() > 0)
                 sendRaw("NAMES " + data.getArgumentAsString(0));
               else
-                sendRaw("NAMES " + channel.get());
+                sendRaw("NAMES " + default_channel.get());
             })
         .build();
 
@@ -293,23 +337,56 @@ public class IRC extends ToggleMod {
             })
         .build();
 
-    loaded = true;
-    if (autoconnect.get() && this.isEnabled()) connect();
+    channel_list
+        .builders()
+        .newCommandBuilder()
+        .name("add")
+        .description("Add a channel to autojoin (with eventually a password)")
+        .processor(
+            data -> { // maybe there's a nicer way to do this?
+              data.requiredArguments(1);
+              if (data.getArgumentCount() > 1)
+                channel_list.add(new ChannelEntry(data.getArgumentAsString(0), data.getArgumentAsString(1)));
+              else channel_list.add(new ChannelEntry(data.getArgumentAsString(0)));
+            })
+        .build();
+
+    channel_list
+        .builders()
+        .newCommandBuilder()
+        .name("remove")
+        .description("Remove a channel by name")
+        .processor(
+            data -> { 
+              data.requiredArguments(1);
+              channel_list.removeIf(c -> c.getUniqueHeader().equals(data.getArgument(0)));
+            })
+        .build();
+
+    channel_list
+        .builders()
+        .newCommandBuilder()
+        .name("list")
+        .description("Show all registered channels (but not their pwd)")
+        .processor(data -> {
+          for (ChannelEntry entry : channel_list) {
+            data.write(entry.name);
+          }
+          data.write(String.format("number: %d", channel_list.size()));
+        })
+        .build();
   }
 
   @Override
   protected void onEnabled() {
-    if (loaded && autoconnect.get())
-      connect();
+    timer.start();
   }
 
   @Override
   protected void onDisabled() {
     if (connected.get()) {
-      if (Helper.getCurrentScreen() instanceof GuiMainMenu)
-        quit("Quit Minecraft");
-      else
-        quit("Disabled IRC mod");
+      quit(getStateFromLastScreen(last_screen));
+      timer.start();
       connected.set(false);
     }
   }
@@ -332,7 +409,8 @@ public class IRC extends ToggleMod {
   }
 
   private void join_channel(String channel, String password) {
-    sendRaw("JOIN " + channel + " " + password);
+    if (password.equals("")) join_channel(channel);
+    else sendRaw("JOIN " + channel + " " + password);
   }
 
   private void join_channel(String channel) {
@@ -340,26 +418,24 @@ public class IRC extends ToggleMod {
   }
 
   public void sendMessage(String message) {
-    sendMessage(channel.get(), message);
+    sendMessage(default_channel.get(), message);
   }
 
   public void sendMessage(String target, String message) {
     if (convert_color_codes.get())
       message = replaceUserFriendlyCodes(message);
     if (sendRaw("PRIVMSG " + target + " :" + message)) {
-      if (target.startsWith("#") && target.equals(channel.get()))
-        printFormattedIRC(used_nick, message);
-      else printFormattedIRC(used_nick, target, message);
+      printFormattedIRC(used_nick, target, message);
     }
   }
 
   private boolean sendRaw(String content) {
     if (!connected.get()) {
-      Helper.printWarning("Not connected to IRC");
+      printIRCSystem("Not connected");
       return false;
     }
     if (!this.isEnabled()) {
-      Helper.printWarning("Please enable IRC mod");
+      Helper.printError("Please enable IRC mod");
       return false;
     }
     if (convert_color_codes.get())
@@ -369,7 +445,7 @@ public class IRC extends ToggleMod {
       writer.flush();
       return true;
     } catch (IOException e) {
-      Helper.printError("Could not send raw message");
+      printIRCSystem("Could not send payload");
       return false;
     }
   }
@@ -380,8 +456,7 @@ public class IRC extends ToggleMod {
       String[] buf = msgIn.split("PRIVMSG", 2)[1].split(":", 2);
       String message = buf[1];
       String dest = buf[0].replace(" ", "");
-      if (dest.equals(channel.get())) printFormattedIRC(author, message);
-      else printFormattedIRC(author, dest, message);
+      printFormattedIRC(author, dest, message);
     } catch (RuntimeException e) {
       e.printStackTrace();
       printIRCSystem(msgIn);
@@ -409,42 +484,28 @@ public class IRC extends ToggleMod {
   }
 
   public static void printIRCSystem(String text) {
-    Helper.outputMessage(Helper.timestamp()
-      .appendSibling(
-        Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false)
-          .appendSibling(
-            Helper.getFormattedText(text, TextFormatting.DARK_GRAY, false, true)
-          )
+    Helper.outputMessage(Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false, null, getHover())
+        .appendSibling(
+          Helper.getFormattedText(text, TextFormatting.DARK_GRAY, false, true)
       )
     );
   }
 
-  private static HoverEvent getHover(String channel) {
+  private static HoverEvent getHover() {
     return new HoverEvent(Action.SHOW_TEXT,
       Helper.getFormattedText("Server : ", TextFormatting.DARK_PURPLE, true, false)
         .appendSibling(
-          Helper.getFormattedText(INSTANCE.connected_server + "\n", TextFormatting.GRAY, false, false)
-          .appendSibling(
-            Helper.getFormattedText("Channel : ", TextFormatting.DARK_PURPLE, true, false)
-              .appendSibling(
-                Helper.getFormattedText((channel.equals("") ? INSTANCE.channel.get() : channel), TextFormatting.GRAY, false, false)
-              )
-          )
+          Helper.getFormattedText(INSTANCE.connected_server, TextFormatting.GRAY, false, false)
         )
     );
   }
 
-  public static void printFormattedIRC(String author, String message) {
-    printFormattedIRC(author, "", message);
-  }
-
   public static void printFormattedIRC(String author, String target, String message) {
-    Helper.outputMessage(Helper.timestamp()
-      .appendSibling(
-        Helper.getFormattedText("[IRC] ", TextFormatting.DARK_PURPLE, true, false, null, getHover(target))
+    Helper.outputMessage(
+        Helper.getFormattedText("[" + target + "] ", TextFormatting.DARK_PURPLE, true, false,
+             new ClickEvent(ClickEvent.Action.RUN_COMMAND, ".irc channel-default " + target), null)
           .appendSibling(
-            Helper.getFormattedText(String.format("<%s%s%s>", author,
-              (!target.equals("") ? " -> " : ""), target), TextFormatting.GRAY, false, false,
+            Helper.getFormattedText(String.format("<%s>", author), TextFormatting.GRAY, false, false,
                 new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, ".irc msg " + author + " "), null)
                 .appendSibling(
                   Helper.getFormattedText(" ", TextFormatting.WHITE, false, false)
@@ -453,23 +514,27 @@ public class IRC extends ToggleMod {
                     )
                 )
           )
-      )
     );
   }
 
   @SubscribeEvent
   public void onClientTick(TickEvent.ClientTickEvent event) {
+    last_screen = Helper.getCurrentScreen();
+    if (!connected.get() && autoconnect.get() && timer.hasTimeElapsed(autoconnect_timer.get() * 1000L)) {
+      timer.start();
+      connect();
+    }
     while (messages.size() > 0) {
       String buf = messages.poll();
       if (buf.startsWith(String.format(":%s 005", server.get()))) { // capabilities message
-        if (show_system.get()) printIRCSystem(buf); // print it without stripping anything
+        printIRCSystem(buf); // print it without stripping anything
       } else if (buf.contains("PRIVMSG")) {
         parseIRCchat(buf);
       } else if (buf.contains("JOIN")) {
         printIRCSystem(parseIRCjoin(buf));
       } else if (buf.contains("PART") || buf.contains("QUIT")) {
         printIRCSystem(parseIRCleave(buf));
-      } else if (show_system.get() && buf.contains(used_nick)) { // don't print NOTICE messages
+      } else if (buf.contains(used_nick)) { // don't print NOTICE messages
         printIRCSystem(buf.split(used_nick, 2)[1]);
       }
     }
@@ -480,11 +545,11 @@ public class IRC extends ToggleMod {
     if (event.getPacket() instanceof CPacketChatMessage
         && !PacketHelper.isIgnored(event.getPacket())) {
       String inputMessage = ((CPacketChatMessage) event.getPacket()).getMessage();
-
+      if (inputMessage.startsWith("/")) return;
 	    if (irc_only.get() || inputMessage.startsWith(prefix.get())) {
         event.setCanceled(true);
         String msg = (irc_only.get() ? inputMessage : inputMessage.replaceFirst(prefix.get(), ""));
-        sendMessage(channel.get(), msg);
+        sendMessage(default_channel.get(), msg);
       }
     }
   }
@@ -540,9 +605,62 @@ public class IRC extends ToggleMod {
                 .replace("&5", TextFormatting.DARK_PURPLE.toString())
                 .replace("&4", TextFormatting.DARK_RED.toString())
                 .replace("&c", TextFormatting.RED.toString())
-                .replace("&a", TextFormatting.DARK_GREEN.toString())
+                .replace("&2", TextFormatting.DARK_GREEN.toString())
                 .replace("&1", TextFormatting.DARK_BLUE.toString())
                 .replace("&0", TextFormatting.BLACK.toString())
-                .replace("&f", TextFormatting.RESET.toString());
+                .replace("&f", TextFormatting.RESET.toString())
+                .replace("&r", TextFormatting.RESET.toString());
+  }
+
+  private String getStateFromLastScreen(GuiScreen in) {
+    if (in == null) return "Disabled while in-game";
+    if (in instanceof ClickGui) return "Disabled from GUI";
+    if (in instanceof GuiChat) return "Disabled from chat";
+    if (in instanceof GuiMainMenu) return "Quit Minecraft";
+    if (in instanceof GuiScreenServerList) return "Disabled while browsing servers?";
+    if (in instanceof GuiDisconnected) return "Disabled after being disconnected";
+    if (in instanceof GuiConnecting) return "Disabled while connecting";
+    if (in instanceof GuiIngameMenu) return "Rage quit! Not even back to main menu!";
+    if (in instanceof GuiInventory) return "Items too strong, mod disabled";
+    return String.format("Disconnected in an unknown screen (%s), woot!", in.getClass().getSimpleName());
+  }
+
+  private static class ChannelEntry implements ISerializableJson {
+    final String name;
+    private String password;
+
+    ChannelEntry(String name) {
+      this.name = name;
+      this.password = "";
+    }
+
+    ChannelEntry(String name, String password) {
+      this.name = name;
+      this.password = password;
+    }
+
+    public String getPassword() {
+      return this.password;
+    }
+
+    @Override
+    public void serialize(JsonWriter writer) throws IOException {
+      writer.value(this.password);
+    }
+
+    @Override
+    public void deserialize(JsonReader reader)  {
+      this.password  = new JsonParser().parse(reader).getAsString();
+    }
+
+    @Override
+    public String getUniqueHeader() {
+      return this.name;
+    }
+
+    @Override
+    public String toString() {
+      return getUniqueHeader();
+    }
   }
 }
