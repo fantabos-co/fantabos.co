@@ -486,7 +486,7 @@ public class IRC extends ToggleMod {
       String buf;
       if (msgIn.contains("QUIT")) {
         buf = msgIn.split("!", 2)[0].substring(1) + " disconnected: ";
-        buf += msgIn.split("Quit", 2)[1].substring(2);
+        buf += msgIn.split("QUIT", 2)[1].substring(2);
       } else {
         String channel = "#" + msgIn.split("#")[1];
         buf = msgIn.split("!", 2)[0].substring(1) + " left " + channel;
