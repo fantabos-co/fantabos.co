@@ -31,7 +31,6 @@ import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -183,12 +182,8 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
         .processor(
             data -> {
               StringBuilder builder = new StringBuilder();
-              Iterator<ClassEntry> it = blacklist.iterator();
-              if (it.hasNext()) {
-                builder.append(it.next().getClassName());
-                if (it.hasNext()) {
-                  builder.append(", ");
-                }
+              for (ClassEntry c : blacklist.contents()) {
+                builder.append(c.getClassName() + "\n");
               }
               data.write(builder.toString());
               data.markSuccess();

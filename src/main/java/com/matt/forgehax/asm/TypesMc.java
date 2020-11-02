@@ -33,10 +33,22 @@ public interface TypesMc {
         .setClassName("net/minecraft/block/BlockLiquid")
         .autoAssign()
         .build();
+
+    ASMClass LayerArmorBase =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/client/renderer/entity/layers/LayerArmorBase")
+        .autoAssign()
+        .build();
     
     ASMClass Material =
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/block/material/Material")
+        .autoAssign()
+        .build();
+
+    ASMClass SoundType =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/block/SoundType")
         .autoAssign()
         .build();
     
@@ -237,6 +249,12 @@ public interface TypesMc {
         .setClassName("net/minecraft/network/NetworkManager")
         .autoAssign()
         .build();
+
+    ASMClass NetworkPlayerInfo =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/client/network/NetworkPlayerInfo")
+        .autoAssign()
+        .build();
     
     ASMClass GuiScreen =
       ASMBuilders.newClassBuilder()
@@ -247,6 +265,12 @@ public interface TypesMc {
     ASMClass GuiMainMenu =
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/client/gui/GuiMainMenu")
+        .autoAssign()
+        .build();
+
+    ASMClass GuiNewChat =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/client/gui/GuiNewChat")
         .autoAssign()
         .build();
     
@@ -285,6 +309,12 @@ public interface TypesMc {
         .setClassName("net/minecraft/item/ItemStack")
         .autoAssign()
         .build();
+
+    ASMClass ItemBlock =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/item/ItemBlock")
+        .autoAssign()
+        .build();
     
     ASMClass EnumFacing =
       ASMBuilders.newClassBuilder()
@@ -307,6 +337,18 @@ public interface TypesMc {
     ASMClass PlayerControllerMP =
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/client/multiplayer/PlayerControllerMP")
+        .autoAssign()
+        .build();
+
+    ASMClass ITextComponent = 
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/util/text/ITextComponent")
+        .autoAssign()
+        .build();
+
+    ASMClass EnumActionResult = 
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/util/EnumActionResult")
         .autoAssign()
         .build();
   }
@@ -497,6 +539,23 @@ public interface TypesMc {
         .finish()
         .autoAssign()
         .build();
+
+    ASMMethod LayerArmorBase_doRenderLayer =
+      Classes.LayerArmorBase.childMethod()
+        .setName("doRenderLayer")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(Classes.EntityLivingBase)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .finish()
+        .autoAssign()
+        .build();
     
     ASMMethod Minecraft_setIngameFocus =
       Classes.Minecraft.childMethod()
@@ -673,6 +732,17 @@ public interface TypesMc {
         .finish()
         .autoAssign()
         .build();
+    ASMMethod World_setBlockState =
+      Classes.World.childMethod()
+        .setName("setBlockState")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(Classes.BlockPos)
+        .add(Classes.IBlockState)
+        .add(int.class)
+        .finish()
+        .autoAssign()
+        .build();
     
     ASMMethod EntityBoat_updateMotion =
       Classes.EntityBoat.childMethod()
@@ -726,6 +796,42 @@ public interface TypesMc {
         .finish()
         .autoAssign()
         .build();
+
+    ASMMethod PlayerTabOverlay_drawPing =
+      Classes.GuiPlayerTabOverlay.childMethod()
+        .setName("drawPing")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(int.class)
+        .add(int.class)
+        .add(int.class)
+        .add(Classes.NetworkPlayerInfo)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod GuiNewChat_setChatLine =
+      Classes.GuiNewChat.childMethod()
+        .setName("setChatLine")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(Classes.ITextComponent)
+        .add(int.class)
+        .add(int.class)
+        .add(boolean.class)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod GuiNewChat_drawChat =
+      Classes.GuiNewChat.childMethod()
+        .setName("drawChat")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(int.class)
+        .finish()
+        .autoAssign()
+        .build();
     
     ASMMethod KeyBinding_isKeyDown =
       Classes.KeyBinding.childMethod()
@@ -768,6 +874,32 @@ public interface TypesMc {
         .setReturnType(void.class)
         .beginParameters()
         .add(Classes.EntityPlayer)
+        .finish()
+        .autoAssign()
+        .build();
+    ASMMethod PlayerControllerMC_onPlayerDestroyBlock =
+      Classes.PlayerControllerMP.childMethod()
+        .setName("onPlayerDestroyBlock")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(Classes.BlockPos)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod ItemBlock_onItemUse =
+      Classes.ItemBlock.childMethod()
+        .setName("onItemUse")
+        .setReturnType(Classes.EnumActionResult)
+        .beginParameters()
+        .add(Classes.EntityPlayer)
+        .add(Classes.World)
+        .add(Classes.BlockPos)
+        .add(Classes.EnumHand)
+        .add(Classes.EnumFacing)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
         .finish()
         .autoAssign()
         .build();

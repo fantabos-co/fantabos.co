@@ -1,7 +1,6 @@
 package com.matt.forgehax.mods;
 
 import com.matt.forgehax.mods.infodisplay.EffectsList;
-import com.matt.forgehax.mods.services.ForgeHaxService;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
@@ -10,7 +9,6 @@ import com.matt.forgehax.util.math.AlignHelper;
 import com.matt.forgehax.util.mod.BaseMod;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ListMod;
-import com.matt.forgehax.util.mod.WatermarkListMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.potion.PotionEffect;
@@ -20,14 +18,13 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import java.util.*;
 
 import static com.matt.forgehax.Helper.getModManager;
-import static com.matt.forgehax.util.draw.SurfaceHelper.getTextHeight;
 
 /**
  * Created by OverFloyd
  * may 2020
  */
 @RegisterMod
-public class InfoDisplay extends WatermarkListMod {
+public class InfoDisplay extends ListMod {
 
   private final Setting<Boolean> condense =
       getCommandStub()
@@ -54,22 +51,12 @@ public class InfoDisplay extends WatermarkListMod {
 
   @Override
   protected int getDefaultOffsetY() {
-    return 1;
-  }
-
-  @Override
-  protected int getDefaultWatermarkOffsetY() {
-    return 1;
+    return 22;
   }
 
   @Override
   protected double getDefaultScale() {
     return 1;
-  }
-
-  @Override
-  public boolean watermarkDefault() {
-    return true;
   }
 
   @Override
@@ -80,10 +67,8 @@ public class InfoDisplay extends WatermarkListMod {
   @SubscribeEvent
   public void onRenderScreen(RenderGameOverlayEvent.Text event) {
     List<String> text = new ArrayList<>();
-    boolean isEffectsListEnabled = getModManager().get(EffectsList.class).get().isEnabled();
-    boolean showEffectsList = getModManager().get(EffectsList.class).get().showList.get();
 
-    if (condense.get() && (MC.currentScreen instanceof GuiChat || MC.gameSettings.showDebugInfo)) {
+    if ((condense.get() && MC.currentScreen instanceof GuiChat) || MC.gameSettings.showDebugInfo) {
       // Total number of InfoDisplay mods in the client
       long totalInfoMods = getModManager()
           .getMods()
@@ -106,40 +91,35 @@ public class InfoDisplay extends WatermarkListMod {
           .getMods()
           .stream()
           .filter(BaseMod::isEnabled)
-          .filter(BaseMod::isInfoDisplayElement)
+          // .filter(BaseMod::isInfoDisplayElement)
+          .filter(mod -> mod.getInfoDisplayText() != null)
           .map(BaseMod::getInfoDisplayText)
           .sorted(sortMode.get().getComparator())
           .map(super::appendArrow)
           .forEach(text::add);
     }
 
-    // Prints the watermark
-    if (showWatermark.get()) {
-      ForgeHaxService.INSTANCE.drawWatermark(getPosX(0), getPosY(watermarkOffsetY.get()), alignment.get().ordinal());
-    }
-
-    int yShift = showWatermark.get() ? getTextHeight(ForgeHaxService.INSTANCE.watermarkScale.get()) : 0;
-    int yCount = 0;
-
     // Prints Info mods on screen
-    SurfaceHelper.drawTextAlign(text, getPosX(0), getPosY(yShift),
+    SurfaceHelper.drawTextAlign(text, getPosX(0), getPosY(0),
         Colors.WHITE.toBuffer(), scale.get(), true, alignment.get().ordinal());
 
     /**
      * Effects list printing
      * by OverFloyd & Tonio_Cartonio
      */
-    if (isEffectsListEnabled && showEffectsList) {
-      final List<PotionEffect> effectList = new ArrayList<>(MC.player.getActivePotionEffects());
+    if (getModManager().get(EffectsList.class).get().isEnabled() &&
+        getModManager().get(EffectsList.class).get().showList.get()) {
+      int yCount = 0;
+      final Collection<PotionEffect> effectList = MC.player.getActivePotionEffects();
 
       for (PotionEffect potionEffect : effectList) {
         if (potionEffect == null) {
           continue;
         }
 
-        // Prints EffectsList on screen
+        // Prints Effect on screen
         SurfaceHelper.drawTextAlign(EffectUtils.getNameDurationString(potionEffect),
-            getPosX(0), getPosY((int) ((text.size() + yCount) * (scale.get() * 10) + yShift)),
+            getPosX(5), getPosY(5 + (int) ((text.size() + yCount) * (scale.get() * 10))),
             potionEffect.getPotion().getLiquidColor(), scale.get(), true, alignment.get().ordinal());
         yCount++;
       }

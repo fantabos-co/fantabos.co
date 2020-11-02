@@ -8,6 +8,7 @@ import com.matt.forgehax.asm.events.AddRenderChunkEvent;
 import com.matt.forgehax.asm.events.ApplyClimbableBlockMovement;
 import com.matt.forgehax.asm.events.ApplyCollisionMotionEvent;
 import com.matt.forgehax.asm.events.BlockControllerProcessEvent;
+import com.matt.forgehax.asm.events.BlockPlaceSoundEvent;
 import com.matt.forgehax.asm.events.BlockRenderEvent;
 import com.matt.forgehax.asm.events.BuildChunkEvent;
 import com.matt.forgehax.asm.events.ChunkUploadedEvent;
@@ -15,7 +16,9 @@ import com.matt.forgehax.asm.events.ComputeVisibilityEvent;
 import com.matt.forgehax.asm.events.DeleteGlResourcesEvent;
 import com.matt.forgehax.asm.events.DoBlockCollisionsEvent;
 import com.matt.forgehax.asm.events.DrawBlockBoundingBoxEvent;
+import com.matt.forgehax.asm.events.DrawPingEvent;
 import com.matt.forgehax.asm.events.EntityBlockSlipApplyEvent;
+import com.matt.forgehax.asm.events.EntityGroundCheckEvent;
 import com.matt.forgehax.asm.events.EntityBlockSlipApplyEvent.Stage;
 import com.matt.forgehax.asm.events.HurtCamEffectEvent;
 import com.matt.forgehax.asm.events.ItemStoppedUsedEvent;
@@ -44,11 +47,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.block.Block;
+import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
+import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.chunk.ChunkCompileTaskGenerator;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -98,8 +104,14 @@ public class ForgeHaxHooks implements ASMCommon {
   public static boolean isBoatSetYawActivated = false;
   public static boolean isNotRowingBoatActivated = false;
   public static boolean isLiquidInteractEnabled = false;
-  
+  public static boolean preventArmorRendering = false;
   public static boolean doIncreaseTabListSize = false;
+  public static boolean doPreventGhostBlocksBreak = false;
+  public static boolean doPreventGhostBlocksPlace = false;
+  public static boolean doPreventChatSizeLimit = false;
+  public static boolean doHideChatBackground = false;
+  public static boolean allowPlaceThroughEntities = false;
+  public static boolean makeHandAlwaysInactive = false;
   
   /** static hooks */
   
@@ -803,12 +815,12 @@ public class ForgeHaxHooks implements ASMCommon {
   }
   
   /**
-   * onPlayerStopUse
+   * onEntitySlipperyness check
    */
   public static final HookReporter HOOK_onEntityBlockSlipApply =
     newHookReporter()
       .hook("onEntityBlockSlipApply")
-      .dependsOn(Methods.PlayerControllerMC_onStoppedUsingItem)
+      .dependsOn(Methods.EntityLivingBase_travel)
       .forgeEvent(EntityBlockSlipApplyEvent.class)
       .build();
   
@@ -826,5 +838,37 @@ public class ForgeHaxHooks implements ASMCommon {
     } else {
       return defaultSlipperiness;
     }
+  }
+
+  /**
+   * onEntityGround check
+   */
+  
+  public static boolean onEntityGroundCheck(EntityLivingBase entityLivingBase) {
+    if (HOOK_onEntityBlockSlipApply.reportHook()) {
+      EntityGroundCheckEvent event =
+        new EntityGroundCheckEvent(entityLivingBase);
+      MinecraftForge.EVENT_BUS.post(event);
+      return event.isCanceled();
+    }
+    return false;
+  }
+
+  /**
+   * onDrawPing
+   */
+  public static boolean onDrawPing(int x1, int x2, int y, NetworkPlayerInfo player) {
+    DrawPingEvent event = new DrawPingEvent(x1, x2, y, player);
+    MinecraftForge.EVENT_BUS.post(event);
+    return event.isCanceled();
+  }
+
+  /**
+   * onGetBlockSound
+   */
+  public static SoundType onGetBlockSound(SoundType sound) {
+    BlockPlaceSoundEvent event = new BlockPlaceSoundEvent(sound);
+    MinecraftForge.EVENT_BUS.post(event);
+    return event.getSound();
   }
 }

@@ -28,6 +28,7 @@ public class AutoRespawnMod extends ToggleMod {
           .name("delay")
           .description("wait ticks before respawning")
           .min(0)
+          .max(10000)
           .defaultTo(50)
           .build();
   

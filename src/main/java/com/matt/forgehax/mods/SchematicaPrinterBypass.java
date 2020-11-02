@@ -10,7 +10,6 @@ import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
 import static com.matt.forgehax.Helper.*;
 
 /**
@@ -20,7 +19,7 @@ import static com.matt.forgehax.Helper.*;
 public class SchematicaPrinterBypass extends ToggleMod {
 
   public SchematicaPrinterBypass() {
-    super(Category.PLAYER, "PrinterBypass", false, "Set silent angles for schematica printer");
+    super(Category.EXPLOIT, "PrinterBypass", false, "Set silent angles for schematica printer");
   }
 
   @SubscribeEvent

@@ -45,6 +45,8 @@ public class MapDownloader extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("resolution")
           .description("resolution of the downloaded image (default 128)")
+          .min(1)
+          .max(1024)
           .defaultTo(128)
           .build();
 
@@ -131,7 +133,7 @@ public class MapDownloader extends ToggleMod {
 
     ResourceLocation location = findResourceLocation(data.mapName);
     if (location == null) {
-      Helper.printMessage("Failed to find ResourceLocation");
+      Helper.printError("Failed to find ResourceLocation");
       return;
     }
 
@@ -190,7 +192,7 @@ public class MapDownloader extends ToggleMod {
                   scaledRes = Integer.valueOf(data.getArgument(1));
                 }
               } catch (NumberFormatException e) {
-                Helper.printMessage("Failed to parse resolution");
+                Helper.printError("Failed to parse resolution");
               }
 
               downloadMap(mapData, fileName, scaledRes);

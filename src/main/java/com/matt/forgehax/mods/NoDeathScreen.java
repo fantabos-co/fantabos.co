@@ -13,6 +13,7 @@ import net.minecraft.client.gui.GuiGameOver;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.network.play.client.CPacketKeepAlive;
+import net.minecraft.network.play.client.CPacketTabComplete;
 import net.minecraft.util.text.TextFormatting;
 
 @RegisterMod
@@ -57,14 +58,22 @@ public class NoDeathScreen extends ToggleMod {
     return (getModName());
   }
 
+  @Override
+  public boolean isVisible() {
+    if (dead) return true;
+    return super.isVisible();
+  }
+
   @SubscribeEvent
   public void onOutgoingPacketSent(PacketEvent.Outgoing.Pre event) {
     if (MC.player == null) {
       dead = false;
       return; // Don't mess with menus! 
     }
-    if (silent.get() && dead && !(event.getPacket() instanceof CPacketChatMessage)
-         && !(event.getPacket() instanceof CPacketKeepAlive)) {
+    if (silent.get() && dead &&
+        !(event.getPacket() instanceof CPacketChatMessage ||
+          event.getPacket() instanceof CPacketKeepAlive ||
+          event.getPacket() instanceof CPacketTabComplete)) {
       event.setCanceled(true);
     }
   }
@@ -81,7 +90,7 @@ public class NoDeathScreen extends ToggleMod {
   public void onGuiScreen(GuiScreenEvent event) {
     if (event.getGui() instanceof GuiGameOver) {
       dead = true;
-      MC.displayGuiScreen(new GuiChat("Oh geez guess I'm bad at this game"));
+      MC.displayGuiScreen(new GuiChat(""));
       MC.player.respawnPlayer();
       getLocalPlayer().setHealth(1F);
       getLocalPlayer().isDead = false;

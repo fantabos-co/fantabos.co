@@ -54,6 +54,8 @@ public class ChunkLogger extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("max-chunks")
           .description("Maximum chunks to render (set to 0 for infinite)")
+          .min(0)
+          .max(100000)
           .defaultTo(5120)
           .build();
   
@@ -93,6 +95,8 @@ public class ChunkLogger extends ToggleMod {
           .description(
               "Maximum time in MS that another chunk load in succession will trigger it to be marked as a new chunk")
           .defaultTo(1000L)
+          .min(0L)
+          .max(100000L)
           .build();
   
   private final Setting<Integer> block_change_threshold =
@@ -102,6 +106,8 @@ public class ChunkLogger extends ToggleMod {
           .name("block-change-threshold")
           .description(
               "Maximum number of blocks required to change between chunk loading in order to be marked as a new chunk")
+          .min(1)
+          .max(1000)
           .defaultTo(100)
           .build();
   
@@ -203,7 +209,7 @@ public class ChunkLogger extends ToggleMod {
               break;
           }
           
-          int color = chunk.isNewChunk() ? Colors.WHITE.toBuffer() : Colors.RED.toBuffer();
+          int color = chunk.isNewChunk() ? Colors.BETTER_PINK.toBuffer() : Colors.WHITE.toBuffer();
           
           GeometryTessellator.drawQuads(
               event.getBuffer(),

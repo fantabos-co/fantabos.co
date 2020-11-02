@@ -2,12 +2,13 @@ package com.matt.forgehax;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-import com.matt.forgehax.mods.services.MainMenuGuiService.CommandInputGui;
+import com.matt.forgehax.mods.BetterChat;
 import com.matt.forgehax.util.FileManager;
 import com.matt.forgehax.util.command.CommandGlobal;
 import com.matt.forgehax.util.mod.loader.ModManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.entity.Entity;
@@ -18,11 +19,16 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
+import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -30,7 +36,12 @@ import java.util.Scanner;
  * Created on 4/25/2017 by fr1kin
  */
 public class Helper implements Globals {
-  
+
+  @Nullable
+  public static GuiScreen getCurrentScreen() {
+    return getMinecraft().currentScreen;
+  }
+
   public static CommandGlobal getGlobalCommand() {
     return CommandGlobal.getInstance();
   }
@@ -116,21 +127,38 @@ public class Helper implements Globals {
           s2 = cpy;
         }
       } else {
-        TextComponentString string =
-            new TextComponentString(startWith + message.replaceAll("\r", ""));
-        string.setStyle(firstStyle);
-        outputMessage(string.getFormattedText());
+        ITextComponent out = timestamp()
+          .appendSibling(
+            new TextComponentString(startWith + message.replaceAll("\r", "")).setStyle(firstStyle)
+            );
+        outputMessage(out);
       }
     }
   }
-  
-  // private function that is ultimately used to output the message
-  private static void outputMessage(String text) {
-    if (getLocalPlayer() != null) {
-      getLocalPlayer().sendMessage(new TextComponentString(text));
-    } else if (MC.currentScreen instanceof CommandInputGui) {
-      ((CommandInputGui) MC.currentScreen).print(text);
+
+  // Check if timestamps should be added and returns a formatted timestamp string or an empty string
+  // Making this in outputMessage() would have added a timestamp for every line, I want
+  //      one for every command or warning: just one for multiline cmds!
+  // I don't really like this but it should not matter much anyway
+  public static ITextComponent timestamp() {
+    String timestamp = "";
+    ITextComponent out = new TextComponentString("");
+    try {
+      if (getModManager().get(BetterChat.class).get().isEnabled() &&
+          getModManager().get(BetterChat.class).get().timestamps.get()) {
+        timestamp = new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + " \u23d0 ";
+        out = getFormattedText(timestamp, TextFormatting.DARK_GRAY, false, false);
+      }
+    } catch (Exception e) {
+      // ignore, default to no timestamps, maybe mod not loaded? Maybe this whole try is unnecessary?
+      LOGGER.warn("Could not get BetterChat! Make better code!");
     }
+    return out;
+  }
+
+  public static void outputMessage(ITextComponent text) {
+    if (getLocalPlayer() != null)
+      getLocalPlayer().sendMessage(text);
   }
   
   public static void printMessageNaked(String append, String message, Style style) {
@@ -141,14 +169,23 @@ public class Helper implements Globals {
     printMessageNaked(
         append,
         message,
-        new Style().setColor(TextFormatting.WHITE),
-        new Style().setColor(TextFormatting.GRAY));
+        new Style().setColor(TextFormatting.GRAY),
+        new Style().setColor(TextFormatting.DARK_GRAY));
   }
   
   public static void printMessageNaked(String message) {
     printMessageNaked("", message);
   }
   
+  private static HoverEvent defaultHover() {
+    return new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+          getFormattedText("ForgeHax v2.10 - tonio's private fork", TextFormatting.GRAY, true, false));
+  }
+
+  private static ClickEvent defaultClick() {
+    return new ClickEvent(ClickEvent.Action.RUN_COMMAND, ".help");
+  }
+
   // Will append '[FH] ' in front
   public static void printMessage(String message) {
     if (!Strings.isNullOrEmpty(message)) {
@@ -159,8 +196,20 @@ public class Helper implements Globals {
   public static void printMessage(String format, Object... args) {
     printMessage(String.format(format, args));
   }
+
+  public static ITextComponent getFormattedText(String text, TextFormatting color,
+      boolean bold, boolean italic, ClickEvent onClick, HoverEvent onHover) {
+        return new TextComponentString(text.replaceAll("\r", ""))
+        .setStyle(new Style()
+            .setColor(color)
+            .setBold(bold)
+            .setItalic(italic)
+            .setClickEvent(onClick)
+            .setHoverEvent(onHover)
+        );
+  }
   
-  private static ITextComponent getFormattedText(String text, TextFormatting color,
+  public static ITextComponent getFormattedText(String text, TextFormatting color,
       boolean bold, boolean italic) {
     return new TextComponentString(text.replaceAll("\r", ""))
         .setStyle(new Style()
@@ -169,35 +218,61 @@ public class Helper implements Globals {
             .setItalic(italic)
         );
   }
+
+  public static void printLog(ITextComponent text) {
+    outputMessage(timestamp()
+      .appendSibling(
+        getFormattedText("[FH] ", TextFormatting.DARK_GRAY, true, false)
+          .appendSibling(text)
+      )
+    );
+  }
+
+  public static void printLog(String format, Object... args) {
+    printLog(getFormattedText(String.format(format, args).trim(),
+                    TextFormatting.GRAY, false, false));
+  }
   
+  public static void printInform(ITextComponent text) {
+    outputMessage(timestamp()
+      .appendSibling(
+        getFormattedText("[FH] ", TextFormatting.DARK_AQUA, true, false)
+          .appendSibling(text)
+      )
+    );
+  }
+
   public static void printInform(String format, Object... args) {
-    outputMessage(
-        getFormattedText("[ForgeHax]", TextFormatting.GREEN, true, false)
-            .appendSibling(
-                getFormattedText(" " + String.format(format, args).trim(),
-                    TextFormatting.GRAY, false, false)
-            ).getFormattedText()
-    );
+    printInform(getFormattedText(String.format(format, args).trim(),
+                    TextFormatting.GRAY, false, false));
   }
   
+  public static void printWarning(ITextComponent text) {
+    outputMessage(timestamp()
+      .appendSibling(
+        getFormattedText("[FH] ", TextFormatting.GOLD, true, false)
+          .appendSibling(text)
+      )
+    );
+  }
+
   public static void printWarning(String format, Object... args) {
-    outputMessage(
-        getFormattedText("[ForgeHax]", TextFormatting.YELLOW, true, false)
-            .appendSibling(
-                getFormattedText(" " + String.format(format, args).trim(),
-                    TextFormatting.GRAY, false, false)
-            ).getFormattedText()
-    );
+    printWarning(getFormattedText(" " + String.format(format, args).trim(),
+      TextFormatting.GRAY, false, false));
   }
   
-  public static void printError(String format, Object... args) {
-    outputMessage(
-        getFormattedText("[ForgeHax]", TextFormatting.RED, true, false)
-            .appendSibling(
-                getFormattedText(" " + String.format(format, args).trim(),
-                    TextFormatting.GRAY, false, false)
-            ).getFormattedText()
+  public static void printError(ITextComponent text) {
+    outputMessage(timestamp()
+      .appendSibling(
+        getFormattedText("[FH] ", TextFormatting.DARK_RED, true, false)
+          .appendSibling(text)
+      )
     );
+  }
+
+  public static void printError(String format, Object... args) {
+    printError(getFormattedText(" " + String.format(format, args).trim(),
+              TextFormatting.GRAY, false, false));
   }
   
   public static void printStackTrace(Throwable t) {

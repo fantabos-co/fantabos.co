@@ -54,6 +54,8 @@ public class SpamService extends ServiceMod {
           .name("delay")
           .description("Delay between each message in ms")
           .defaultTo(5000L)
+          .min(0L)
+          .max(1000000L)
           .changed(
               cb -> {
                 nextSendMs = 0L;

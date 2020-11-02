@@ -23,7 +23,9 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureAttribute;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
+import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.init.Enchantments;
+import net.minecraft.init.MobEffects;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -74,6 +76,37 @@ public class AutoTool extends ToggleMod {
           .defaultTo(0)
           .min(0)
           .max((int) Short.MAX_VALUE)
+          .build();
+
+  public final Setting<Integer> delay_tool =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("delay-tool")
+          .description("Delay in ticks beore reverting tool")
+          .defaultTo(5)
+          .min(0)
+          .max(100)
+          .build();
+
+  public final Setting<Integer> cooldown_weapon =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("cooldown-weapon")
+          .description("Keep weapon in hand this many ticks")
+          .defaultTo(30)
+          .min(0)
+          .max(100)
+          .build();
+
+  private final Setting<Boolean> crystal_aura =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("crystal")
+          .description("Don't switch weapon when hitting a crystal (and no Weakness)")
+          .defaultTo(true)
           .build();
   
   public AutoTool() {
@@ -144,7 +177,7 @@ public class AutoTool extends ToggleMod {
     return EnchantmentHelper.getEnchantmentLevel(enchantment, item.getItemStack());
   }
   
-  private InvItem getBestTool(BlockPos pos) {
+  public InvItem getBestTool(BlockPos pos) { // I need this public for GhostMining!
     InvItem current = LocalPlayerInventory.getSelected();
     
     if (!BlockHelper.isBlockPlaceable(pos) || getWorld().isAirBlock(pos)) {
@@ -179,7 +212,7 @@ public class AutoTool extends ToggleMod {
   
   public void selectBestTool(BlockPos pos) {
     if (isEnabled() && tools.get()) {
-      LocalPlayerInventory.setSelected(getBestTool(pos), revert_back.get(), ticks -> ticks > 5);
+      LocalPlayerInventory.setSelected(getBestTool(pos), revert_back.get(), ticks -> ticks > delay_tool.get());
     }
   }
   
@@ -188,17 +221,21 @@ public class AutoTool extends ToggleMod {
       LocalPlayerInventory.setSelected(
           getBestWeapon(target),
           revert_back.get(),
-          ticks -> getLocalPlayer().getCooledAttackStrength(0.f) >= 1.f && ticks > 30);
+          ticks -> getLocalPlayer().getCooledAttackStrength(0.f) >= 1.f && ticks > cooldown_weapon.get());
     }
   }
   
   @SubscribeEvent
   public void onBlockBreak(PlayerDamageBlockEvent event) {
-    selectBestTool(event.getPos());
+    if (!event.isCanceled())
+      selectBestTool(event.getPos());
   }
   
   @SubscribeEvent
   public void onAttackEntity(PlayerAttackEntityEvent event) {
+    if (crystal_aura.get() && event.getVictim() instanceof EntityEnderCrystal &&
+        !getLocalPlayer().isPotionActive(MobEffects.WEAKNESS))
+      return;
     selectBestWeapon(event.getVictim());
   }
 }

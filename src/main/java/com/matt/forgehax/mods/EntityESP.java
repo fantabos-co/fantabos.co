@@ -2,9 +2,11 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getWorld;
+import static com.matt.forgehax.Helper.getModManager;
 import static com.matt.forgehax.util.draw.SurfaceHelper.drawOutlinedRect;
 
 import com.matt.forgehax.events.RenderEvent;
+import com.matt.forgehax.mods.services.FriendService;
 import com.matt.forgehax.events.Render2DEvent;
 import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
@@ -19,12 +21,9 @@ import com.matt.forgehax.util.draw.RenderUtils;
 import java.util.Objects;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraft.client.renderer.GlStateManager;
-import org.lwjgl.opengl.GL11;
 
 @RegisterMod
 public class EntityESP extends ToggleMod {
@@ -42,7 +41,7 @@ public class EntityESP extends ToggleMod {
       .description("2D or 3D ESP rendering")
       .defaultTo(ESPMode.BOX)
       .build();
-  
+
   public final Setting<Boolean> players =
     getCommandStub()
       .builders()
@@ -77,6 +76,8 @@ public class EntityESP extends ToggleMod {
       .name("width")
       .description("Line width")
       .defaultTo(2.0F)
+      .min(0f)
+      .max(10f)
       .build();
 
   private final Setting<Integer> alpha =
@@ -98,7 +99,7 @@ public class EntityESP extends ToggleMod {
           .description("red")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(191)
           .build();
 
   private final Setting<Integer> green =
@@ -109,7 +110,7 @@ public class EntityESP extends ToggleMod {
           .description("green")
           .min(0)
           .max(255)
-          .defaultTo(255)
+          .defaultTo(97)
           .build();
 
   private final Setting<Integer> blue =
@@ -120,23 +121,22 @@ public class EntityESP extends ToggleMod {
           .description("blue")
           .min(0)
           .max(255)
-          .defaultTo(255)
+          .defaultTo(106)
           .build();
-  
+
   public EntityESP() {
     super(Category.RENDER, "EntityESP", false, "Draw 2D boxes around entities");
   }
 
   @SubscribeEvent(priority = EventPriority.LOW)
   public void onRender2D(final Render2DEvent event) {
-    if (mode.get() == ESPMode.BOX) return;
+    if (mode.get() == ESPMode.BOX || getWorld() == null) return;
+
     getWorld()
       .loadedEntityList
       .stream()
       .filter(EntityUtils::isLiving)
-      .filter(
-        entity ->
-          !Objects.equals(getLocalPlayer(), entity) && !EntityUtils.isFakeLocalPlayer(entity))
+      .filter(entity -> !Objects.equals(getLocalPlayer(), entity))
       .filter(EntityUtils::isAlive)
       .filter(EntityUtils::isValidEntity)
       .map(entity -> (EntityLivingBase) entity)
@@ -144,54 +144,56 @@ public class EntityESP extends ToggleMod {
         living -> {
           switch (EntityUtils.getRelationship(living)) {
             case PLAYER:
-			  if (!players.get()) return;
+                if (!players.get()) return;
               break;
             case HOSTILE:
-			  if (!mobs_hostile.get()) return;
+                if (!mobs_hostile.get()) return;
               break;
             case NEUTRAL:
             case FRIENDLY:
-			  if (!mobs_friendly.get()) return;
+                if (!mobs_friendly.get()) return;
               break;
           }
-	  	  int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
+
+          int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
           Vec3d bottomPos = EntityUtils.getInterpolatedPos(living, event.getPartialTicks());
           Vec3d topPos =
             bottomPos.addVector(0.D, living.getRenderBoundingBox().maxY - living.posY, 0.D);
-          
+
           Plane top = VectorUtils.toScreen(topPos);
           Plane bot = VectorUtils.toScreen(bottomPos);
-          
+
           double topX = top.getX();
           double topY = top.getY() + 1.D;
           double botX = bot.getX();
           double botY = bot.getY() + 1.D;
           double height = (bot.getY() - top.getY());
           double width = height;
-  		
-		  drawOutlinedRect((int) (topX - (width/2)), (int) topY, (int) width, (int) height,
-		  	  			color, linewidth.get());
+
+          drawOutlinedRect((int) (topX - (width/2)), (int) topY, (int) width, (int) height, color, linewidth.get());
         });
   }
 
   @SubscribeEvent(priority = EventPriority.LOW)
   public void onRender(final RenderEvent event) {
-    if (mode.get() == ESPMode.SQUARE) return;
+    if (mode.get() == ESPMode.SQUARE || getWorld() == null) return;
+
     getWorld()
       .loadedEntityList
       .stream()
       .filter(EntityUtils::isLiving)
-      .filter(
-        entity ->
-          !Objects.equals(getLocalPlayer(), entity) && !EntityUtils.isFakeLocalPlayer(entity))
+      .filter(entity -> !Objects.equals(getLocalPlayer(), entity))
       .filter(EntityUtils::isAlive)
       .filter(EntityUtils::isValidEntity)
       .map(entity -> (EntityLivingBase) entity)
       .forEach(
         living -> {
+          int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
           switch (EntityUtils.getRelationship(living)) {
             case PLAYER:
-			        if (!players.get()) return;
+              if (!players.get()) return;
+              if (getModManager().get(FriendService.class).get().isFriendly(living.getName()))
+                color = Colors.DARK_AQUA.toBuffer(); // color should be customizable!
               break;
             case HOSTILE:
 			        if (!mobs_hostile.get()) return;
@@ -201,8 +203,6 @@ public class EntityESP extends ToggleMod {
 			        if (!mobs_friendly.get()) return;
               break;
           }
-
-	  	    int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
           AxisAlignedBB bb = living.getEntityBoundingBox();
           Vec3d minVec = new Vec3d(bb.minX, bb.minY, bb.minZ);
           Vec3d maxVec = new Vec3d(bb.maxX, bb.maxY, bb.maxZ);

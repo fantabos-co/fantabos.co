@@ -105,7 +105,6 @@ public class EntityUtils implements Globals {
   public static boolean isValidEntity(Entity entity) {
     Entity riding = getLocalPlayer().getRidingEntity();
     return entity.ticksExisted > 1
-        && !isFakeLocalPlayer(entity)
         && (riding == null || !riding.equals(entity));
   }
   

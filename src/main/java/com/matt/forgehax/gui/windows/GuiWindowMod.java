@@ -15,6 +15,8 @@ import com.matt.forgehax.util.mod.Category;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import net.minecraft.util.math.MathHelper;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
@@ -23,19 +25,19 @@ import org.lwjgl.opengl.GL11;
  * Created by Babbaj on 9/5/2017.
  */
 public class GuiWindowMod extends GuiWindow {
-  
+
   public List<GuiButton> buttonList = new ArrayList<>();
-  
+
   /**
    * The button list y coord needs to be offset to move them up or down the window 0 = natural state
    * anything above 0 means the button list has moved up and the user has scrolled down
    */
   private int buttonListOffset;
-  
+
   public Category category;
-  
+
   // public int windowY; // Y value of the modlist - 20 pixels lower than the header Y
-  
+
   public GuiWindowMod(Category categoryIn) {
     super(categoryIn.getPrettyName());
     category = categoryIn;
@@ -55,7 +57,7 @@ public class GuiWindowMod extends GuiWindow {
     }
     width = 90;
   }
-  
+
   private void drawModTooltip(BaseMod mod, int xScaled, int yScaled) {
     int scale = ClickGui.scaledRes.getScaleFactor();
 
@@ -72,32 +74,32 @@ public class GuiWindowMod extends GuiWindow {
     int lineHeight = SurfaceHelper.getTextHeight() / scale;
     int lineSpacing = 2;
     int tooltipHeight = lineHeight * 2 + lineSpacing + padding * 2;
-    
+
     if ((tooltipX + tooltipWidth) * scale > ClickGui.scaledRes.getScaledWidth()) {
       tooltipX -= tooltipWidth + offset * 2;
     }
-    
+
     if ((tooltipY + tooltipHeight) * scale > ClickGui.scaledRes.getScaledHeight()) {
       tooltipY -= tooltipHeight + offset * 2;
     }
-    
+
     final int col = Color.of(50, 50, 50, 255).toBuffer();
-    
+
     SurfaceHelper.drawRect(tooltipX * scale, tooltipY * scale + 1,
       tooltipWidth * scale, tooltipHeight * scale - 2,
       col);
-    
+
     SurfaceHelper.drawRect(tooltipX * scale + 1, tooltipY * scale,
       tooltipWidth * scale - 2, tooltipHeight * scale,
       col);
-    
+
     SurfaceHelper
       .drawTextShadow(modName, (tooltipX + padding) * scale, (tooltipY + padding) * scale,
         0xFFFFFF);
     SurfaceHelper.drawTextShadow(modDescription, (tooltipX + padding) * scale,
       (tooltipY + padding + lineHeight + lineSpacing) * scale, 0xAAAAAA);
   }
-  
+
   public void drawWindow(int mouseX, int mouseY) {
     super.drawWindow(mouseX, mouseY);
     windowY = headerY + 22;
@@ -105,13 +107,14 @@ public class GuiWindowMod extends GuiWindow {
     if (isHidden){
       return;
     }
-    int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() * 
-                          getModManager().get(GuiService.class).get().max_height.get());
+
+    int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() *
+      getModManager().get(GuiService.class).get().max_height.get());
 
     SurfaceHelper.drawOutlinedRectShaded(
       posX, windowY, width, actualHeight, Colors.GRAY.toBuffer(), 80, 3);
     int buttonY = windowY - buttonListOffset + 2;
-  
+
     int scale = ClickGui.scaledRes.getScaleFactor();
 
     GL11.glPushMatrix();
@@ -130,12 +133,12 @@ public class GuiWindowMod extends GuiWindow {
     }
     GL11.glDisable(GL11.GL_SCISSOR_TEST);
     GL11.glPopMatrix();
-  
+
     // update variables
     bottomX = posX + width; // set the coords of the bottom right corner for mouse coord testing
     bottomY = windowY + actualHeight;
   }
-  
+
   @Override
   public void drawTooltip(int mouseX, int mouseY) {
     int scale = ClickGui.scaledRes.getScaleFactor();
@@ -158,39 +161,44 @@ public class GuiWindowMod extends GuiWindow {
 
   /**
    * Used for toggling mods in the ClickGui
-   * 0 == Left Click 1 == Right Click 2 == Middle Click
    */
   public void mouseClicked(int x, int y, int state) {
     super.mouseClicked(x, y, state);
-    if (isHidden){
+
+    if (isHidden || state == MouseButtons.MIDDLE.id) {
       return;
     }
 
-    if (state == 0) {
-      for (GuiButton button : buttonList) {
-        if (x > button.x
+    for (GuiButton button : buttonList) {
+      if (x > button.x
           && x < (button.x + width)
           && y > button.y
           && y < (button.y + GuiButton.height)
           && !isMouseInHeader(x, y)) {
+        if (state == MouseButtons.LEFT.id) {
           button.toggleMod();
           break;
+        } else if (state == MouseButtons.RIGHT.id) {
+          GuiWindowSetting gui = new GuiWindowSetting(button.getMod(), x, y);
+          if (!ClickGui.getInstance().windowList.contains(gui))
+            ClickGui.getInstance().windowList.add(gui);
         }
       }
     }
   }
-  
-  public void handleMouseInput() throws IOException {
+
+  public void handleMouseInput(int x, int y) throws IOException {
     int i = Mouse.getEventDWheel();
-    
+
     i = MathHelper.clamp(i, -1, 1);
     buttonListOffset -= i * 10;
-    
+
     if (buttonListOffset < 0) {
       buttonListOffset = 0; // don't scroll up if its already at the top
     }
-    int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() * 
-                          getModManager().get(GuiService.class).get().max_height.get());
+
+    int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() *
+      getModManager().get(GuiService.class).get().max_height.get());
     int lowestButtonY = (GuiButton.height + 1) * buttonList.size() + windowY;
     int lowestAllowedOffset = lowestButtonY - actualHeight - windowY + 3;
     if (lowestButtonY - buttonListOffset < bottomY) {

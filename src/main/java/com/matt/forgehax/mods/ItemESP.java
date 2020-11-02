@@ -19,6 +19,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -40,7 +41,7 @@ public class ItemESP extends ToggleMod {
       .map(EntityItem.class::cast)
       .filter(entity -> entity.ticksExisted > 1)
       .count();
-    return (getModName() + " [" + count + "]");
+    return (getModName() + " [" + TextFormatting.DARK_GREEN + count + TextFormatting.WHITE + "]");
   }
   public final Setting<Double> scale =
       getCommandStub()
@@ -50,6 +51,7 @@ public class ItemESP extends ToggleMod {
           .description("Scaling for text")
           .defaultTo(1.D)
           .min(0.D)
+          .max(5D)
           .build();
 
   public final Setting<Boolean> age =
@@ -76,6 +78,8 @@ public class ItemESP extends ToggleMod {
           .<Double>newSettingBuilder()
           .name("box-offset-y")
           .description("Y offset for 3D box")
+          .min(0D)
+          .max(10D)
           .defaultTo(0D)
           .build();
 
@@ -85,6 +89,8 @@ public class ItemESP extends ToggleMod {
           .<Float>newSettingBuilder()
           .name("width")
           .description("Outline width")
+          .min(0f)
+          .max(10f)
           .defaultTo(1.0F)
           .build();
 

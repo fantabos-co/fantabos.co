@@ -1,12 +1,12 @@
 package com.matt.forgehax.util.mod;
 
-import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.math.AlignHelper;
 
+import net.minecraft.util.text.TextFormatting;
+
 import java.util.Comparator;
-import java.util.List;
 
 public abstract class ListMod extends HudMod {
 
@@ -14,7 +14,8 @@ public abstract class ListMod extends HudMod {
 
   protected enum ListSorter {
     ALPHABETICAL((o1, o2) -> 0), // mod list is already sorted alphabetically
-    LENGTH(Comparator.<String>comparingInt(SurfaceHelper::getTextWidth).reversed());
+    LENGTH(Comparator.<String>comparingInt(SurfaceHelper::getTextWidth).reversed()),
+    REVLENGTH(Comparator.<String>comparingInt(SurfaceHelper::getTextWidth));
 
     private final Comparator<String> comparator;
 
@@ -41,11 +42,6 @@ public abstract class ListMod extends HudMod {
   }
 
   public String appendArrow(final String text) {
-    return AlignHelper.getFlowDirX2(alignment.get()) == 1 ? ">" + text : text + "<";
-  }
-
-  public void printList(int align, List<String> text) {
-    SurfaceHelper.drawTextAlign(text, getPosX(offsetX.get()), getPosY(offsetY.get()),
-        Colors.WHITE.toBuffer(), scale.get(), true, align);
+    return AlignHelper.getFlowDirX2(alignment.get()) == 1 ? TextFormatting.GRAY + "> " + TextFormatting.WHITE + text : text + TextFormatting.GRAY + " <";
   }
 }

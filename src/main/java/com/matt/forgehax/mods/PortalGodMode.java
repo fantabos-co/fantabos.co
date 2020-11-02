@@ -12,7 +12,7 @@ import net.minecraft.network.play.client.CPacketConfirmTeleport;
 public class PortalGodMode extends ToggleMod {
 
   public PortalGodMode() {
-    super(Category.PLAYER, "PortalGodMode", false, "Cancels all TeleportConfirm packet");
+    super(Category.EXPLOIT, "PortalGodMode", false, "Cancels all TeleportConfirm packet");
   }
 
   @SubscribeEvent

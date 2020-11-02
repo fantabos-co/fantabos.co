@@ -9,7 +9,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.network.play.client.CPacketVehicleMove;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
 import static com.matt.forgehax.Helper.*;
 
 @RegisterMod
@@ -28,7 +27,7 @@ public class RiderDesync extends ToggleMod {
   private boolean forceUpdate = false;
   
   public RiderDesync() {
-    super(Category.MOVEMENT, "RiderDesync", false, "For entity force dismounting");
+    super(Category.EXPLOIT, "RiderDesync", false, "For entity force dismounting");
   }
   
   @Override

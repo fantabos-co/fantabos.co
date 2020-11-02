@@ -31,6 +31,8 @@ public class AutoLog extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("threshold")
           .description("Health to go down to to disconnect\"")
+          .min(0)
+          .max(40)
           .defaultTo(0)
           .build();
 
@@ -55,7 +57,7 @@ public class AutoLog extends ToggleMod {
   @Override
   public String getDisplayText() {
     if (disconnectOnNewPlayer.get())
-      return (super.getDisplayText() + " [" + "!" + "]");
+      return (super.getDisplayText() + " [" + TextFormatting.DARK_AQUA + "!" + TextFormatting.WHITE + "]");
     return super.getDisplayText();
   }
   

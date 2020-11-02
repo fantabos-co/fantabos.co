@@ -67,6 +67,7 @@ public class ExtraInventory extends ToggleMod {
           .description("Delay between window clicks (in MS)")
           .defaultTo(500L)
           .min(0L)
+          .max(10000L)
           .build();
   
   private TaskChain nextClickTask = null;
@@ -79,7 +80,7 @@ public class ExtraInventory extends ToggleMod {
   
   public ExtraInventory() {
     super(
-        Category.PLAYER,
+        Category.EXPLOIT,
         "ExtraInventory",
         false,
         "Allows one to carry up to 5 extra items in their inventory");

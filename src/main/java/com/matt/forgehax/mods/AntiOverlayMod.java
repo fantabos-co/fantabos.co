@@ -126,10 +126,11 @@ public class AntiOverlayMod extends ToggleMod {
    */
   @SubscribeEvent
   public void onRender(RenderEvent event) {
-    ItemStack item = FastReflection.Fields.EntityRenderer_itemActivationItem.get(MC.entityRenderer);
-    
-    if (noTotem.get() && item != null && item.getItem() == Items.TOTEM_OF_UNDYING) {
-      FastReflection.Fields.EntityRenderer_itemActivationItem.set(MC.entityRenderer, null);
+    if (noTotem.get() && getLocalPlayer() != null) {
+      ItemStack item = FastReflection.Fields.EntityRenderer_itemActivationItem.get(MC.entityRenderer);
+      if (item != null && item.getItem() == Items.TOTEM_OF_UNDYING) {
+        FastReflection.Fields.EntityRenderer_itemActivationItem.set(MC.entityRenderer, null);
+      }
     }
   }
 }

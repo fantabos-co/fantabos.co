@@ -53,6 +53,7 @@ public class VanillaFlyMod extends ToggleMod {
           .name("speed")
           .description("fly speed as a multiplier of the default")
           .min(0f)
+          .max(5f)
           .defaultTo(1f)
           .build();
   

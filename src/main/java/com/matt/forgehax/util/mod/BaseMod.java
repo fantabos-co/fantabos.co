@@ -294,8 +294,12 @@ public abstract class BaseMod implements Globals {
     return getDisplayText();
   }
 
+  /**
+   * Called to get text to display on InfoDisplay, default to null
+   */
+
   public String getInfoDisplayText() {
-    return getInfoDisplayText();
+    return null;
   }
 
   @Override

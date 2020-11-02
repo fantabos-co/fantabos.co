@@ -10,6 +10,7 @@ import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraft.network.play.server.SPacketChangeGameState;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -38,6 +39,13 @@ public class NoWeather extends ToggleMod {
           .defaultTo(true)
           .build();
   
+  @Override
+  public boolean isVisible() {
+    if (showStatus.get() && isRaining) return true;
+    return super.isVisible();
+  }
+
+
   private void saveState(World world) {
     if (world != null) {
       setState(world.getWorldInfo().isRaining(), world.rainingStrength, world.prevRainingStrength);
@@ -128,13 +136,13 @@ public class NoWeather extends ToggleMod {
       String status;
       
       if (getWorld().isThundering()) {
-        status = "[Thunder]";
+        status = " [" + TextFormatting.AQUA + "THUNDER" + TextFormatting.RESET + "]";
       } else if (canSnow) {
-        status = "[Snowing]";
+        status = " [" + TextFormatting.AQUA + "SNOWING" + TextFormatting.RESET + "]";
       } else if (!canRain) {
-        status = "[Cloudy]";
+        status = " [" + TextFormatting.AQUA + "CLOUDY" + TextFormatting.RESET + "]";
       } else {
-        status = "[Raining]";
+        status = " [" + TextFormatting.AQUA + "RAINING" + TextFormatting.RESET + "]";
       }
       
       return super.getDisplayText() + status;

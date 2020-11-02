@@ -10,6 +10,7 @@ import com.matt.forgehax.asm.utils.transforming.RegisterMethodTransformer;
 import java.util.Objects;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -106,4 +107,35 @@ public class PlayerControllerMCPatch extends ClassTransformer {
       node.instructions.insertBefore(last, label);
     }
   }
+
+  // // Tonio
+  // @RegisterMethodTransformer
+  // private class onPlayerDestroyBlock extends MethodTransformer {
+  //   
+  //   @Override
+  //   public ASMMethod getMethod() {
+  //     return Methods.PlayerControllerMC_onPlayerDestroyBlock;
+  //   }
+  //   
+  //   @Inject(description = "Add patch to cancel local player destry block events")
+  //   public void inject(MethodNode main) {
+  //     AbstractInsnNode node =
+  //       ASMHelper.findPattern(main.instructions.getFirst(),
+  //         new int[]{ ILOAD, IRETURN },
+  //         "xx");
+  //     
+  //     Objects.requireNonNull(node, "Find pattern failed for node");
+  //     
+  //     InsnList insnList = new InsnList();
+  //     
+  //     insnList.add(ASMHelper.call(GETSTATIC, TypesHook.Fields.ForgeHaxHooks_doPreventGhostBlocksBreak));
+  //     final LabelNode jmp = new LabelNode();
+  //     insnList.add(new JumpInsnNode(IFEQ, jmp));
+  //     insnList.add(new InsnNode(ICONST_0)); // return false
+  //     insnList.add(new InsnNode(IRETURN));
+  //     insnList.add(jmp);
+  //     
+  //     main.instructions.insertBefore(node, insnList);
+  //   }
+  // }
 }

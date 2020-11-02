@@ -1,7 +1,6 @@
 package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
-
 import com.matt.forgehax.asm.ForgeHaxHooks;
 import com.matt.forgehax.asm.events.AddCollisionBoxToListEvent;
 import com.matt.forgehax.util.command.Setting;
@@ -37,6 +36,8 @@ public class SafeWalkMod extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("min-height")
           .description("Minimum height above ground for collisions")
+          .min(0)
+          .max(100)
           .defaultTo(15)
           .build();
   

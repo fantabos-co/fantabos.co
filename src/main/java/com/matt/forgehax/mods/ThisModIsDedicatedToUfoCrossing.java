@@ -9,7 +9,6 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.network.play.server.SPacketSpawnPlayer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
 import java.util.Optional;
 import java.util.UUID;
 

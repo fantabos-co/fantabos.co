@@ -34,6 +34,7 @@ public class AutoKey extends ToggleMod {
           .description("delay(ms) between clicks")
           .defaultTo(500) // 500 ms
           .min(0)
+          .max(10000)
           .build();
   
   private static Setting<Integer> holdTime; // static to allow easy access from ClickMode
@@ -46,6 +47,8 @@ public class AutoKey extends ToggleMod {
             .name("holdTime")
             .description("how long to hold button for tap")
             .defaultTo(150) // approximate minimum for reliable key pressing
+            .min(0)
+            .max(1000)
             .build();
   }
   
@@ -104,7 +107,7 @@ public class AutoKey extends ToggleMod {
         .processor(
             data -> {
               if (data.getArgumentCount() > 0) {
-                Helper.printMessage("Unexpected arguments!");
+                Helper.printError("Unexpected arguments!");
                 return;
               }
               activeKeys.clear();
@@ -125,7 +128,7 @@ public class AutoKey extends ToggleMod {
               if (mode != null) {
                 Helper.printMessage("Removed key: %s", key.getBinding().getKeyDescription());
               } else {
-                Helper.printMessage("Unknown key");
+                Helper.printError("Unknown key");
               }
             })
         .build();

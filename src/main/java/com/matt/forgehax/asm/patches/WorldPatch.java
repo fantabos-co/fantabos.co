@@ -103,4 +103,32 @@ public class WorldPatch extends ClassTransformer {
       method.instructions.insertBefore(node, list);
     }
   }
+
+  // Tonio
+  @RegisterMethodTransformer
+  private class canCollideCheck extends MethodTransformer {
+    
+    @Override
+    public ASMMethod getMethod() {
+      return Methods.World_setBlockState;
+    }
+    
+    @Inject(description = "Add patch to cancel setBlock calls")
+    public void inject(MethodNode main) {      
+      InsnList insnList = new InsnList();
+      
+      insnList.add(ASMHelper.call(GETSTATIC, TypesHook.Fields.ForgeHaxHooks_doPreventGhostBlocksPlace));
+      final LabelNode jmp = new LabelNode();
+      insnList.add(new JumpInsnNode(IFEQ, jmp));
+      insnList.add(new VarInsnNode(ILOAD, 3)); // Load 3rd arg, integer "flag"
+      insnList.add(new InsnNode(ICONST_3)); // Flag 3 is for changes coming from server, keep only those
+      insnList.add(new InsnNode(IXOR)); // if flag == 3, flag ^ 3 = 0
+      insnList.add(new JumpInsnNode(IFEQ, jmp));
+      insnList.add(new InsnNode(ICONST_0));
+      insnList.add(new InsnNode(IRETURN));
+      insnList.add(jmp);
+      
+      main.instructions.insert(insnList);
+    }
+  }
 }

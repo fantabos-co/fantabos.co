@@ -67,7 +67,8 @@ public class StorageESPMod extends ToggleMod {
           .<Float>newSettingBuilder()
           .name("width")
           .description("The width value for the outline")
-          .min(0.5f)
+          .min(0f)
+          .max(10f)
           .defaultTo(1.0f)
           .build();
 
@@ -143,6 +144,17 @@ public class StorageESPMod extends ToggleMod {
           .defaultTo(true)
           .build();
 
+  public final Setting<Integer> stash_warn =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("stash-warn")
+          .description("Number of chests needed for warning, set 0 for always on, a very large number for always off")
+          .min(0)
+          .max(1000)
+          .defaultTo(20)
+          .build();
+
   public StorageESPMod() {
     super(Category.RENDER, "StorageESP", false, "Shows storage blocks/entities");
   }
@@ -151,7 +163,14 @@ public class StorageESPMod extends ToggleMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + count + "]");
+    return (getModName() + " [" + TextFormatting.GOLD + count + TextFormatting.WHITE + "]");
+  }
+
+  @Override
+  public String getInfoDisplayText() {
+    if (count >= stash_warn.get())
+      return TextFormatting.GOLD + "Chests: " + count + TextFormatting.WHITE;
+    return super.getInfoDisplayText();
   }
 
   private int getTileEntityOutlineColor(TileEntity tileEntity) {

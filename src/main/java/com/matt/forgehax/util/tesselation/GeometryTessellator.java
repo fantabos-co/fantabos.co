@@ -81,19 +81,42 @@ public class GeometryTessellator extends Tessellator {
   public static void setStaticDelta(final double delta) {
     deltaS = delta;
   }
-  
+
   public void drawCuboid(final BlockPos pos, final int sides, final int argb) {
     drawCuboid(pos, pos, sides, argb);
   }
   
+  public void drawCuboid(final BlockPos pos, final int sides, final int argb, final double height) {
+    drawCuboid(pos, pos, sides, argb, height);
+  }
+
+  public void drawCuboid(
+      final BlockPos begin, final BlockPos end, final int sides, final int argb, final double height) {
+    drawCuboid(getBuffer(), begin, end, sides, argb, this.delta, height);
+  }
+  
   public void drawCuboid(
       final BlockPos begin, final BlockPos end, final int sides, final int argb) {
-    drawCuboid(getBuffer(), begin, end, sides, argb, this.delta);
+    drawCuboid(getBuffer(), begin, end, sides, argb, this.delta, 1D);
   }
   
   public static void drawCuboid(
       final BufferBuilder buffer, final BlockPos pos, final int sides, final int argb) {
-    drawCuboid(buffer, pos, pos, sides, argb);
+    drawCuboid(buffer, pos, pos, sides, argb, 1D);
+  }
+
+  public static void drawCuboid(
+      final BufferBuilder buffer, final BlockPos pos, final int sides, final int argb, final double height) {
+  drawCuboid(buffer, pos, pos, sides, argb, height);
+}
+
+  public static void drawCuboid(
+    final BufferBuilder buffer,
+    final BlockPos begin,
+    final BlockPos end,
+    final int sides,
+    final int argb) {
+  drawCuboid(buffer, begin, end, sides, argb, GeometryTessellator.deltaS, 1D);
   }
   
   public static void drawCuboid(
@@ -101,8 +124,9 @@ public class GeometryTessellator extends Tessellator {
       final BlockPos begin,
       final BlockPos end,
       final int sides,
-      final int argb) {
-    drawCuboid(buffer, begin, end, sides, argb, GeometryTessellator.deltaS);
+      final int argb,
+      final double height) {
+    drawCuboid(buffer, begin, end, sides, argb, GeometryTessellator.deltaS, height);
   }
   
   private static void drawCuboid(
@@ -111,7 +135,8 @@ public class GeometryTessellator extends Tessellator {
       final BlockPos end,
       final int sides,
       final int argb,
-      final double delta) {
+      final double delta,
+      final double height) {
     if (buffer.getDrawMode() == -1 || sides == 0) {
       return;
     }
@@ -120,7 +145,7 @@ public class GeometryTessellator extends Tessellator {
     final double y0 = begin.getY() - delta;
     final double z0 = begin.getZ() - delta;
     final double x1 = end.getX() + 1 + delta;
-    final double y1 = end.getY() + 1 + delta;
+    final double y1 = end.getY() + height + delta;
     final double z1 = end.getZ() + 1 + delta;
     
     switch (buffer.getDrawMode()) {

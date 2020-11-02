@@ -12,7 +12,10 @@ import com.matt.forgehax.asm.patches.EntityLivingBasePatch;
 import com.matt.forgehax.asm.patches.EntityPatch;
 import com.matt.forgehax.asm.patches.EntityPlayerSPPatch;
 import com.matt.forgehax.asm.patches.EntityRendererPatch;
+import com.matt.forgehax.asm.patches.GuiNewChatPatch;
+import com.matt.forgehax.asm.patches.ItemBlockPatch;
 import com.matt.forgehax.asm.patches.KeyBindingPatch;
+import com.matt.forgehax.asm.patches.LayerRenderPatch;
 import com.matt.forgehax.asm.patches.MinecraftPatch;
 import com.matt.forgehax.asm.patches.NetManager$4Patch;
 import com.matt.forgehax.asm.patches.NetManagerPatch;
@@ -56,16 +59,16 @@ public class ForgeHaxTransformer implements IClassTransformer, ASMCommon {
     registerTransformer(new EntityLivingBasePatch());
     registerTransformer(new EntityPatch());
     registerTransformer(new EntityPlayerSPPatch());
-    registerTransformer(new EntityRendererPatch());
+	registerTransformer(new EntityRendererPatch());
     registerTransformer(new MinecraftPatch());
     registerTransformer(new NetManagerPatch());
     registerTransformer(new NetManager$4Patch());
-    registerTransformer(new PlayerControllerMCPatch());
+    registerTransformer(new PlayerControllerMCPatch()); // + Tonio
     registerTransformer(new RenderChunkPatch());
     registerTransformer(new RenderGlobalPatch());
     registerTransformer(new BufferBuilderPatch());
     registerTransformer(new VisGraphPatch());
-    registerTransformer(new WorldPatch());
+    registerTransformer(new WorldPatch()); // + Tonio
     
     // Babbaj
     registerTransformer(new BoatPatch());
@@ -74,8 +77,11 @@ public class ForgeHaxTransformer implements IClassTransformer, ASMCommon {
     registerTransformer(new KeyBindingPatch());
     registerTransformer(new SchematicPrinterPatch());
 
-    // Not-Babbaj-nor-fr1kin
+    // Tonio
     registerTransformer(new BlockLiquidPatch());
+    registerTransformer(new LayerRenderPatch());
+    registerTransformer(new GuiNewChatPatch());
+    registerTransformer(new ItemBlockPatch());
     
     // special transformers
     

@@ -67,6 +67,36 @@ public interface TypesHook {
         .setName("isLiquidInteractEnabled")
         .setType(boolean.class)
         .build();
+
+    ASMField ForgeHaxHooks_preventArmorRendering =
+      Classes.ForgeHaxHooks.childField()
+        .setName("preventArmorRendering")
+        .setType(boolean.class)
+        .build();
+
+    ASMField ForgeHaxHooks_doPreventGhostBlocksPlace =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doPreventGhostBlocksPlace")
+        .setType(boolean.class)
+        .build();
+
+    ASMField ForgeHaxHooks_doPreventGhostBlocksBreak =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doPreventGhostBlocksBreak")
+        .setType(boolean.class)
+        .build();
+
+    ASMField ForgeHaxHooks_doPreventMaxChatSize =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doPreventChatSizeLimit")
+        .setType(boolean.class)
+        .build();
+
+    ASMField ForgeHaxHooks_doHideChatBackground =
+      Classes.ForgeHaxHooks.childField()
+        .setName("doHideChatBackground")
+        .setType(boolean.class)
+        .build();
   }
   
   interface Methods {
@@ -448,6 +478,15 @@ public interface TypesHook {
         .add(int.class)
         .finish()
         .build();
+
+    ASMMethod ForgeHaxHooks_onEntityGroundCheck =
+      Classes.ForgeHaxHooks.childMethod()
+        .setName("onEntityGroundCheck")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(TypesMc.Classes.EntityLivingBase)
+        .finish()
+        .build();
     
     ASMMethod ForgeHaxHooks_fireEvent_v =
       Classes.ForgeHaxHooks.childMethod()
@@ -472,6 +511,27 @@ public interface TypesHook {
         .setName("onDrawBoundingBoxPost")
         .setReturnType(void.class)
         .emptyParameters()
+        .build();
+
+    ASMMethod ForgeHaxHooks_onDrawPing =
+      Classes.ForgeHaxHooks.childMethod()
+        .setName("onDrawPing")
+        .setReturnType(boolean.class)
+        .beginParameters()
+        .add(int.class)
+        .add(int.class)
+        .add(int.class)
+        .add(TypesMc.Classes.NetworkPlayerInfo)
+        .finish()
+        .build();
+
+    ASMMethod ForgeHaxHooks_onGetBlockSound =
+      Classes.ForgeHaxHooks.childMethod()
+        .setName("onGetBlockSound")
+        .setReturnType(TypesMc.Classes.SoundType)
+        .beginParameters()
+        .add(TypesMc.Classes.SoundType)
+        .finish()
         .build();
   }
 }

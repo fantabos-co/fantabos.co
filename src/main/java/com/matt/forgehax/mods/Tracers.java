@@ -18,6 +18,7 @@ import java.util.Objects;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
@@ -103,15 +104,25 @@ public class Tracers extends ToggleMod implements Colors {
       .defaultTo(true)
       .build();
 
+  public final Setting<Boolean> friend_highlight =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("friends")
+          .description("Color friends differently")
+          .defaultTo(true)
+          .build();
+
   private final Setting<Float> width =
-    getCommandStub()
-      .builders()
-      .<Float>newSettingBuilder()
-      .name("width")
-      .description("The width value for the tracers.")
-      .min(0.5f)
-      .defaultTo(1.5f)
-      .build();
+      getCommandStub()
+          .builders()
+          .<Float>newSettingBuilder()
+          .name("width")
+          .description("The width value for the tracers.")
+          .min(0f)
+          .max(10f)
+          .defaultTo(1.5f)
+          .build();
 
   public final Setting<Boolean> players =
     getCommandStub()
@@ -331,11 +342,16 @@ public class Tracers extends ToggleMod implements Colors {
 
     private final Entity entity;
     private final MobTypeEnum relationship;
+    private boolean isfriend = false;
 
     public EntityRelations(Entity entity) {
       Objects.requireNonNull(entity);
       this.entity = entity;
       this.relationship = EntityUtils.getRelationship(entity);
+      if (entity instanceof EntityPlayer) {
+        if (getModManager().get(FriendService.class).get().isFriendly(entity.getName()))
+          isfriend = true;
+      }
     }
 
     public Entity getEntity() {
@@ -349,7 +365,8 @@ public class Tracers extends ToggleMod implements Colors {
     public Color getStaticColor() {
       switch (relationship) {
         case PLAYER:
-          return YELLOW;
+          if (this.isfriend) return DARK_AQUA;
+          return BETTER_PINK;
         case HOSTILE:
           return RED;
         case NEUTRAL:
@@ -396,10 +413,16 @@ public class Tracers extends ToggleMod implements Colors {
 
     public boolean isOptionEnabled() {
       switch (relationship) {
-        case PLAYER: return players.get();
-        case HOSTILE: return hostile.get();
-        case NEUTRAL: return neutral.get();
-        default: return friendly.get();
+        case PLAYER:
+          if (this.isfriend && friend_filter.get())
+            return false;
+          return players.get();
+        case HOSTILE:
+          return hostile.get();
+        case NEUTRAL:
+          return neutral.get();
+        default:
+          return friendly.get();
       }
     }
 

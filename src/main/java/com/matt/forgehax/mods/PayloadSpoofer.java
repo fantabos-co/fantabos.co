@@ -3,13 +3,18 @@ package com.matt.forgehax.mods;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.matt.forgehax.asm.events.PacketEvent;
+import com.matt.forgehax.asm.reflection.FastReflection.Fields;
+import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.util.Scanner;
 import java.util.Set;
 import net.minecraft.network.Packet;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.client.CPacketCustomPayload;
 import net.minecraft.network.play.server.SPacketCustomPayload;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -21,6 +26,15 @@ import net.minecraftforge.fml.common.network.internal.FMLProxyPacket;
  */
 @RegisterMod
 public class PayloadSpoofer extends ToggleMod {
+
+  public final Setting<Boolean> filter_all =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("filter-all")
+      .description("Filter all non-vanilla packets")
+      .defaultTo(false)
+      .build();
   
   private static final Set<String> IGNORE_LIST = Sets.newHashSet();
   
@@ -64,8 +78,13 @@ public class PayloadSpoofer extends ToggleMod {
     String channel;
     ByteBuf packetBuffer;
     final Packet packet = event.getPacket();
+    if (MC.isSingleplayer()) return;
   
     if (packet instanceof SPacketCustomPayload || packet instanceof FMLProxyPacket) {
+      if (filter_all.get()) {
+        event.setCanceled(true);
+        return;
+      }
       if (packet instanceof SPacketCustomPayload) {
         channel = ((SPacketCustomPayload) packet).getChannelName();
         packetBuffer = ((SPacketCustomPayload) packet).getBufferData();
@@ -85,8 +104,20 @@ public class PayloadSpoofer extends ToggleMod {
     String channel;
     ByteBuf packetBuffer;
     final Packet packet = event.getPacket();
+    if (MC.isSingleplayer()) return;
     
     if (packet instanceof CPacketCustomPayload || packet instanceof FMLProxyPacket) {
+      if (filter_all.get()) {
+        if (packet instanceof CPacketCustomPayload) {
+          CPacketCustomPayload p = (CPacketCustomPayload) event.getPacket();
+          if(p.getChannelName().equals("MC|Brand")) {
+            Fields.CPacketCustomPayload_data.set(p, new PacketBuffer(Unpooled.buffer()).writeString("vanilla"));
+            return;
+          }
+        }
+        event.setCanceled(true);
+        return;
+      }
       if (packet instanceof CPacketCustomPayload) {
         channel = ((CPacketCustomPayload) packet).getChannelName();
         packetBuffer = ((CPacketCustomPayload) packet).getBufferData();

@@ -10,14 +10,11 @@ import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.math.AlignHelper;
-import com.matt.forgehax.util.mod.BaseMod;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ListMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
-import net.minecraft.client.gui.GuiChat;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.entity.item.EntityEnderCrystal;
@@ -25,8 +22,12 @@ import net.minecraft.entity.item.EntityEnderCrystal;
 import java.util.*;
 
 import static com.matt.forgehax.Helper.getModManager;
-import static com.matt.forgehax.util.draw.SurfaceHelper.getTextHeight;
+import static com.matt.forgehax.util.draw.SurfaceHelper.getTextHeight;//TODO Implement ???
 
+/**
+ * Created by OverFloyd
+ * may 2020
+ */
 @RegisterMod
 public class EntityList extends ListMod {
 
@@ -80,7 +81,7 @@ public class EntityList extends ListMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + count + "]");
+    return (getModName() + " [" + TextFormatting.DARK_RED + count + TextFormatting.WHITE + "]");
   }
 
   private int count = 0, max_len = 0;
@@ -92,6 +93,7 @@ public class EntityList extends ListMod {
       List<String> entityList = new ArrayList<>();
 	    List<String> text = new ArrayList<>();
 
+      // Prints all the "InfoDisplayElement" mods
       getWorld()
         .loadedEntityList
         .stream()
@@ -100,12 +102,13 @@ public class EntityList extends ListMod {
         .filter(e -> players.get() || !EntityUtils.isPlayer(e))
         .filter(e -> !Objects.equals(getLocalPlayer(), e) && !EntityUtils.isFakeLocalPlayer(e))
         .filter(EntityUtils::isValidEntity)
-        .map(entity -> {
-		  if (entity instanceof EntityItem)
-            return ((EntityItem) entity).getItem().getDisplayName();
-          else
-            return entity.getDisplayName().getUnformattedText();
-        })
+        .map(entity -> { if (entity instanceof EntityItem)
+                            return ((EntityItem) entity).getItem().getDisplayName();
+                         else if (entity instanceof EntityEnderCrystal) // ye janky but whaterver
+                            return "Ender Crystal";                     // it doesn't seem to have a name anywhere
+                         else
+                            return entity.getDisplayName().getUnformattedText();
+                       })
         .forEach(name -> entityList.add(name));
 
 	    String buf = "";

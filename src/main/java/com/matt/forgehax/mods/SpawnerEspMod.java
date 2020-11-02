@@ -64,7 +64,8 @@ public class SpawnerEspMod extends ToggleMod {
       .<Float>newSettingBuilder()
       .name("width")
       .description("The width value for the outline")
-      .min(0.5f)
+      .min(0f)
+      .max(10f)
       .defaultTo(1.0f)
       .build();
 

@@ -29,7 +29,7 @@ public class BlockHighlightMod extends ToggleMod {
           .description("Red amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(191)
           .build();
   private final Setting<Integer> green =
       getCommandStub()
@@ -39,7 +39,7 @@ public class BlockHighlightMod extends ToggleMod {
           .description("Green amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(97)
           .build();
   private final Setting<Integer> blue =
       getCommandStub()
@@ -49,7 +49,7 @@ public class BlockHighlightMod extends ToggleMod {
           .description("Blue amount, 0-255")
           .min(0)
           .max(255)
-          .defaultTo(0)
+          .defaultTo(106)
           .build();
   
   private final Setting<Float> width =
@@ -59,6 +59,7 @@ public class BlockHighlightMod extends ToggleMod {
           .name("width")
           .description("line width")
           .min(0.f)
+          .max(10f)
           .defaultTo(5.f)
           .build();
   

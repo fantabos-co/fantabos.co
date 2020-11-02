@@ -44,6 +44,7 @@ public class BreadCrumbs extends ToggleMod {
           .description("rendering smoothness")
           .defaultTo(1)
           .min(1)
+          .max(50)
           .build();
 
   /*public final Setting<Integer> maxpoints =
@@ -72,6 +73,47 @@ public class BreadCrumbs extends ToggleMod {
           .name("intermediate") // TODO: give this a better name
           .description("Draw points between anchors")
           .defaultTo(true)
+          .build();
+
+  public final Setting<Integer> alpha =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("alpha")
+          .description("Alpha amount, 0-255")
+          .min(0)
+          .max(255)
+          .defaultTo(50)
+          .build();
+  public final Setting<Integer> red =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("red")
+          .description("Red amount, 0-255")
+          .min(0)
+          .max(255)
+          .defaultTo(191)
+          .build();
+  public final Setting<Integer> green =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("green")
+          .description("Green amount, 0-255")
+          .min(0)
+          .max(255)
+          .defaultTo(97)
+          .build();
+  public final Setting<Integer> blue =
+      getCommandStub()
+          .builders()
+          .<Integer>newSettingBuilder()
+          .name("blue")
+          .description("Blue amount, 0-255")
+          .min(0)
+          .max(255)
+          .defaultTo(106)
           .build();
 
   public BreadCrumbs() {
@@ -423,7 +465,7 @@ public class BreadCrumbs extends ToggleMod {
 
       builder.begin(GL11.GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
       path.forEach(p -> {
-        builder.pos(p.x, p.y, p.z).color(255, 0, 0, 255).endVertex();
+        builder.pos(p.x, p.y, p.z).color(red.get(), green.get(), blue.get(), alpha.get()).endVertex();
       });
       event.getTessellator().draw();
     });

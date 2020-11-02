@@ -36,6 +36,8 @@ public class AutoFishMod extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("casting_delay")
           .description("Number of ticks to wait after casting the rod to attempt a recast")
+          .min(0)
+          .max(60)
           .defaultTo(20)
           .build();
   
@@ -46,6 +48,8 @@ public class AutoFishMod extends ToggleMod {
           .name("max_sound_distance")
           .description(
               "Maximum distance between the splash sound and hook entity allowed (set to 0 to disable this feature)")
+          .min(0D)
+          .max(100D)
           .defaultTo(2.D)
           .build();
   
@@ -57,6 +61,8 @@ public class AutoFishMod extends ToggleMod {
           .description(
               "Maximum amount of time (in ticks) allowed until the hook is pulled in (set to 0 to disable this feature)")
           .defaultTo(600)
+          .min(0)
+          .max(9999)
           .build();
   
   public AutoFishMod() {

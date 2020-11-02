@@ -36,7 +36,8 @@ public class ClickGui extends GuiScreen implements Globals {
   private GuiWindowMod worldWindow = new GuiWindowMod(Category.WORLD);
   private GuiWindowMod miscWindow = new GuiWindowMod(Category.MISC);
   private GuiWindowMod chatWindow = new GuiWindowMod(Category.CHAT);
-  private final GuiWindowMod guiWindow = new GuiWindowMod(Category.GUI);
+  private GuiWindowMod guiWindow = new GuiWindowMod(Category.GUI);
+  private GuiWindowMod exploitWindow = new GuiWindowMod(Category.EXPLOIT);
   
   {
     windowList.add(playerWindow);
@@ -45,8 +46,9 @@ public class ClickGui extends GuiScreen implements Globals {
     windowList.add(renderWindow);
     windowList.add(combatWindow);
     windowList.add(worldWindow);
-    windowList.add(guiWindow);
+    windowList.add(exploitWindow);
     windowList.add(miscWindow);
+    windowList.add(guiWindow);
   }
   
   public static ScaledResolution scaledRes = new ScaledResolution(MC);
@@ -55,6 +57,7 @@ public class ClickGui extends GuiScreen implements Globals {
   
   private ClickGui() {
     // set initial window positions
+    // TODO: load from settings
     // TODO: improve this a bit maybe
     for (int i = 0; i < windowList.size(); i++) {
       // Look up a saved position
@@ -165,12 +168,14 @@ public class ClickGui extends GuiScreen implements Globals {
   public void handleMouseInput() throws IOException {
     // used for scrolling
     super.handleMouseInput();
-    
+
     int scale = scaledRes.getScaleFactor();
+    int mouseX = Mouse.getEventX() / scale;
+    int mouseY = (MC.displayHeight - Mouse.getEventY()) / scale;
+
     for (GuiWindow window : Lists.reverse(windowList)) {
-      if (isMouseInWindow(
-        Mouse.getEventX() / scale, (MC.displayHeight - Mouse.getEventY()) / scale, window)) {
-        window.handleMouseInput();
+      if (isMouseInWindow(mouseX, mouseY, window)) {
+        window.handleMouseInput(mouseX, mouseY);
         break;
       }
     }

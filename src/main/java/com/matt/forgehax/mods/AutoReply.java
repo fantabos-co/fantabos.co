@@ -1,6 +1,7 @@
 package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
+import static com.matt.forgehax.Helper.getModManager;
 
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
@@ -8,6 +9,7 @@ import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import com.mojang.realmsclient.gui.ChatFormatting;
 import joptsimple.internal.Strings;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.Display;
@@ -52,7 +54,14 @@ public class AutoReply extends ToggleMod {
           .build();
 
   public AutoReply() {
-    super(Category.MISC, "AutoReply", false, "Automatically talk in chat if finds a strings");
+    super(Category.CHAT, "AutoReply", false, "Automatically talk in chat if finds a strings");
+  }
+
+  private int replies = 0;
+
+  @Override
+  protected void onEnabled() {
+    replies = 0;
   }
 
   @SubscribeEvent
@@ -66,12 +75,19 @@ public class AutoReply extends ToggleMod {
         append = Strings.EMPTY;
       }
 
-      if (onLostFocus.getAsBoolean() && !Display.isActive()) {
+      if (!onLostFocus.getAsBoolean() || !Display.isActive()) {
         getLocalPlayer().sendChatMessage(append + text.get());
-      } else if (!onLostFocus.getAsBoolean()) {
-        getLocalPlayer().sendChatMessage(append + text.get());
+        if (getModManager().get(MatrixNotifications.class).get().isEnabled()) {
+          getModManager().get(MatrixNotifications.class).get().send_notify(message);
+        }
+        replies++;
       }
     }
+  }
+
+  @Override
+  public String getDisplayText() {
+    return (super.getDisplayText() + " [" + TextFormatting.GRAY + replies + TextFormatting.WHITE + "]");
   }
 
   @Override

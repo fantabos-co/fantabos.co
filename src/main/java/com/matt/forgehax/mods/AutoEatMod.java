@@ -73,6 +73,7 @@ public class AutoEatMod extends ToggleMod {
               "Number of ticks to wait before starting to eat a food item after switching to it in the hotbar.")
           .defaultTo(10)
           .min(0)
+          .max(60)
           .build();
   
   private ItemFood food = null;

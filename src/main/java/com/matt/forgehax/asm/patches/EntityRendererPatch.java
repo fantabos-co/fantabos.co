@@ -7,9 +7,11 @@ import com.matt.forgehax.asm.utils.transforming.ClassTransformer;
 import com.matt.forgehax.asm.utils.transforming.Inject;
 import com.matt.forgehax.asm.utils.transforming.MethodTransformer;
 import com.matt.forgehax.asm.utils.transforming.RegisterMethodTransformer;
+
 import java.util.Objects;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -50,3 +52,4 @@ public class EntityRendererPatch extends ClassTransformer {
     }
   }
 }
+
