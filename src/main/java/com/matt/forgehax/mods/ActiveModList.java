@@ -6,6 +6,7 @@ import com.matt.forgehax.util.math.AlignHelper.Align;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.mod.BaseMod;
+import com.matt.forgehax.util.mod.ServiceMod;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ListMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
@@ -90,7 +91,7 @@ public class ActiveModList extends ListMod {
       long serviceMods = getModManager()
           .getMods()
           .stream()
-          .filter(BaseMod::isHidden)
+          .filter(ServiceMod.class::isInstance)
           .count();
 
       // Total number of mods in the client
