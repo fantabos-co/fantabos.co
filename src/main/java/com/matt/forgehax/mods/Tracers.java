@@ -12,6 +12,7 @@ import com.matt.forgehax.util.math.VectorUtils;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
+import com.matt.forgehax.mods.services.FriendService;
 
 import java.util.Objects;
 
@@ -157,6 +158,15 @@ public class Tracers extends ToggleMod implements Colors {
       .<Boolean>newSettingBuilder()
       .name("friendly")
       .description("Trace friendly mobs.")
+      .defaultTo(false)
+      .build();
+
+  public final Setting<Boolean> friend_filter =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("friend-filter")
+      .description("Don't draw tracers to friends")
       .defaultTo(false)
       .build();
 
@@ -414,7 +424,7 @@ public class Tracers extends ToggleMod implements Colors {
     public boolean isOptionEnabled() {
       switch (relationship) {
         case PLAYER:
-          if (this.isfriend && friend_filter.get())
+		  if (this.isfriend && friend_filter.get())
             return false;
           return players.get();
         case HOSTILE:
