@@ -63,7 +63,7 @@ public class IRC extends ToggleMod {
           .<String>newSettingBuilder()
           .name("server")
           .description("Server to connect to")
-          .defaultTo("")
+          .defaultTo("irc.2b2t.it")
           .build();
   private final Setting<String> nick =
       getCommandStub()
@@ -104,6 +104,19 @@ public class IRC extends ToggleMod {
         .description("Contains channels to autoconnect to")
         .factory(ChannelEntry::new)
         .supplier(Sets::newConcurrentHashSet)
+        .defaults(
+              () -> {
+                Set<ChannelEntry> contents = Sets.newHashSet();
+                ChannelEntry entry;
+                try {                  
+                  // default fhchat channel
+                  entry = new ChannelEntry("#fhchat");
+                  contents.add(entry);
+                } catch (Exception e) {
+				  e.printStackTrace();
+                }
+                return contents;
+              })
         .build();
 
   public final Setting<String> prefix =
