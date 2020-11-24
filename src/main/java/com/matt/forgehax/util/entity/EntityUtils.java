@@ -53,6 +53,16 @@ public class EntityUtils implements Globals {
     }
   }
   
+  /**
+   * Gets the health of the entity or 0 if the entity is not alive
+   * 
+   */
+  public static float getHealth(Entity entity) {
+      if (!isLiving(entity)) return 0.0f;
+      EntityLivingBase livingBase = (EntityLivingBase)entity;
+      return livingBase.getHealth() + livingBase.getAbsorptionAmount();
+  }
+  
   public static boolean isBatsDisabled = false;
   public static boolean isSquidsDisabled = false;
   

@@ -1,6 +1,9 @@
 package com.matt.forgehax.mods;
 
+import com.matt.forgehax.asm.ForgeHaxHooks;
 import com.matt.forgehax.asm.events.DrawBlockBoundingBoxEvent;
+import com.matt.forgehax.mods.services.RainbowService;
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
@@ -10,76 +13,66 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterMod
 public class BlockHighlightMod extends ToggleMod {
-  
-  private final Setting<Integer> alpha =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("alpha")
-          .description("Transparency, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(255)
-          .build();
-  private final Setting<Integer> red =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("red")
-          .description("Red amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(191)
-          .build();
-  private final Setting<Integer> green =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("green")
-          .description("Green amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(97)
-          .build();
-  private final Setting<Integer> blue =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("blue")
-          .description("Blue amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(106)
-          .build();
+
+  private final Setting<Color> color =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color")
+      .description("Color for trail")
+      .defaultTo(Color.of(191, 97, 106, 255))
+      .build();
+
+  private final Setting<Boolean> rainbow =
+    getCommandStub()
+        .builders()
+        .<Boolean>newSettingBuilder()
+        .name("rainbow")
+        .description("Use rainbow color instead")
+        .defaultTo(false)
+        .build();
   
   private final Setting<Float> width =
-      getCommandStub()
-          .builders()
-          .<Float>newSettingBuilder()
-          .name("width")
-          .description("line width")
-          .min(0.f)
-          .max(10f)
-          .defaultTo(5.f)
-          .build();
+    getCommandStub()
+      .builders()
+      .<Float>newSettingBuilder()
+      .name("width")
+      .description("line width")
+      .min(0.f)
+      .max(10f)
+      .defaultTo(5.f)
+      .build();
   
   public BlockHighlightMod() {
     super(
         Category.RENDER, "BlockHighlight", false, "Make selected block bounding box more visible");
   }
+
+  @Override
+  protected void onEnabled() {
+    ForgeHaxHooks.drawBlockHighlightInWater = true;
+  }
+
+  @Override
+  protected void onDisabled() {
+    ForgeHaxHooks.drawBlockHighlightInWater = false;
+  }
   
   private float toFloat(int colorVal) {
     return colorVal / 255.f;
   }
-  
+
   @SubscribeEvent
   public void onRenderBoxPre(DrawBlockBoundingBoxEvent.Pre event) {
+    Color c;
+    if (rainbow.get()) c = RainbowService.getRainbowColorClass();
+    else c = color.get();
     GlStateManager.disableDepth();
     GlStateManager.glLineWidth(width.get());
-    event.alpha = toFloat(alpha.get());
-    event.red = toFloat(red.get());
-    event.green = toFloat(green.get());
-    event.blue = toFloat(blue.get());
+    event.alpha = toFloat(c.getAlpha());
+    event.red = toFloat(c.getRed());
+    event.green = toFloat(c.getGreen());
+    event.blue = toFloat(c.getBlue());
   }
   
   @SubscribeEvent

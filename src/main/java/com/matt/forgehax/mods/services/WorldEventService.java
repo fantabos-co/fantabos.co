@@ -1,7 +1,10 @@
 package com.matt.forgehax.mods.services;
 
+import static com.matt.forgehax.Helper.getModManager;
+
 import com.matt.forgehax.events.WorldChangeEvent;
 import com.matt.forgehax.events.listeners.WorldListener;
+import com.matt.forgehax.mods.PortalGodMode;
 import com.matt.forgehax.util.mod.ServiceMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraftforge.common.MinecraftForge;
@@ -29,5 +32,8 @@ public class WorldEventService extends ServiceMod {
   @SubscribeEvent
   public void onWorldUnload(WorldEvent.Unload event) {
     MinecraftForge.EVENT_BUS.post(new WorldChangeEvent(event.getWorld()));
+    if (PortalGodMode.auto != null && PortalGodMode.auto.get()) { // i dunno where else to do this
+      getModManager().get(PortalGodMode.class).get().enable(true);
+    }
   }
 }

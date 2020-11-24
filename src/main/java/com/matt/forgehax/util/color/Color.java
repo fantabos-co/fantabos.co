@@ -6,7 +6,7 @@ import java.util.Objects;
  * Created on 2/5/2018 by fr1kin
  */
 public abstract class Color {
-  
+	
   public static int clamp(int c) {
     return Math.min(255, Math.max(0, c));
   }

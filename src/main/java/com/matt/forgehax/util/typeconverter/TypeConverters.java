@@ -1,8 +1,10 @@
 package com.matt.forgehax.util.typeconverter;
 
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.typeconverter.types.BooleanType;
 import com.matt.forgehax.util.typeconverter.types.ByteType;
 import com.matt.forgehax.util.typeconverter.types.CharacterType;
+import com.matt.forgehax.util.typeconverter.types.ColorType;
 import com.matt.forgehax.util.typeconverter.types.DoubleType;
 import com.matt.forgehax.util.typeconverter.types.FloatType;
 import com.matt.forgehax.util.typeconverter.types.IntegerType;
@@ -24,4 +26,5 @@ public interface TypeConverters {
   TypeConverter<Long> LONG = new LongType();
   TypeConverter<Short> SHORT = new ShortType();
   TypeConverter<String> STRING = new StringType();
+  TypeConverter<Color> COLOR = new ColorType();
 }

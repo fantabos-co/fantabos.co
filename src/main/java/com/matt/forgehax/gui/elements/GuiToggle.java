@@ -5,13 +5,6 @@ import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.TextComponentString;
-import org.lwjgl.input.Keyboard;
-
-import java.io.IOException;
-
-import static com.matt.forgehax.Globals.MC;
 
 /**
  * Created by Tonio on 10/08/2020.
@@ -21,8 +14,11 @@ public class GuiToggle extends GuiElement {
   private static final int ELEMENT_OUTLINE = Color.of(65, 65, 65, 200).toBuffer();
   private static final int ELEMENT_IN = Color.of(150, 150, 150, 200).toBuffer();
 
+  private Setting setting;
+
   public GuiToggle(Setting settingIn, GuiWindowSetting parent) {
     super(settingIn, parent);
+    this.setting = settingIn;
     height = 12;
   }
 

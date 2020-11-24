@@ -2,6 +2,8 @@ package com.matt.forgehax.util.typeconverter;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.matt.forgehax.util.color.Color;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -76,6 +78,7 @@ public class TypeConverterRegistry {
     registerAll(TypeConverters.INTEGER, int.class);
     registerAll(TypeConverters.LONG, long.class);
     registerAll(TypeConverters.SHORT, short.class);
+    registerAll(TypeConverters.COLOR, Color.class);
     register(TypeConverters.STRING);
   }
 }

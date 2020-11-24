@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityMobSpawner;
 import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
@@ -28,6 +29,15 @@ public class SpawnerEspMod extends ToggleMod {
   public SpawnerEspMod() {
     super(Category.RENDER, "SpawnerESP", false, "Shows spawners");
   }
+
+  private final Setting<Color> color =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color")
+      .description("Color for highlighted blocks")
+      .defaultTo(Color.of(255, 85, 85, 64))
+      .build();
 
   public final Setting<Boolean> outline =
     getCommandStub()
@@ -45,17 +55,6 @@ public class SpawnerEspMod extends ToggleMod {
       .name("fill")
       .description("Renders a box on the block")
       .defaultTo(true)
-      .build();
-
-  public final Setting<Integer> alpha =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("alpha")
-      .description("Alpha value for fill mode")
-      .defaultTo(64)
-      .min(0)
-      .max(255)
       .build();
 
   private final Setting<Float> width =
@@ -78,7 +77,7 @@ public class SpawnerEspMod extends ToggleMod {
       .defaultTo(false)
       .build();
 
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.HIGH)
   public void onRender(RenderEvent event) {
     if(MC.gameSettings.hideGUI || getWorld() == null) {
       return;
@@ -97,8 +96,9 @@ public class SpawnerEspMod extends ToggleMod {
           GlStateManager.glLineWidth(width.get());
           event.getBuffer().begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
           GeometryTessellator.drawCuboid(
-            event.getBuffer(), pos, GeometryMasks.Line.ALL, Colors.RED.toBuffer());
-
+            event.getBuffer(), pos, GeometryMasks.Line.ALL,
+            Color.of(color.get().toBuffer()).setAlpha(255).toBuffer());
+            
           event.getTessellator().draw();
         }
 
@@ -106,7 +106,7 @@ public class SpawnerEspMod extends ToggleMod {
           event.getBuffer().begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
           GeometryTessellator.drawCuboid(
             event.getBuffer(), pos, GeometryMasks.Quad.ALL,
-            Color.of(255, 0, 0, alpha.get()).toBuffer()); //RED
+            color.get().toBuffer());
 
           event.getTessellator().draw();
         }

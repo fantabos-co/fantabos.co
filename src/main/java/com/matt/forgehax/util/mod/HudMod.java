@@ -3,6 +3,7 @@ package com.matt.forgehax.util.mod;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.math.AlignHelper;
 import com.matt.forgehax.util.math.AlignHelper.Align;
+import com.matt.forgehax.gui.PromptGui;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -44,6 +45,8 @@ public abstract class HudMod extends ToggleMod {
             .name("x-offset")
             .description("Shift on X-axis")
             .defaultTo(getDefaultOffsetX())
+            .min(-10000)
+            .max(10000)
             .build();
 
     this.offsetY =
@@ -53,6 +56,8 @@ public abstract class HudMod extends ToggleMod {
             .name("y-offset")
             .description("Shift on Y-axis")
             .defaultTo(getDefaultOffsetY())
+            .min(-10000)
+            .max(10000)
             .build();
 
     this.scale =
@@ -62,6 +67,8 @@ public abstract class HudMod extends ToggleMod {
             .name("scale")
             .description("Size scaling")
             .defaultTo(getDefaultScale())
+            .min(0D)
+            .max(5D)
             .build();
   }
 
@@ -81,7 +88,8 @@ public abstract class HudMod extends ToggleMod {
     if ((alignment.get() == Align.BOTTOMLEFT
         || alignment.get() == Align.BOTTOMRIGHT
         || alignment.get() == Align.BOTTOM)
-        && MC.currentScreen instanceof GuiChat) {
+        && (MC.currentScreen instanceof GuiChat ||
+            MC.currentScreen instanceof PromptGui)) {
       chatOffset = Math.max(15 - offsetY.get(), 0);
     }
 

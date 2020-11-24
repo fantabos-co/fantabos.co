@@ -1,7 +1,6 @@
 package com.matt.forgehax.events.listeners;
 
-import static com.matt.forgehax.Helper.getModManager;
-
+import com.matt.forgehax.events.BlockUpdateEvent;
 import com.matt.forgehax.events.EntityAddedEvent;
 import com.matt.forgehax.events.EntityRemovedEvent;
 import net.minecraft.block.state.IBlockState;
@@ -13,13 +12,13 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IWorldEventListener;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
-import java.time.Instant;
 
 public class WorldListener implements IWorldEventListener {
   
   @Override
   public void notifyBlockUpdate(
       World worldIn, BlockPos pos, IBlockState oldState, IBlockState newState, int flags) {
+    MinecraftForge.EVENT_BUS.post(new BlockUpdateEvent(worldIn, pos, oldState, newState, flags));
   }
   
   @Override

@@ -11,7 +11,6 @@ import com.matt.forgehax.util.mod.loader.RegisterMod;
 
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraft.network.play.client.CPacketKeepAlive;
-import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.network.play.client.CPacketTabComplete;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -19,12 +18,22 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class Hold extends ToggleMod {
 
   private final Setting<Boolean> aggressive =
-  getCommandStub()
+    getCommandStub()
       .builders()
       .<Boolean>newSettingBuilder()
-      .name("aggressive")
-      .description("Cancel almost all packets")
+      .name("cancel-packets")
+      .description("Cancel almost all packets while holding")
       .defaultTo(false)
+      .build();
+  private final Setting<Float> threshold =
+    getCommandStub()
+      .builders()
+      .<Float>newSettingBuilder()
+      .name("threshold")
+      .description("Min fall height to trigger, set to 0 for manual use")
+      .min(0.F)
+      .max(256.F)
+      .defaultTo(0.F)
       .build();
       
   public Hold() {
@@ -33,19 +42,18 @@ public class Hold extends ToggleMod {
   
   @SubscribeEvent
   public void onOutgoingPacket(PacketEvent.Outgoing.Pre event) {
-    if (aggressive.get() &&
-        !(event.getPacket() instanceof CPacketKeepAlive) &&
-        !(event.getPacket() instanceof CPacketChatMessage) &&
-        !(event.getPacket() instanceof CPacketTabComplete)) {
-          event.setCanceled(true);
-    }
-    else if (event.getPacket() instanceof CPacketPlayer) {
-      event.setCanceled(true);
-    }
+    if (!aggressive.get()
+        || getLocalPlayer() == null
+        || getLocalPlayer().fallDistance < threshold.get()
+        || event.getPacket() instanceof CPacketKeepAlive
+        || event.getPacket() instanceof CPacketChatMessage
+        || event.getPacket() instanceof CPacketTabComplete) return;
+    event.setCanceled(true);
   }
 
   @SubscribeEvent
   public void onMovement(LocalPlayerUpdateMovementEvent event) {
+    if (getLocalPlayer() == null || getLocalPlayer().fallDistance < threshold.get()) return;
     getLocalPlayer().setVelocity(0, 0, 0);
   }
 }

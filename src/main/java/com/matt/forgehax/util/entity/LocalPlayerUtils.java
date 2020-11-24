@@ -3,18 +3,23 @@ package com.matt.forgehax.util.entity;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getPlayerController;
 import static com.matt.forgehax.Helper.getWorld;
+import static com.matt.forgehax.Helper.getNetworkManager;
 
 import com.google.common.base.Predicates;
 import com.matt.forgehax.Globals;
 import com.matt.forgehax.mods.managers.PositionRotationManager;
 import com.matt.forgehax.mods.services.SneakService;
+import com.matt.forgehax.util.PacketHelper;
 import com.matt.forgehax.util.Switch;
 import com.matt.forgehax.util.math.Angle;
+import com.matt.forgehax.util.math.AngleHelper;
+
 import java.util.Optional;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.PlayerCapabilities;
+import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -187,5 +192,55 @@ public class LocalPlayerUtils implements Globals {
   
   public static Switch getFlySwitch() {
     return FLY_SWITCH;
+  }
+
+
+  /**
+   * This comes from IronException's Freecam, all props to him for idea and implementation
+   */
+
+  public static void lookAt(final Entity entity, final Vec3d goal) {
+    lookAt(entity, goal, false);
+  }
+
+  public static void lookAt(final Entity entity, final Vec3d goal, final boolean packet) {
+      lookAt(entity, goal, true, true, packet);
+  }
+
+  public static void lookAt(final Entity entity, final Vec3d goal, final boolean yawIn, final boolean pitchIn, final boolean packet) {
+      final Vec3d position = entity.getPositionEyes(1f);
+      float yaw = entity.rotationYaw;
+      float pitch = entity.rotationPitch;
+      if (yawIn) {
+          yaw = calculateYaw(position, goal);
+      }
+      if (pitchIn) {
+          pitch = calculatePitch(position, goal);
+      }
+      lookAt(entity, yaw, pitch, packet);
+  }
+
+  public static void lookAt(final Entity entity, final float yaw, final float pitch, final boolean packet) {
+      // TODO maybe a setting or whatever works best to set this?
+      entity.prevRotationYaw = entity.rotationYaw;
+      entity.prevRotationPitch = entity.rotationPitch;
+      entity.rotationYaw = yaw;
+      entity.rotationPitch = pitch;
+      entity.setRotationYawHead(entity.rotationYaw); // so the head also looks that way
+      if (packet) {
+        PacketHelper.ignoreAndSend(new CPacketPlayer.Rotation(yaw, pitch, true));
+      }
+  }
+
+  public static float calculateYaw(final Vec3d from, final Vec3d goal) {
+      return AngleHelper.normalizeInDegrees(
+              AngleHelper.getAngleFacingInDegrees(
+                      goal.subtract(from)).getYaw());
+  }
+
+  public static float calculatePitch(final Vec3d from, final Vec3d goal) {
+      return AngleHelper.normalizeInDegrees(
+              AngleHelper.getAngleFacingInDegrees(
+                      goal.subtract(from)).getPitch());
   }
 }

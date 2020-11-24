@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.text.TextFormatting;
 
 public class EnchantmentUtils {
   
@@ -55,33 +56,36 @@ public class EnchantmentUtils {
     private static final Map<Integer, String> SHORT_ENCHANT_NAMES = Maps.newHashMap();
     
     static {
-      SHORT_ENCHANT_NAMES.put(0, "p");
-      SHORT_ENCHANT_NAMES.put(1, "fp");
-      SHORT_ENCHANT_NAMES.put(2, "ff");
-      SHORT_ENCHANT_NAMES.put(3, "bp");
-      SHORT_ENCHANT_NAMES.put(4, "pp");
-      SHORT_ENCHANT_NAMES.put(5, "r");
-      SHORT_ENCHANT_NAMES.put(6, "aa");
-      SHORT_ENCHANT_NAMES.put(7, "th");
-      SHORT_ENCHANT_NAMES.put(8, "ds");
-      SHORT_ENCHANT_NAMES.put(9, "fw");
-      SHORT_ENCHANT_NAMES.put(16, "sh");
-      SHORT_ENCHANT_NAMES.put(17, "sm");
-      SHORT_ENCHANT_NAMES.put(18, "boa");
-      SHORT_ENCHANT_NAMES.put(19, "kb");
-      SHORT_ENCHANT_NAMES.put(20, "fa");
-      SHORT_ENCHANT_NAMES.put(21, "l");
-      SHORT_ENCHANT_NAMES.put(32, "eff");
-      SHORT_ENCHANT_NAMES.put(33, "st");
-      SHORT_ENCHANT_NAMES.put(34, "ub");
-      SHORT_ENCHANT_NAMES.put(35, "for");
-      SHORT_ENCHANT_NAMES.put(48, "pow");
-      SHORT_ENCHANT_NAMES.put(49, "pun");
-      SHORT_ENCHANT_NAMES.put(50, "fl");
-      SHORT_ENCHANT_NAMES.put(51, "inf");
-      SHORT_ENCHANT_NAMES.put(61, "los");
-      SHORT_ENCHANT_NAMES.put(62, "lur");
-      SHORT_ENCHANT_NAMES.put(70, "mend");
+      SHORT_ENCHANT_NAMES.put(0, "p"); // Protection
+      SHORT_ENCHANT_NAMES.put(1, "fp"); // Fire Protection
+      SHORT_ENCHANT_NAMES.put(2, "ff"); // Feather falling
+      SHORT_ENCHANT_NAMES.put(3, "bp"); // Blast Protection
+      SHORT_ENCHANT_NAMES.put(4, "pp"); // Projectile Protection
+      SHORT_ENCHANT_NAMES.put(5, "r"); // Respiration
+      SHORT_ENCHANT_NAMES.put(6, "aa"); // Aqua affinity
+      SHORT_ENCHANT_NAMES.put(7, "th"); // Thorns
+      SHORT_ENCHANT_NAMES.put(8, "ds"); // Depth Strider
+      SHORT_ENCHANT_NAMES.put(9, "fw"); // Frost Walker
+      SHORT_ENCHANT_NAMES.put(10, TextFormatting.RED + "bnd" + TextFormatting.RESET); // Curse of Binding
+      SHORT_ENCHANT_NAMES.put(16, "sh"); // Sharpness
+      SHORT_ENCHANT_NAMES.put(17, "sm"); // Smite
+      SHORT_ENCHANT_NAMES.put(18, "boa"); // Bane of Arthropods
+      SHORT_ENCHANT_NAMES.put(19, "kb"); // Knockback
+      SHORT_ENCHANT_NAMES.put(20, "fa"); // Fire Aspect
+      SHORT_ENCHANT_NAMES.put(21, "l"); // Looting
+      SHORT_ENCHANT_NAMES.put(22, "sw"); // Sweeping Edge
+      SHORT_ENCHANT_NAMES.put(32, "e"); // Efficiencu
+      SHORT_ENCHANT_NAMES.put(33, "slk"); // Silk Touch
+      SHORT_ENCHANT_NAMES.put(34, "ub"); // Unbreaking
+      SHORT_ENCHANT_NAMES.put(35, "for"); // Fortune
+      SHORT_ENCHANT_NAMES.put(48, "pow"); // Power
+      SHORT_ENCHANT_NAMES.put(49, "pun"); // Punch
+      SHORT_ENCHANT_NAMES.put(50, "fl"); // Flame
+      SHORT_ENCHANT_NAMES.put(51, "inf"); // Infinity
+      SHORT_ENCHANT_NAMES.put(61, "los"); // Luck of the Sea
+      SHORT_ENCHANT_NAMES.put(62, "lur"); // Lure
+      SHORT_ENCHANT_NAMES.put(70, "men"); // Mending
+      SHORT_ENCHANT_NAMES.put(71, TextFormatting.RED + "van" + TextFormatting.RESET); // Curse of Vanishing
     }
     
     private final Enchantment enchantment;
@@ -110,7 +114,7 @@ public class EnchantmentUtils {
         if (enchantment.getMaxLevel() <= 1) {
           return SHORT_ENCHANT_NAMES.get(id);
         } else {
-          return SHORT_ENCHANT_NAMES.get(id) + this.level;
+          return SHORT_ENCHANT_NAMES.get(id) + (this.level > 32000 ? "32k" : this.level);
         }
       } else {
         return toString();

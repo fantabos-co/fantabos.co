@@ -18,6 +18,15 @@ public class ToggleMod extends BaseMod {
           .defaultTo(true)
           .build();
 
+  private final Setting<Boolean> logToggle =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("logToggle")
+          .description("Force printing in chat when the module is toggled")
+          .defaultTo(false)
+          .build();
+
   public ToggleMod(Category category, String modName, boolean defaultValue, String description) {
     super(category, modName, description);
     this.enabled =
@@ -39,6 +48,7 @@ public class ToggleMod extends BaseMod {
             .build();
   }
 
+
   /**
    * Toggle mod to be on/off
    */
@@ -52,12 +62,12 @@ public class ToggleMod extends BaseMod {
 
   @Override
   public void enable(final boolean commandOutput) {
-    enabled.set(true, commandOutput);
+    enabled.set(true, commandOutput || logToggle.get());
   }
 
   @Override
   public void disable(final boolean commandOutput) {
-    enabled.set(false, commandOutput);
+    enabled.set(false, commandOutput || logToggle.get());
   }
 
   @Override
@@ -119,7 +129,7 @@ public class ToggleMod extends BaseMod {
    */
   @Override
   public void onBindPressed(CallbackData cb) {
-    toggle(ForgeHaxService.INSTANCE.toggleMsgs.get());
+    toggle(ForgeHaxService.getInstance().toggleMsgs.get());
   }
 
   @Override

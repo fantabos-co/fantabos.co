@@ -1,9 +1,7 @@
 package com.matt.forgehax.util.entry;
 
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import java.io.IOException;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import net.minecraft.launchwrapper.Launch;
@@ -43,15 +41,13 @@ public class ClassEntry implements ISerializableJson {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginObject();
-    writer.endObject();
+  public void serialize(JsonObject in) {
+    in.addProperty(clazzName, "N/A");
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginObject();
-    reader.endObject();
+  public void deserialize(JsonObject in) {
+    // do nothing
   }
   
   @Override

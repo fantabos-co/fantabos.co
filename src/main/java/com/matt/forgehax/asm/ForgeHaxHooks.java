@@ -2,23 +2,9 @@ package com.matt.forgehax.asm;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.matt.forgehax.Helper;
 import com.matt.forgehax.asm.TypesMc.Methods;
-import com.matt.forgehax.asm.events.AddCollisionBoxToListEvent;
-import com.matt.forgehax.asm.events.AddRenderChunkEvent;
-import com.matt.forgehax.asm.events.ApplyClimbableBlockMovement;
-import com.matt.forgehax.asm.events.ApplyCollisionMotionEvent;
-import com.matt.forgehax.asm.events.BlockControllerProcessEvent;
-import com.matt.forgehax.asm.events.BlockPlaceSoundEvent;
-import com.matt.forgehax.asm.events.BlockRenderEvent;
-import com.matt.forgehax.asm.events.BuildChunkEvent;
-import com.matt.forgehax.asm.events.ChunkUploadedEvent;
-import com.matt.forgehax.asm.events.ComputeVisibilityEvent;
-import com.matt.forgehax.asm.events.DeleteGlResourcesEvent;
-import com.matt.forgehax.asm.events.DoBlockCollisionsEvent;
-import com.matt.forgehax.asm.events.DrawBlockBoundingBoxEvent;
-import com.matt.forgehax.asm.events.DrawPingEvent;
-import com.matt.forgehax.asm.events.EntityBlockSlipApplyEvent;
-import com.matt.forgehax.asm.events.EntityGroundCheckEvent;
+import com.matt.forgehax.asm.events.*;
 import com.matt.forgehax.asm.events.EntityBlockSlipApplyEvent.Stage;
 import com.matt.forgehax.asm.events.HurtCamEffectEvent;
 import com.matt.forgehax.asm.events.ItemStoppedUsedEvent;
@@ -33,6 +19,8 @@ import com.matt.forgehax.asm.events.PushOutOfBlocksEvent;
 import com.matt.forgehax.asm.events.RenderBlockInLayerEvent;
 import com.matt.forgehax.asm.events.RenderBlockLayerEvent;
 import com.matt.forgehax.asm.events.RenderBoatEvent;
+import com.matt.forgehax.asm.events.RenderEntityModelEvent;
+import com.matt.forgehax.asm.events.RenderItemAndEffectIntoGuiEvent;
 import com.matt.forgehax.asm.events.SchematicaPlaceBlockEvent;
 import com.matt.forgehax.asm.events.SetupTerrainEvent;
 import com.matt.forgehax.asm.events.WaterMovementEvent;
@@ -42,41 +30,46 @@ import com.matt.forgehax.asm.events.listeners.BlockModelRenderListener;
 import com.matt.forgehax.asm.events.listeners.Listeners;
 import com.matt.forgehax.asm.utils.MultiBoolean;
 import com.matt.forgehax.asm.utils.debug.HookReporter;
-import java.nio.ByteOrder;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.block.Block;
 import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderItem;
 import net.minecraft.client.renderer.ViewFrustum;
-import net.minecraft.client.renderer.chunk.ChunkCompileTaskGenerator;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
-import net.minecraft.client.renderer.chunk.RenderChunk;
-import net.minecraft.client.renderer.chunk.SetVisibility;
-import net.minecraft.client.renderer.chunk.VisGraph;
+import net.minecraft.client.renderer.block.model.IBakedModel;
+import net.minecraft.client.renderer.chunk.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.MoverType;
 import net.minecraft.entity.item.EntityBoat;
+import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.Packet;
 import net.minecraft.util.BlockRenderLayer;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.MouseHelper;
+import net.minecraft.util.MovementInputFromOptions;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.Event;
+
+import java.nio.ByteOrder;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 public class ForgeHaxHooks implements ASMCommon {
   
@@ -112,7 +105,14 @@ public class ForgeHaxHooks implements ASMCommon {
   public static boolean doHideChatBackground = false;
   public static boolean allowPlaceThroughEntities = false;
   public static boolean makeHandAlwaysInactive = false;
-  
+  public static boolean makeIsHittingBlockAlwaysFalse = false;
+  public static boolean preventElytraSoundUpdate = false;
+  public static boolean allowDifferentUserForFreecam = false;
+  public static boolean allowMovementInFreecam = false;
+  public static boolean drawBlockHighlightInWater = false;
+  public static boolean allowCameraClip = false;
+  public static boolean forceControlEntity = false;
+
   /** static hooks */
   
   /**
@@ -162,6 +162,10 @@ public class ForgeHaxHooks implements ASMCommon {
     if (HOOK_onRenderBoat.reportHook()) {
       RenderBoatEvent event = new RenderBoatEvent(boat, entityYaw);
       MinecraftForge.EVENT_BUS.post(event);
+      if (event.getOpacity() < 1F) {
+        GlStateManager.color(1, 1, 1, event.getOpacity());
+        GlStateManager.enableBlend();
+      }
       return event.getYaw();
     } else {
       return entityYaw;
@@ -197,6 +201,21 @@ public class ForgeHaxHooks implements ASMCommon {
   public static boolean onHurtcamEffect(float partialTicks) {
     return HOOK_onHurtcamEffect.reportHook()
       && MinecraftForge.EVENT_BUS.post(new HurtCamEffectEvent(partialTicks));
+  }
+
+  /**
+   * onLoadShader
+   */
+  public static final HookReporter HOOK_onLoadShader =
+          newHookReporter()
+                  .hook("onLoadShader")
+                  .dependsOn(Methods.EntityRenderer_loadEntityShader)
+                  .forgeEvent(LoadShaderEvent.class)
+                  .build();
+
+  public static boolean onLoadShader() {
+    return HOOK_onLoadShader.reportHook()
+            && MinecraftForge.EVENT_BUS.post(new LoadShaderEvent());
   }
   
   /**
@@ -410,24 +429,43 @@ public class ForgeHaxHooks implements ASMCommon {
     return HOOK_onDoBlockCollisions.reportHook()
       && MinecraftForge.EVENT_BUS.post(new DoBlockCollisionsEvent(entity, pos, state));
   }
-  
+
+  /**
+   * onSneakEvent
+   */
+  public static final HookReporter HOOK_onSneakEvent =
+          newHookReporter()
+                  .hook("onSneakEvent")
+                  .dependsOn(Methods.Entity_move)
+                  .build();
+
+  public static boolean onSneakEvent(boolean onGround, boolean isSneaking, Entity in) {
+    if (HOOK_onSneakEvent.reportHook()) {
+      final SneakCheckEvent event = new SneakCheckEvent(in, isSneaking, onGround);
+      MinecraftForge.EVENT_BUS.post(event);
+      return (event.isCancelable() && event.isCanceled()) || (isSneaking && onGround);
+    } else {
+      return (isSneaking && onGround);
+    }
+  }
+
   /**
    * isBlockFiltered
    */
   public static final HookReporter HOOK_isBlockFiltered =
-    newHookReporter()
-      .hook("isBlockFiltered")
-      .dependsOn(TypesMc.Methods.Entity_doBlockCollisions)
-      .build();
-  
+          newHookReporter()
+                  .hook("isBlockFiltered")
+                  .dependsOn(TypesMc.Methods.Entity_doBlockCollisions)
+                  .build();
+
   public static final Set<Class<? extends Block>> LIST_BLOCK_FILTER = Sets.newHashSet();
-  
+
   public static boolean isBlockFiltered(Entity entity, IBlockState state) {
     return HOOK_isBlockFiltered.reportHook()
-      && entity instanceof EntityPlayer
-      && LIST_BLOCK_FILTER.contains(state.getBlock().getClass());
+            && entity instanceof EntityPlayer
+            && LIST_BLOCK_FILTER.contains(state.getBlock().getClass());
   }
-  
+
   /**
    * onApplyClimbableBlockMovement
    */
@@ -871,4 +909,176 @@ public class ForgeHaxHooks implements ASMCommon {
     MinecraftForge.EVENT_BUS.post(event);
     return event.getSound();
   }
+
+  /**
+   * onElytraFlying
+   */
+  
+  public static boolean onElytraFlying(Entity in) {
+    return MinecraftForge.EVENT_BUS.post(new EntityElytraFlyingEvent(in));
+  }
+  
+  /**
+   * onPrintChatLine
+   */
+  public static ITextComponent onPrintChatLine(ITextComponent msg) {
+    AddChatLineEvent event = new AddChatLineEvent(msg);
+    MinecraftForge.EVENT_BUS.post(event);
+    return event.getMessage();
+  }
+
+  /**
+   * onUpdatePlayerMoveState
+   */
+  public static void onUpdatePlayerMoveState(MovementInputFromOptions in) {
+    MinecraftForge.EVENT_BUS.post(new UpdateInputFromOptionsEvent(in));
+  }
+
+  /**
+   * onUpdateMouseState
+   */
+  public static void onUpdateMouseState(MouseHelper in) {
+    MinecraftForge.EVENT_BUS.post(new MouseUpdateEvent(in));
+  }
+  
+  /*TheAlphaEpsilon*/
+  
+  /**
+   * onRenderItem
+   */
+  
+  public static final HookReporter HOOK_renderItemAndEffectIntoGUI =
+		  newHookReporter()
+		  	.hook("onRenderItemAndEffectIntoGui")
+		  	.dependsOn(TypesMc.Methods.RenderItem_renderItemAndEffectIntoGUI)
+		  	.forgeEvent(RenderItemAndEffectIntoGuiEvent.class)
+		  	.build();
+  
+  public static boolean onRenderItemAndEffectIntoGui(ItemStack stack, int x, int y) {
+	  return HOOK_renderItemAndEffectIntoGUI.reportHook()
+			  && MinecraftForge.EVENT_BUS.post(new RenderItemAndEffectIntoGuiEvent(stack, x, y));
+  }
+  
+  /**
+   * onRenderModel
+   */
+  public static final HookReporter HOOK_onRenderModel =
+			newHookReporter()
+				.hook("onRenderModel")
+				.dependsOn(TypesMc.Methods.RenderLivingBase_renderModel)
+				.forgeEvent(RenderEntityModelEvent.class)
+				.build();
+	
+	public static boolean onRenderModel(ModelBase modelBase,
+			Entity entity,
+			float limbSwing,
+			float limbSwingAmount,
+			float age,
+			float yaw,
+			float pitch,
+			float scale) {
+		
+		return HOOK_onRenderModel.reportHook()
+				&& MinecraftForge.EVENT_BUS.post(
+						new RenderEntityModelEvent(0, 
+								modelBase, 
+								entity, 
+								limbSwing, 
+								limbSwingAmount, 
+								age, 
+								yaw, 
+								pitch, 
+								scale));
+	}
+	
+	/**
+	 * onRenderEnderCrystal
+	 */
+	public static final HookReporter HOOK_onRenderEnderCrystal =
+			newHookReporter()
+				.hook("onRenderEnderCrystal")
+				.dependsOn(TypesMc.Methods.RenderEnderCrystal_doRender)
+				.forgeEvent(RenderEnderCrystalEvent.class)
+				.build();
+	
+
+	public static boolean onRenderEnderCrystal(ModelBase model, EntityEnderCrystal crystal, float height, float rotation) {
+		
+		return HOOK_onRenderEnderCrystal.reportHook() &&
+			MinecraftForge.EVENT_BUS.post(new RenderEnderCrystalEvent(model, crystal, height, rotation));
+						
+	}
+	
+	
+	/**
+	 * onRenderEntityItem3d
+	 */
+	
+	public static final HookReporter HOOK_onRenderEntityItem3d =
+			newHookReporter()
+				.hook("onRenderEntityItem3d")
+				.dependsOn(TypesMc.Methods.RenderEntityItem_doRender)
+				.forgeEvent(RenderEntityItem3dEvent.class)
+				.build();
+	
+	public static boolean onRenderEntityItem3d(RenderItem renderItem, ItemStack stack, IBakedModel bakedModel) {
+		return HOOK_onRenderEntityItem3d.reportHook() &&
+				MinecraftForge.EVENT_BUS.post(new RenderEntityItem3dEvent(renderItem, stack, bakedModel));
+	}
+	
+	/**
+	 * onRenderEntityItem2d
+	 */
+	
+	public static final HookReporter HOOK_onRenderEntityItem2d =
+			newHookReporter()
+				.hook("onRenderEntityItem2d")
+				.dependsOn(TypesMc.Methods.RenderEntityItem_doRender)
+				.forgeEvent(RenderEntityItem2dEvent.class)
+				.build();
+	
+	public static boolean onRenderEntityItem2d(RenderItem renderItem, ItemStack stack, IBakedModel bakedModel) {
+		return HOOK_onRenderEntityItem2d.reportHook() &&
+				MinecraftForge.EVENT_BUS.post(new RenderEntityItem2dEvent(renderItem, stack, bakedModel));
+	}
+	
+	public static void testingMethod() {
+		Helper.printMessageNaked("Testing method was called");
+  }
+  
+  /**
+	 * onApplyRotations
+	 */
+  public static float onApplyRotations(EntityLivingBase in, float yaw) {
+    if (in instanceof EntityPlayerSP) { // maybe i should check if it equals local player?
+      ModelRotationEvent e = new ModelRotationEvent.Yaw(yaw);
+      MinecraftForge.EVENT_BUS.post(e);
+      return e.get();
+    } else {
+      return yaw;
+    }
+  }
+
+  /**
+	 * onRenderModel but for head
+	 */
+  public static float onRenderModelHead(EntityLivingBase in, float pitch) {
+    if (in instanceof EntityPlayerSP) { // maybe i should check if it equals local player?
+      ModelRotationEvent e = new ModelRotationEvent.Pitch(pitch);
+      MinecraftForge.EVENT_BUS.post(e);
+      return e.get();
+    } else {
+      return pitch;
+    }
+  }
+
+  /**
+	 * onPigTravel
+	 */
+  public static Vec3d onPigTravel(EntityLivingBase in) {
+    PigTravelEvent e = new PigTravelEvent(in);
+    MinecraftForge.EVENT_BUS.post(e);
+    return new Vec3d(e.getStrafe(), e.getJump(), e.getForward());
+  }
+	
 }

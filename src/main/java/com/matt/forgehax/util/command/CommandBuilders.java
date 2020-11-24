@@ -1,5 +1,6 @@
 package com.matt.forgehax.util.command;
 
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.serialization.ISerializableJson;
 
 /**
@@ -41,6 +42,10 @@ public class CommandBuilders {
   
   public <T extends Enum<T>> SettingEnumBuilder<T> newSettingEnumBuilder() {
     return new SettingEnumBuilder<T>().parent(parent);
+  }
+
+  public <T extends Color> SettingColorBuilder newSettingColorBuilder() {
+    return new SettingColorBuilder().parent(parent);
   }
   
   public <T extends ISerializableJson> OptionsBuilder<T> newOptionsBuilder() {

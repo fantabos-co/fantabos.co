@@ -22,13 +22,15 @@ public class GuiTextInput extends GuiElement {
   private static final int ELEMENT_IN = Color.of(100, 100, 100, 150).toBuffer();
 
   private int ticks;
-  private boolean isActive;
 
   private int selectedIndex = -1;
   private final StringBuilder input = new StringBuilder();
 
+  private Setting setting;
+
   public GuiTextInput(Setting settingIn, GuiWindowSetting parent) {
     super(settingIn, parent);
+    this.setting = settingIn;
     height = 15;
   }
 

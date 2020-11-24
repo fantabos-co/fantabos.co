@@ -1,12 +1,16 @@
 package com.matt.forgehax.mods;
 
+import static com.matt.forgehax.Helper.getCurrentScreen;
 import static com.matt.forgehax.Helper.getModManager;
+
+import com.matt.forgehax.gui.PromptGui;
+import com.matt.forgehax.mods.services.RainbowService;
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.math.AlignHelper.Align;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import com.matt.forgehax.util.mod.BaseMod;
-import com.matt.forgehax.util.mod.ServiceMod;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ListMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
@@ -16,10 +20,21 @@ import java.util.List;
 
 import net.minecraft.client.gui.*;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterMod
 public class ActiveModList extends ListMod {
+
+  private final Setting<Color> color =
+          getCommandStub()
+                  .builders()
+                  .newSettingColorBuilder()
+                  .name("color")
+                  .description("activemodlist color")
+                  .defaultTo(Color.of(255, 255, 255, 1))
+                  .build();
+
   private final Setting<Boolean> showDebugText =
       getCommandStub()
           .builders()
@@ -46,6 +61,15 @@ public class ActiveModList extends ListMod {
           .description("Condense ModList when chat is open")
           .defaultTo(false)
           .build();
+
+  private final Setting<Boolean> rainbow =
+          getCommandStub()
+                  .builders()
+                  .<Boolean>newSettingBuilder()
+                  .name("rainbow")
+                  .description("Change color")
+                  .defaultTo(false)
+                  .build();
 
   public ActiveModList() {
     super(Category.GUI, "ActiveMods", true, "Shows list of all active mods");
@@ -81,17 +105,22 @@ public class ActiveModList extends ListMod {
     return false;
   } // default false
 
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.HIGH)
   public void onRenderScreen(RenderGameOverlayEvent.Text event) {
+    int clr;
+    if (rainbow.get()) clr = RainbowService.getRainbowColor();
+    else clr = color.get().toBuffer();
     List<String> text = new ArrayList<>();
 
-    if ((condense.get() && MC.currentScreen instanceof GuiChat) || MC.gameSettings.showDebugInfo) {
+    if ((condense.get() && getCurrentScreen() instanceof GuiChat)
+        || MC.gameSettings.showDebugInfo
+        || getCurrentScreen() instanceof PromptGui) {
 
       // Total number of service mods
       long serviceMods = getModManager()
           .getMods()
           .stream()
-          .filter(ServiceMod.class::isInstance)
+          .filter(BaseMod::isHidden)
           .count();
 
       // Total number of mods in the client
@@ -126,9 +155,8 @@ public class ActiveModList extends ListMod {
           .map(super::appendArrow)
           .forEach(text::add);
     }
-
     // Prints on screen
     SurfaceHelper.drawTextAlign(text, getPosX(0), getPosY(0),
-        Colors.WHITE.toBuffer(), scale.get(), true, alignment.get().ordinal());
+        clr, scale.get(), true, alignment.get().ordinal());
   }
 }

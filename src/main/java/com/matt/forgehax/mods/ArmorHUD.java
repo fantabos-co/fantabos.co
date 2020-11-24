@@ -15,6 +15,7 @@ import com.matt.forgehax.util.math.AlignHelper.Align;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.item.ItemStack;
 
 /**
@@ -91,7 +92,11 @@ public class ArmorHUD extends HudMod {
         // int x = i - 90 + (9 - iteration) * 20 + 2;
         GlStateManager.enableDepth();
 
-        SurfaceHelper.drawItem(i, getPosX(slot*20), getPosY(bubble_offset));
+        RenderHelper.enableGUIStandardItemLighting();
+
+        MC.getRenderItem().renderItemAndEffectIntoGUI(i, getPosX(slot*20), getPosY(bubble_offset));
+        
+        RenderHelper.disableStandardItemLighting();
 
         GlStateManager.enableTexture2D();
         GlStateManager.disableLighting();

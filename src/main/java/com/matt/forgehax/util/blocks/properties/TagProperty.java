@@ -1,9 +1,9 @@
 package com.matt.forgehax.util.blocks.properties;
 
 import com.google.common.collect.Sets;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.Collection;
 import java.util.Iterator;
 import joptsimple.internal.Strings;
@@ -30,21 +30,22 @@ public class TagProperty implements IBlockProperty {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginArray();
-    for (String tag : tags) {
-      writer.value(tag);
-    }
-    writer.endArray();
+  public void serialize(JsonObject in) {
+    JsonArray add = new JsonArray();
+    for (String tag : tags)
+      add.add(tag);
+
+    in.add(HEADING, add);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginArray();
-    while (reader.hasNext()) {
-      add(reader.nextString());
+  public void deserialize(JsonObject in) {
+    JsonArray from = in.getAsJsonArray(HEADING);
+    if (from == null) return;
+
+    for (JsonElement e : from) {
+      add(e.getAsString());
     }
-    reader.endArray();
   }
   
   @Override

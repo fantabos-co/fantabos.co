@@ -139,6 +139,39 @@ public enum Projectile implements IProjectile {
     public Item getItem() {
       return Items.ENDER_PEARL;
     }
+  // },
+  // // Adding these makes them show but they are wrong!
+  // EXPERIENCE_BOTTLE() {
+  //   @Override
+  //   public Item getItem() {
+  //     return Items.EXPERIENCE_BOTTLE;
+  //   }
+  //   
+  //   // @Override
+  //   // public double getGravity() {
+  //   //   return 0.07D;
+  //   // }
+  //   // 
+  //   // @Override
+  //   // public double getForce(int charge) {
+  //   //   return 0.7D;
+  //   // }
+  // },
+  // SPLASH_POTION() {
+  //   @Override
+  //   public Item getItem() {
+  //     return Items.SPLASH_POTION;
+  //   }
+  // 
+  //   // @Override
+  //   // public double getGravity() {
+  //   //   return 0.05D;
+  //   // }
+  //   // 
+  //   // @Override
+  //   // public double getForce(int charge) {
+  //   //   return 0.5D;
+  //   // }
   };
   
   private static final int MAX_ITERATIONS =

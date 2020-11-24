@@ -1,31 +1,7 @@
 package com.matt.forgehax.asm;
 
 import com.matt.forgehax.asm.TypesMc.Classes;
-import com.matt.forgehax.asm.patches.BlockPatch;
-import com.matt.forgehax.asm.patches.BoatPatch;
-import com.matt.forgehax.asm.patches.BufferBuilderPatch;
-import com.matt.forgehax.asm.patches.BlockLiquidPatch;
-import com.matt.forgehax.asm.patches.ChunkRenderContainerPatch;
-import com.matt.forgehax.asm.patches.ChunkRenderDispatcherPatch;
-import com.matt.forgehax.asm.patches.ChunkRenderWorkerPatch;
-import com.matt.forgehax.asm.patches.EntityLivingBasePatch;
-import com.matt.forgehax.asm.patches.EntityPatch;
-import com.matt.forgehax.asm.patches.EntityPlayerSPPatch;
-import com.matt.forgehax.asm.patches.EntityRendererPatch;
-import com.matt.forgehax.asm.patches.GuiNewChatPatch;
-import com.matt.forgehax.asm.patches.ItemBlockPatch;
-import com.matt.forgehax.asm.patches.KeyBindingPatch;
-import com.matt.forgehax.asm.patches.LayerRenderPatch;
-import com.matt.forgehax.asm.patches.MinecraftPatch;
-import com.matt.forgehax.asm.patches.NetManager$4Patch;
-import com.matt.forgehax.asm.patches.NetManagerPatch;
-import com.matt.forgehax.asm.patches.PlayerControllerMCPatch;
-import com.matt.forgehax.asm.patches.PlayerTabOverlayPatch;
-import com.matt.forgehax.asm.patches.RenderBoatPatch;
-import com.matt.forgehax.asm.patches.RenderChunkPatch;
-import com.matt.forgehax.asm.patches.RenderGlobalPatch;
-import com.matt.forgehax.asm.patches.VisGraphPatch;
-import com.matt.forgehax.asm.patches.WorldPatch;
+import com.matt.forgehax.asm.patches.*;
 import com.matt.forgehax.asm.patches.special.SchematicPrinterPatch;
 import com.matt.forgehax.asm.utils.ASMStackLogger;
 import com.matt.forgehax.asm.utils.transforming.ClassTransformer;
@@ -59,7 +35,7 @@ public class ForgeHaxTransformer implements IClassTransformer, ASMCommon {
     registerTransformer(new EntityLivingBasePatch());
     registerTransformer(new EntityPatch());
     registerTransformer(new EntityPlayerSPPatch());
-	registerTransformer(new EntityRendererPatch());
+    registerTransformer(new EntityRendererPatch());
     registerTransformer(new MinecraftPatch());
     registerTransformer(new NetManagerPatch());
     registerTransformer(new NetManager$4Patch());
@@ -82,7 +58,22 @@ public class ForgeHaxTransformer implements IClassTransformer, ASMCommon {
     registerTransformer(new LayerRenderPatch());
     registerTransformer(new GuiNewChatPatch());
     registerTransformer(new ItemBlockPatch());
+    registerTransformer(new ElytraSoundPatch());
+    registerTransformer(new MovementInputFromOptionsPatch());
+    registerTransformer(new MouseHelperPatch());
     
+    // TheAlphaEpsilon
+    registerTransformer(new RenderItemPatch());
+    registerTransformer(new RenderLivingBasePatch());
+    registerTransformer(new RenderEnderCrystalPatch());
+    registerTransformer(new RenderEntityItemPatch());
+    registerTransformer(new AbstractClientPlayerPatch());
+
+    //Fraaz
+    registerTransformer(new AbstractHorsePatch());
+    registerTransformer(new EntityLlamaPatch());
+    registerTransformer(new EntityPigPatch());
+
     // special transformers
     
     // exclude transformers from Mixin

@@ -3,16 +3,17 @@ package com.matt.forgehax.mods;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
+import com.matt.forgehax.Helper;
 import com.matt.forgehax.asm.ForgeHaxHooks;
+import com.matt.forgehax.asm.events.AddChatLineEvent;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 
 import net.minecraft.client.gui.GuiChat;
-import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
@@ -58,9 +59,22 @@ public class BetterChat extends ToggleMod {
   
   public BetterChat() {
     super(Category.CHAT, "BetterChat", false, "Improve in-game chat");
+    INSTANCE = this;
   }
 
   private float scale;
+  private static BetterChat INSTANCE = null;
+
+  public static ITextComponent addTimestamp(ITextComponent in) {
+    if (INSTANCE == null || !INSTANCE.timestamps.get())
+      return in;
+    
+    String timestamp = new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime()) + " \u23d0";
+    return Helper.getFormattedText(timestamp + TextFormatting.RESET, TextFormatting.DARK_GRAY, false, false)
+                  .appendSibling(Helper.getFormattedText(" ", TextFormatting.WHITE, false, false)
+                    .appendSibling(in)
+                  );
+  }
 
   @Override
   protected void onEnabled() {
@@ -73,12 +87,9 @@ public class BetterChat extends ToggleMod {
     // Don't disable the Chat size hook to prevent accidental history wipes
   }
 
-  @SubscribeEvent(priority = EventPriority.LOW)
-  public void onChat(ClientChatReceivedEvent event) {
-    if (!timestamps.get()) return;
-    String timeStamp = new SimpleDateFormat("HH:mm:ss").format(Calendar.getInstance().getTime());
-    event.setMessage(new TextComponentString(TextFormatting.DARK_GRAY + timeStamp + " \u23d0 " + TextFormatting.RESET)
-                          .appendSibling(event.getMessage()));
+  @SubscribeEvent(priority = EventPriority.HIGHEST)
+  public void onChatLineAdd(AddChatLineEvent event) {
+    event.setMessage(BetterChat.addTimestamp(event.getMessage()));
   }
 
   @SubscribeEvent // Doing this on tick is overkill but flipping booleans should not be that bad and allows 1 mod

@@ -5,6 +5,7 @@ import static com.matt.forgehax.Helper.getLocalPlayer;
 import com.google.common.collect.Lists;
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.asm.events.LocalPlayerUpdateMovementEvent;
+import com.matt.forgehax.asm.events.ModelRotationEvent;
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.mods.managers.PositionRotationManager.RotationState.Local;
 import com.matt.forgehax.util.Utils;
@@ -23,6 +24,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.network.play.server.SPacketPlayerPosLook.EnumFlags;
 import net.minecraft.util.math.Vec3d;
+import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -34,11 +36,21 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class PositionRotationManager extends ServiceMod {
 
   // copy/pasted from ToggleMod
-  private final Setting<Boolean> enabled = getCommandStub()
+  private final Setting<Boolean> enabled =
+    getCommandStub()
       .builders()
       .<Boolean>newSettingBuilder()
       .name("enabled")
       .description("Enables the mod")
+      .defaultTo(true)
+      .build();
+
+  private final Setting<Boolean> show_heading =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("show")
+      .description("Shows where player is watching serverside")
       .defaultTo(true)
       .build();
   
@@ -55,7 +67,7 @@ public class PositionRotationManager extends ServiceMod {
   }
   
   public PositionRotationManager() {
-    super("PositionRotationManager");
+    super("PositionRotationManager", "Allows mods to move player, either serverside only or on both ends");
   }
   
   public final Setting<Double> smooth =
@@ -242,6 +254,16 @@ public class PositionRotationManager extends ServiceMod {
     
     // update the read-only state
     STATE.setCurrentState(gState);
+  }
+
+  @SubscribeEvent
+  public void onRenderPlayer(ModelRotationEvent event) {
+    if (!enabled.get() || !show_heading.get()) return;
+    if (event instanceof ModelRotationEvent.Pitch) {
+      event.set(gState.getServerAngles().getPitch());
+    } else if (event instanceof ModelRotationEvent.Yaw) {
+      event.set(gState.getServerAngles().getYaw());
+    }
   }
   
   @SubscribeEvent(priority = EventPriority.HIGHEST)

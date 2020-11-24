@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.events.RenderEvent;
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
@@ -44,8 +45,8 @@ public class ChunkLogger extends ToggleMod {
   enum DetectionMethodEnum {
     IS_FULL_CHUNK,
     TIMING,
-    BLOCK_CHANGE_THRESHOLD,
-    DECORATOR_BLOCKS_DETECTED,
+    BLOCK_CHANGE_THRESHOLD, // TODO
+    DECORATOR_BLOCKS_DETECTED, // TODO
   }
   
   private final Setting<Integer> max_chunks =
@@ -109,6 +110,23 @@ public class ChunkLogger extends ToggleMod {
           .min(1)
           .max(1000)
           .defaultTo(100)
+          .build();
+
+  private final Setting<Color> color_new =
+      getCommandStub()
+          .builders()
+          .newSettingColorBuilder()
+          .name("color-new")
+          .description("Color for new chunks")
+          .defaultTo(Color.of(191, 97, 106, 255))
+          .build();
+  private final Setting<Color> color_old =
+      getCommandStub()
+          .builders()
+          .newSettingColorBuilder()
+          .name("color-old")
+          .description("Color for old chunks")
+          .defaultTo(Color.of(128, 128, 128, 128))
           .build();
   
   private final Lock chunkLock = new ReentrantLock();
@@ -190,6 +208,9 @@ public class ChunkLogger extends ToggleMod {
     } finally {
       chunkLock.unlock();
     }
+
+    int c_new = color_new.get().toBuffer();
+    int c_old = color_old.get().toBuffer();
     
     copy.forEach(
         chunk -> {
@@ -209,7 +230,7 @@ public class ChunkLogger extends ToggleMod {
               break;
           }
           
-          int color = chunk.isNewChunk() ? Colors.BETTER_PINK.toBuffer() : Colors.WHITE.toBuffer();
+          int color = chunk.isNewChunk() ? c_new : c_old;
           
           GeometryTessellator.drawQuads(
               event.getBuffer(),

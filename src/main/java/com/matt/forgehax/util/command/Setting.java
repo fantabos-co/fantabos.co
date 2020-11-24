@@ -1,15 +1,12 @@
 package com.matt.forgehax.util.command;
 
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import com.matt.forgehax.mods.services.ForgeHaxService;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.util.SafeConverter;
 import com.matt.forgehax.util.command.callbacks.OnChangeCallback;
 import com.matt.forgehax.util.command.exception.CommandBuildException;
 import com.matt.forgehax.util.console.ConsoleIO;
 import com.matt.forgehax.util.serialization.ISerializableJson;
 import com.matt.forgehax.util.typeconverter.TypeConverter;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -54,13 +51,21 @@ public class Setting<E> extends Command implements ISerializableJson {
 
       Boolean defaultProcessor = (Boolean) data.getOrDefault(DEFAULTPROCESSOR, true);
       if (defaultProcessor) {
+        parser.acceptsAll(Arrays.asList("force", "f"), "Set a value ignoring min/max");
+
         processors.add(
             in -> {
-              in.requiredArguments(1);
+              if (in.getArgumentCount() == 0) {
+                in.write(getPrintText());
+                return;
+              }
+              
               Object arg = in.getArgument(0);
+              boolean force = in.hasOption("force");
               if (arg != null) {
-                rawSet(String.valueOf(arg));
-                serialize();
+                if (force) rawForceSet(String.valueOf(arg));
+                else rawSet(String.valueOf(arg));
+                // serialize();
                 in.markSuccess();
               } else {
                 in.markFailed();
@@ -70,7 +75,7 @@ public class Setting<E> extends Command implements ISerializableJson {
 
       Boolean resetAutoGen = (Boolean) data.getOrDefault(RESETAUTOGEN, true);
       if (resetAutoGen) {
-        parser.acceptsAll(Arrays.asList("r", "reset"), "Sets the command to its default value");
+        parser.acceptsAll(Arrays.asList("reset"), "Sets the command to its default value");
       }
 
       // set with constraints
@@ -138,7 +143,7 @@ public class Setting<E> extends Command implements ISerializableJson {
     return converter.toString(get());
   }
 
-  public boolean set(E value, final boolean commandOutput) {
+  public E cap(E value) {
     if (comparator != null && value != null && this.value != null) {
       // clamp value to minimum and maximum value
       if (minValue != null && comparator.compare(value, minValue) < 0) {
@@ -147,27 +152,47 @@ public class Setting<E> extends Command implements ISerializableJson {
         value = maxValue;
       }
     }
+    return value;
+  }
 
-    if (!Objects.equals(get(), value)) {
-      OnChangeCallback<E> cb = new OnChangeCallback<>(this, get(), value);
-      invokeCallbacks(CallbackType.CHANGE, cb);
-      if (cb.isCanceled()) {
-        return false;
-      }
+  public boolean set(E value, final boolean commandOutput) {
+    value = cap(value);
 
-      if (commandOutput) {
-        String logMsg = String.format("%s = %s", getAbsoluteName(), converter.toStringSafe(value));
-        ConsoleIO.write(logMsg); // Print for every other setting
-      }
+    boolean was_set = set_and_invoke(value);
 
-      this.value = value;
-      return true;
+    if (was_set && commandOutput) {
+      String logMsg = String.format("%s = %s", getAbsoluteName(), converter.toStringPretty(value));
+      ConsoleIO.write(logMsg); // Print for every other setting
     }
-    return false;
+    return was_set;
   }
 
   public boolean set(E value) {
     return set(value, true);
+  }
+
+  public boolean force_set(E value) {
+    // Force set should always be logged
+    boolean was_set = set_and_invoke(value);
+
+    if (was_set) {
+      String logMsg = String.format("%s := %s", getAbsoluteName(), converter.toStringPretty(value));
+      ConsoleIO.write(logMsg); // Print for every other setting
+    }
+
+    return was_set;
+  }
+
+  private boolean set_and_invoke(E value) {
+    if (!Objects.equals(get(), value)) {
+      OnChangeCallback<E> cb = new OnChangeCallback<>(this, get(), value);
+      invokeCallbacks(CallbackType.CHANGE, cb);
+      if (cb.isCanceled())
+        return false;
+      this.value = value;
+      return true;
+    }
+    return false;
   }
 
   public boolean rawSet(String value, boolean output) {
@@ -176,6 +201,10 @@ public class Setting<E> extends Command implements ISerializableJson {
 
   public boolean rawSet(String value) {
     return rawSet(value, true);
+  }
+
+  public boolean rawForceSet(String value) {
+    return force_set(converter.parseSafe(value));
   }
 
   public boolean reset(boolean commandOutput) {
@@ -188,7 +217,7 @@ public class Setting<E> extends Command implements ISerializableJson {
 
   @Override
   public String getPrintText() {
-    return getName() + " = " + getAsString() + " - " + getDescription();
+    return getName() + " = " + converter.toStringPretty(get()) + " - " + getDescription();
   }
 
   @Override
@@ -201,22 +230,22 @@ public class Setting<E> extends Command implements ISerializableJson {
   public boolean removeChild(@Nonnull Command child) {
     return false;
   }
-
+  
   @Nullable
   @Override
   public Command getChild(String name) {
     return null;
   }
-
+  
   @Override
   public Collection<Command> getChildren() {
     return Collections.emptySet();
   }
-
+  
   @Override
   public void getChildrenDeep(Collection<Command> all) {
   }
-
+  
   @Override
   public Collection<Command> getChildrenDeep() {
     return Collections.emptySet();
@@ -226,9 +255,9 @@ public class Setting<E> extends Command implements ISerializableJson {
   protected boolean preprocessor(String[] args) {
     if (args.length > 0) {
       String opt = args[0];
-      if (opt.matches("-r|--reset")) {
+      if (opt.matches("--reset")) {
         reset(true);
-        serialize();
+        // serialize();
         return false;
       }
     }
@@ -236,22 +265,23 @@ public class Setting<E> extends Command implements ISerializableJson {
   }
 
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginObject();
-
-    writer.name("value");
-    writer.value(getAsString());
-
-    writer.endObject();
+  public void reset_defaults() {
+    this.set(this.getDefault(), false);
   }
 
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginObject();
+  public void serialize(JsonObject in) {
+    // Settings can't have children, so just serialize self
+    if (!get().equals(getDefault()))
+      in.addProperty(getName(), getAsString());
+  }
 
-    reader.nextName(); // value
-    rawSet(reader.nextString(), false);
-
-    reader.endObject();
+  @Override
+  public void deserialize(JsonObject in) {
+    // Settings can't have children, so just deserialize self
+    if (in.get(getName()) != null) {
+      String from = in.get(getName()).getAsString();
+      if (from != null) rawSet(from, false);
+    }
   }
 }

@@ -178,10 +178,11 @@ public class GuiWindowMod extends GuiWindow {
         if (state == MouseButtons.LEFT.id) {
           button.toggleMod();
           break;
-        } else if (state == MouseButtons.RIGHT.id) {
+        } else if (state == MouseButtons.RIGHT.id) { //Where the options window is created
           GuiWindowSetting gui = new GuiWindowSetting(button.getMod(), x, y);
           if (!ClickGui.getInstance().windowList.contains(gui))
             ClickGui.getInstance().windowList.add(gui);
+        	ClickGui.getInstance().moveWindowToTop(gui);
         }
       }
     }

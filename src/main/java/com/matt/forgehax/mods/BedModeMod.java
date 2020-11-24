@@ -29,7 +29,7 @@ public class BedModeMod extends ToggleMod {
   @Override
   public String getDisplayText() {
     if (sleeping)
-      return (getModName() + " [" + TextFormatting.BLUE + "SLEEPING" + TextFormatting.WHITE + "]");
+      return (getModName() + " [" + TextFormatting.BLUE + "SLEEPING" + TextFormatting.RESET + "]");
     return (getModName());
   }
 

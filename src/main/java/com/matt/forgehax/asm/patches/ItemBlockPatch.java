@@ -8,19 +8,13 @@ import com.matt.forgehax.asm.utils.transforming.Inject;
 import com.matt.forgehax.asm.utils.transforming.MethodTransformer;
 import com.matt.forgehax.asm.utils.transforming.RegisterMethodTransformer;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Objects;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.util.Printer;
-import org.objectweb.asm.util.Textifier;
-import org.objectweb.asm.util.TraceMethodVisitor;
 
 public class ItemBlockPatch extends ClassTransformer {
   
@@ -83,20 +77,6 @@ public class ItemBlockPatch extends ClassTransformer {
       // insnList.add(new IntInsnNode(ASTORE, 14));
     
       main.instructions.insert(getBlockNode, insnList); // This is super broken :(
-      
-      // for (AbstractInsnNode i : main.instructions.toArray())
-      //   LOGGER.warn(insnToString(i));
     }
   }
-
-  // public static String insnToString(AbstractInsnNode insn){
-  //   insn.accept(mp);
-  //   StringWriter sw = new StringWriter();
-  //   printer.print(new PrintWriter(sw));
-  //   printer.getText().clear();
-  //   return sw.toString();
-  // }
-  // 
-  // private static Printer printer = new Textifier();
-  // private static TraceMethodVisitor mp = new TraceMethodVisitor(printer); 
 }

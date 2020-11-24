@@ -77,6 +77,27 @@ public class CoordsHud extends HudMod {
           .description("Hide true coordinates")
           .defaultTo(false)
           .build();
+  
+  private DecimalFormatSymbols symbols;
+
+  private final Setting<Boolean> correct =
+		  getCommandStub()
+		  .builders()
+		  .<Boolean>newSettingBuilder()
+		  .name("correctNumber")
+		  .description("Displays numbers correctly (read: American)")
+		  .defaultTo(false)
+		  .changed(c -> {
+			  if(c.getTo()) {
+				  symbols.setGroupingSeparator(',');
+				  symbols.setDecimalSeparator('.');
+			  } else {
+				  symbols.setGroupingSeparator('.');
+				  symbols.setDecimalSeparator(',');
+			  }
+			  formatter = new DecimalFormat("##,###,##0", symbols);
+		  })
+		  .build();
 
   @Override
   protected Align getDefaultAlignment() {
@@ -100,9 +121,11 @@ public class CoordsHud extends HudMod {
 
   @Override
   protected void onLoad() {
-    symbols = new DecimalFormatSymbols(Locale.US);
-    symbols.setDecimalSeparator(',');
-    symbols.setGroupingSeparator('.');
+	symbols = new DecimalFormatSymbols(Locale.US);
+    if(!correct.getAsBoolean()) {
+    	symbols.setDecimalSeparator(',');
+    	symbols.setGroupingSeparator('.');
+    }
     formatter = new DecimalFormat("##,###,##0", symbols);
     formatter.setGroupingSize(3);
   }
@@ -113,7 +136,6 @@ public class CoordsHud extends HudMod {
   double otherX;
   double otherZ;
 
-  private DecimalFormatSymbols symbols;
   private DecimalFormat formatter;
 
   @SubscribeEvent
@@ -145,7 +167,6 @@ public class CoordsHud extends HudMod {
   @SubscribeEvent
   public void onRenderOverlay(RenderGameOverlayEvent.Text event) {
     List<String> text = new ArrayList<>();
-
     // Direction
     String facingNormal = String.format("%s " + TextFormatting.GRAY + "[%s]" + TextFormatting.WHITE,
                                   facingTable[getPlayerDirection()], towardsTable[getPlayerDirection()]);

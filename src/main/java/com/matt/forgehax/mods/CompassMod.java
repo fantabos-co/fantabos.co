@@ -2,6 +2,7 @@ package com.matt.forgehax.mods;
 
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.events.Render2DEvent;
+import com.matt.forgehax.mods.services.RainbowService;
 import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
@@ -38,37 +39,32 @@ public class CompassMod extends ToggleMod {
           .description("Shows axis instead of cardinal directions")
           .defaultTo(false)
           .build();
-      
-  private final Setting<Integer> red =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("red")
-          .description("Red amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(191)
-          .build();
-  private final Setting<Integer> green =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("green")
-          .description("Green amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(97)
-          .build();
-  private final Setting<Integer> blue =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("blue")
-          .description("Blue amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(106)
-          .build();
+
+  private final Setting<Color> color_north =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-north")
+      .description("Color for North direction")
+      .defaultTo(Color.of(191, 97, 106, 255))
+      .build();
+  private final Setting<Color> color_normal =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-compass")
+      .description("Color for other directions")
+      .defaultTo(Color.of(255, 255, 255, 255))
+      .build();
+
+    private final Setting<Boolean> rainbow =
+            getCommandStub()
+                    .builders()
+                    .<Boolean>newSettingBuilder()
+                    .name("rainbow")
+                    .description("Change color")
+                    .defaultTo(false)
+                    .build();
   
   private static final double HALF_PI = Math.PI / 2;
   
@@ -85,6 +81,9 @@ public class CompassMod extends ToggleMod {
   
   @SubscribeEvent
   public void onRender(Render2DEvent event) {
+      int clr;
+      if (rainbow.get()) clr = RainbowService.getRainbowColor();
+      else clr = color_north.get().toBuffer();
     final double centerX = event.getScreenWidth() / 2;
     final double centerY = event.getScreenHeight() * 0.8;
     
@@ -105,7 +104,7 @@ public class CompassMod extends ToggleMod {
           dir_name,
           (float) (centerX + getX(rad)),
           (float) (centerY + getY(rad)),
-          dir == Direction.N ? Color.of(red.get(), green.get(), blue.get(), 255).toBuffer() : Colors.WHITE.toBuffer());
+          dir == Direction.N ? clr : color_normal.get().toBuffer());
       
     }
     

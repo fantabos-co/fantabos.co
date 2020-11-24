@@ -70,7 +70,7 @@ public class SpamService extends ServiceMod {
   private Map<String, AtomicLong> customDelays = Maps.newConcurrentMap();
   
   public SpamService() {
-    super("SpamService");
+    super("SpamService", "Send periodic messages in chat");
   }
   
   @Override

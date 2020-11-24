@@ -1,8 +1,6 @@
 package com.matt.forgehax.util.blocks.properties;
 
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
+import com.google.gson.JsonObject;
 
 /**
  * Created on 5/24/2017 by fr1kin
@@ -38,13 +36,14 @@ public class ToggleProperty implements IBlockProperty {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.value(enabled);
+  public void serialize(JsonObject in) {
+    in.addProperty(HEADING, enabled);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    setEnabled(reader.nextBoolean());
+  public void deserialize(JsonObject in) {
+    if (in.get(HEADING) != null)
+      setEnabled(in.get(HEADING).getAsBoolean());
   }
   
   @Override

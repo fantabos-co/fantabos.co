@@ -1,14 +1,12 @@
 package com.matt.forgehax.util.command;
 
 import com.google.common.base.Strings;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.util.command.callbacks.CallbackData;
 import com.matt.forgehax.util.command.exception.CommandBuildException;
 import com.matt.forgehax.util.command.exception.CommandExecuteException;
 import com.matt.forgehax.util.key.IKeyBind;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import java.io.IOException;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.settings.KeyBinding;
@@ -18,7 +16,7 @@ import org.lwjgl.input.Keyboard;
 /**
  * Created on 6/8/2017 by fr1kin
  */
-public class CommandStub extends Command implements IKeyBind, ISerializableJson {
+public class CommandStub extends Command implements IKeyBind {
   
   public static final String KEYBIND = "Command.keybind";
   public static final String KEYBIND_OPTIONS = "Command.keybind_options";
@@ -51,13 +49,13 @@ public class CommandStub extends Command implements IKeyBind, ISerializableJson 
                 }
                 
                 bind(kc);
-                serialize();
+                // serialize();
                 
                 dt.write(String.format("Bound %s to key %s [code=%d]", getAbsoluteName(), key, kc));
                 dt.stopProcessing();
               } else if (dt.hasOption("unbind")) {
                 unbind();
-                serialize();
+                // serialize();
                 
                 dt.write(String.format("Unbound %s", getAbsoluteName()));
                 dt.stopProcessing();
@@ -76,32 +74,34 @@ public class CommandStub extends Command implements IKeyBind, ISerializableJson 
       bind = null;
     }
   }
-  
+
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginObject();
-    
-    writer.name("bind");
-    if (bind != null) {
-      writer.value(bind.getKeyCode());
-    } else {
-      writer.value(-1);
-    }
-    
-    writer.endObject();
+  public void reset_defaults() {
+    getChildren().forEach(c -> c.reset_defaults());
+    if (bind != null)
+      unbind();
+  }
+
+  @Override
+  public void serialize(JsonObject in) {
+    JsonObject add = new JsonObject();
+    getChildren().forEach(c -> c.serialize(add));
+    if (bind != null && bind.getKeyCode() > 0) add.addProperty("bind", bind.getKeyCode());
+    if (!add.entrySet().isEmpty())
+      in.add(getName(), add);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginObject();
-    
-    reader.nextName();
-    int kc = reader.nextInt();
-    if (kc > -1) {
-      bind(kc);
+  public void deserialize(JsonObject in) {
+    JsonObject from = in.getAsJsonObject(getName());
+    if (from == null) {
+      unbind();
+      return;
     }
-    
-    reader.endObject();
+    getChildren().forEach(c -> c.deserialize(from));
+    if (from.get("bind") != null && from.get("bind").getAsInt() > 0)
+      bind(from.get("bind").getAsInt());
+    else unbind();
   }
   
   @Override

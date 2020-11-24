@@ -96,7 +96,7 @@ public abstract class GuiWindow {
 
   public void drawWindow(int mouseX, int mouseY) {
     ClickGui.scaledRes = new ScaledResolution(MC);
-    int color = Color.of(gui.red.get(), gui.green.get(), gui.blue.get(), 255).toBuffer();
+    int color = gui.color.get().toBuffer();
     if (dragging) {
       posX = mouseX - dragX;
       headerY = mouseY - dragY;
@@ -104,13 +104,9 @@ public abstract class GuiWindow {
     drawHeader();
     windowY = headerY + 21;
     if (!isHidden) {
-      int actualHeight;
-      if (this instanceof GuiWindowMod) { // This is ugly af, TODO despaghettify!
-        actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() * 
+      int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() * 
                           getModManager().get(GuiService.class).get().max_height.get());
-      } else {
-        actualHeight = height;
-      }
+      
       SurfaceHelper.drawOutlinedRectShaded(
         posX, windowY, width, actualHeight, color, 80, 3);
     }
@@ -120,7 +116,8 @@ public abstract class GuiWindow {
 
   public void drawHeader() {
     // draw the title of the window
-    int color = Color.of(gui.red.get() + 22, gui.green.get() + 22, gui.blue.get() + 22, 255).toBuffer();
+    Color c = gui.color.get();
+    int color = Color.of(c.getRed() + 22, c.getGreen() + 22, c.getBlue() + 22, c.getAlpha()).toBuffer();
     SurfaceHelper.drawOutlinedRectShaded(
       posX, headerY, width, 20, color, 50, 5);
     SurfaceHelper.drawTextShadowCentered(

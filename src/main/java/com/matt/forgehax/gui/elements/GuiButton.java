@@ -35,9 +35,9 @@ public class GuiButton {
 
   public void toggleMod() {
     if (!mod.isEnabled()) {
-      mod.enable(ForgeHaxService.INSTANCE.toggleMsgs.get());
+      mod.enable(ForgeHaxService.getInstance().toggleMsgs.get());
     } else {
-      mod.disable(ForgeHaxService.INSTANCE.toggleMsgs.get());
+      mod.disable(ForgeHaxService.getInstance().toggleMsgs.get());
     }
   }
 

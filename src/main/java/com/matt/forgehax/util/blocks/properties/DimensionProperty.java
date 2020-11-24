@@ -1,10 +1,9 @@
 package com.matt.forgehax.util.blocks.properties;
 
 import com.google.common.collect.Sets;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonToken;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
@@ -58,19 +57,23 @@ public class DimensionProperty implements IBlockProperty {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginArray();
+  public void serialize(JsonObject in) {
+    JsonArray add = new JsonArray();
+
     for (DimensionType dimension : dimensions) {
-      writer.value(dimension.getName());
+      add.add(dimension.getName());
     }
-    writer.endArray();
+
+    in.add(HEADING, add);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginArray();
-    while (reader.hasNext() && reader.peek().equals(JsonToken.STRING)) {
-      String dim = reader.nextString();
+  public void deserialize(JsonObject in) {
+    JsonArray from = in.getAsJsonArray(HEADING);
+    if (from == null) return;
+
+    for (JsonElement e : from) {
+      String dim = e.getAsString();
       for (DimensionType type : DimensionType.values()) {
         if (Objects.equals(type.getName(), dim)) {
           add(type);

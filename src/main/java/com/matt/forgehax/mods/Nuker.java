@@ -7,6 +7,9 @@ import static com.matt.forgehax.Helper.getWorld;
 import static com.matt.forgehax.Helper.printError;
 import static com.matt.forgehax.Helper.printInform;
 import static com.matt.forgehax.Helper.printWarning;
+import static com.matt.forgehax.Helper.getWorld;
+import static com.matt.forgehax.Helper.getLocalPlayer;
+import static com.matt.forgehax.Helper.getModManager;
 
 import com.google.common.collect.Lists;
 import com.matt.forgehax.asm.events.BlockControllerProcessEvent;
@@ -45,6 +48,10 @@ import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.Entity;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RegisterMod
 public class Nuker extends ToggleMod implements PositionRotationManager.MovementUpdateListener {
@@ -53,6 +60,7 @@ public class Nuker extends ToggleMod implements PositionRotationManager.Movement
   
   private final List<UniqueBlock> targets = Lists.newArrayList();
   private final AtomicBoolean attackToggle = new AtomicBoolean(false);
+
   
   private BlockPos currentTarget = null;
   
@@ -133,6 +141,15 @@ public class Nuker extends ToggleMod implements PositionRotationManager.Movement
           .description("Will prefer higher blocks (good for mining sand).")
           .defaultTo(false)
           .build();
+
+  private final Setting<Boolean> playerRender =
+        getCommandStub()
+            .builders()
+            .<Boolean>newSettingBuilder()
+            .name("playerRender")
+            .description("Stop mining if there's atleast someone in Render")
+            .defaultTo(false)
+            .build();
   
   public Nuker() {
     super(Category.WORLD, "Nuker", false, "Mine blocks around yourself");
@@ -189,10 +206,25 @@ public class Nuker extends ToggleMod implements PositionRotationManager.Movement
       currentTarget = null;
     }
   }
+
+  @Override
+  public void onLoad() {
+    getCommandStub()
+        .builders()
+        .newCommandBuilder()
+        .name("clear")
+        .description("Remove all selected blocks")
+        .processor(
+            data -> {
+              targets.clear();
+              printInform("Removed all selected blocks");
+            })
+        .build();
+  }
   
   @Override
   protected void onEnabled() {
-    PositionRotationManager.getManager().register(this, PriorityEnum.HIGH);
+    PositionRotationManager.getManager().register(this, PriorityEnum.LOWEST);
     printInform(
         "Select blocks by looking at it and pressing %s", BindingHelper.getIndexName(bindSelect));
   }
@@ -204,6 +236,12 @@ public class Nuker extends ToggleMod implements PositionRotationManager.Movement
   
   @SubscribeEvent
   public void onUpdate(LocalPlayerUpdateEvent event) {
+    Entity player = getWorld().loadedEntityList.stream()
+    .filter(EntityUtils::isPlayer)
+    .filter(e -> !Objects.equals(getLocalPlayer(), e))
+    .findAny()
+    .orElse(null);
+    if(player!=null&&playerRender.get()) return;
     if (bindSelect.isKeyDown() && attackToggle.compareAndSet(false, true)) {
       UniqueBlock info = null;
       RayTraceResult tr = LocalPlayerUtils.getMouseOverBlockTrace();
@@ -246,10 +284,20 @@ public class Nuker extends ToggleMod implements PositionRotationManager.Movement
   
   @Override
   public void onLocalPlayerMovementUpdate(Local state) {
+    Entity player = getWorld().loadedEntityList.stream()
+        .filter(EntityUtils::isPlayer)
+        .filter(e -> !Objects.equals(getLocalPlayer(), e))
+        .findAny()
+        .orElse(null);
+    if(player!=null&&playerRender.get()) return;
+
+
+
     if (targets.isEmpty()) {
       resetBlockBreaking();
       return;
     }
+
     
     final Vec3d eyes = EntityUtils.getEyePos(getLocalPlayer());
     final Vec3d dir =

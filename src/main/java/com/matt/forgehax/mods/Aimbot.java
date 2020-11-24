@@ -7,7 +7,7 @@ import static com.matt.forgehax.Helper.getModManager;
 
 import com.matt.forgehax.mods.managers.PositionRotationManager;
 import com.matt.forgehax.mods.managers.PositionRotationManager.RotationState;
-import com.matt.forgehax.mods.services.FriendService;
+import com.matt.forgehax.mods.managers.FriendManager;
 import com.matt.forgehax.mods.services.TickRateService;
 import com.matt.forgehax.util.Utils;
 import com.matt.forgehax.util.command.Setting;
@@ -24,6 +24,7 @@ import com.matt.forgehax.util.projectile.Projectile;
 import java.util.Comparator;
 import java.util.Optional;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
@@ -47,6 +48,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
   enum Selector {
     CROSSHAIR,
     DISTANCE,
+    HEALTH
   }
   
   private final Setting<Boolean> silent =
@@ -206,7 +208,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
           .builders()
           .<Selector>newSettingEnumBuilder()
           .name("selector")
-          .description("The method used to select a target from a group")
+          .description("The method used to select a target from a group [crosshair/distance/health]")
           .defaultTo(Selector.CROSSHAIR)
           .build();
 
@@ -247,6 +249,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
     } else {
       return 0.D;
     }
+    
   }
   
   private boolean canAttack(EntityPlayer localPlayer, Entity target) {
@@ -302,7 +305,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
   private boolean isFiltered(Entity entity) {
     switch (EntityUtils.getRelationship(entity)) {
       case PLAYER:
-        if (friend_filter.get() && getModManager().get(FriendService.class).get().isFriendly(entity.getName()))
+        if (friend_filter.get() && FriendManager.isFriendly(entity.getName()))
           return false;
         return target_players.get();
       case FRIENDLY:
@@ -337,6 +340,17 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
     switch (selector.get()) {
       case DISTANCE:
         return getAttackPosition(entity).subtract(pos).lengthSquared();
+      case HEALTH:
+        if (entity instanceof EntityLivingBase) {
+          EntityLivingBase e = (EntityLivingBase) entity;
+          if (e.getHealth() + e.getAbsorptionAmount() <= 0) {
+            return 100d + getAttackPosition(entity).subtract(pos).lengthSquared(); // don't attack dead entities!
+          } else {
+            return Math.pow((e.getHealth() + e.getAbsorptionAmount())/20d, 2d);
+          }
+        } else {
+          return 20d + getAttackPosition(entity).subtract(pos).lengthSquared(); // higher than any living
+        }
       case CROSSHAIR:
       default:
         return getAttackPosition(entity)
@@ -363,6 +377,7 @@ public class Aimbot extends ToggleMod implements PositionRotationManager.Movemen
   
   @Override
   public void onDisabled() {
+    target = null;
     PositionRotationManager.getManager().unregister(this);
   }
   

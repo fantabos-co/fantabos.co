@@ -1,184 +1,112 @@
 package com.matt.forgehax.mods;
 
-import static com.matt.forgehax.Helper.getLocalPlayer;
-import static com.matt.forgehax.Helper.getNetworkManager;
-import static com.matt.forgehax.Helper.getRidingEntity;
-
-import com.google.common.collect.Lists;
-import com.matt.forgehax.asm.events.PacketEvent;
+import com.matt.forgehax.asm.events.LocalPlayerUpdateMovementEvent;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
-import com.matt.forgehax.util.PacketHelper;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.CPacketPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 @RegisterMod
 public class StepMod extends ToggleMod {
-  
+
   private static final float DEFAULT_STEP_HEIGHT = 0.6f;
-  
-  private final Setting<Boolean> entityStep =
-      getCommandStub()
-          .builders()
-          .<Boolean>newSettingBuilder()
-          .name("entity-step")
-          .description("entitystep")
-          .defaultTo(false)
-          .build();
-  
-  private final Setting<Float> stepHeight =
-      getCommandStub()
-          .builders()
-          .<Float>newSettingBuilder()
-          .name("height")
-          .description("how high you can step")
-          .defaultTo(1.2f)
-          .min(0f)
-          .max(50f)
-          .changed(__ -> MC.addScheduledTask(() -> {
-            if (isEnabled()) {
-              EntityPlayer player = getLocalPlayer();
-              if (player != null) {
-                updateStepHeight(player);
-              }
-            }
-          }))
-          .build();
-  
+
+  private final Setting<Boolean> doubleStep =
+          getCommandStub()
+                  .builders()
+                  .<Boolean>newSettingBuilder()
+                  .name("double-step")
+                  .description("step up 2 blocks instead of just 1")
+                  .defaultTo(false)
+                  .build();
+
   private final Setting<Boolean> unstep =
-      getCommandStub()
-          .builders()
-          .<Boolean>newSettingBuilder()
-          .name("unstep")
-          .description("step down instead of falling")
-          .defaultTo(false)
-          .build();
-  
+          getCommandStub()
+                  .builders()
+                  .<Boolean>newSettingBuilder()
+                  .name("unstep")
+                  .description("step down instead of falling")
+                  .defaultTo(false)
+                  .build();
+
   public StepMod() {
     super(Category.MOVEMENT, "Step", false, "Step up blocks");
   }
-  
-  @Override
-  protected void onEnabled() {
-    EntityPlayer player = getLocalPlayer();
-    if (player != null) {
-      wasOnGround = player.onGround;
-    }
-  }
-  
-  @Override
-  public void onDisabled() {
-    EntityPlayer player = getLocalPlayer();
-    if (player != null) {
-      player.stepHeight = DEFAULT_STEP_HEIGHT;
-    }
-    
-    if (getRidingEntity() != null) {
-      getRidingEntity().stepHeight = 1;
-    }
-  }
-  
-  private void updateStepHeight(EntityPlayer player) {
-    player.stepHeight = player.onGround ? stepHeight.get() : DEFAULT_STEP_HEIGHT;
-  }
-  
-  private boolean wasOnGround = false;
-  
-  private void unstep(EntityPlayer player) {
-    AxisAlignedBB range = player.getEntityBoundingBox().expand(0, -stepHeight.get(), 0)
-        .contract(0, player.height, 0);
-    
-    if (!player.world.collidesWithAnyBlock(range)) {
-      return;
-    }
-    
-    List<AxisAlignedBB> collisionBoxes = player.world.getCollisionBoxes(player, range);
-    AtomicReference<Double> newY = new AtomicReference<>(0D);
-    collisionBoxes.forEach(box -> newY.set(Math.max(newY.get(), box.maxY)));
-    player.setPositionAndUpdate(player.posX, newY.get(), player.posZ);
-  }
-  
-  private void updateUnstep(EntityPlayer player) {
-    try {
-      if (unstep.get() && wasOnGround && !player.onGround && player.motionY <= 0) {
-        unstep(player);
-      }
-    } finally {
-      wasOnGround = player.onGround;
-    }
-  }
-  
+
   @SubscribeEvent
-  public void onLocalPlayerUpdate(LocalPlayerUpdateEvent event) {
-    EntityPlayer player = (EntityPlayer) event.getEntityLiving();
-    if (player == null) {
-      return;
+  public void onLocalPlayerMovementEvent(LocalPlayerUpdateEvent event) {
+
+    if (!MC.player.collidedHorizontally) return;
+    if (!MC.player.onGround || MC.player.isOnLadder() || MC.player.isInWater() || MC.player.isInLava() || MC.player.movementInput.jump || MC.player.noClip) return;
+    if (MC.player.moveForward == 0 && MC.player.moveStrafing == 0) return;
+
+    final double n = get_n_normal();
+
+      if (n < 0 || n > 2) return;
+
+    if (n == 2.0 && doubleStep.get()) {
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.42, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.78, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.63, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.51, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.9, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 1.21, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 1.45, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 1.43, MC.player.posZ, MC.player.onGround));
+      MC.player.setPosition(MC.player.posX, MC.player.posY + 2.0, MC.player.posZ);
     }
-    
-    updateStepHeight(player);
-    updateUnstep(player);
-    
-    if (getRidingEntity() != null) {
-      if (entityStep.getAsBoolean()) {
-        getRidingEntity().stepHeight = 256;
-      } else {
-        getRidingEntity().stepHeight = 1;
+    if (n == 1.5) {
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.41999998688698, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.7531999805212, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 1.00133597911214, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 1.16610926093821, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 1.24918707874468, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 1.1707870772188, MC.player.posZ, MC.player.onGround));
+      MC.player.setPosition(MC.player.posX, MC.player.posY + 1.5, MC.player.posZ);
+    }
+    if (n == 1.0) {
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.41999998688698, MC.player.posZ, MC.player.onGround));
+      MC.player.connection.sendPacket(new CPacketPlayer.Position(MC.player.posX, MC.player.posY + 0.7531999805212, MC.player.posZ, MC.player.onGround));
+      MC.player.setPosition(MC.player.posX, MC.player.posY + 1.0, MC.player.posZ);
+    }
+
+
+  }
+
+ @SubscribeEvent
+  public void onLocalPlayerMovementEvent2(LocalPlayerUpdateMovementEvent event) {
+    if (!MC.player.onGround || MC.player.isOnLadder() || MC.player.isInWater() || MC.player.isInLava() || MC.player.movementInput.jump || MC.player.noClip) return;
+    if (MC.player.moveForward == 0 && MC.player.moveStrafing == 0) return;
+
+    if(unstep.get()) {
+      MC.player.motionY = -1;
+    }
+  }
+
+  public double get_n_normal() {
+
+    MC.player.stepHeight = 0.5f;
+
+    double max_y = -1;
+
+    final AxisAlignedBB grow = MC.player.getEntityBoundingBox().offset(0, 0.05, 0).grow(0.05);
+
+    if (!MC.world.getCollisionBoxes(MC.player, grow.offset(0, 2, 0)).isEmpty()) return 100;
+
+    for (final AxisAlignedBB aabb : MC.world.getCollisionBoxes(MC.player, grow)) {
+
+      if (aabb.maxY > max_y) {
+        max_y = aabb.maxY;
       }
+
     }
+
+    return max_y - MC.player.posY;
+
   }
-  
-  private CPacketPlayer previousPositionPacket = null;
-  
-  @SubscribeEvent
-  public void onPacketSending(PacketEvent.Outgoing.Pre event) {
-    if (event.getPacket() instanceof CPacketPlayer.Position
-        || event.getPacket() instanceof CPacketPlayer.PositionRotation) {
-      CPacketPlayer packetPlayer = event.getPacket();
-      if (previousPositionPacket != null && !PacketHelper.isIgnored(event.getPacket())) {
-        double diffY = packetPlayer.getY(0.f) - previousPositionPacket.getY(0.f);
-        // y difference must be positive
-        // greater than 1, but less than 1.5
-        if (diffY > DEFAULT_STEP_HEIGHT && diffY <= 1.2491870787) {
-          List<Packet> sendList = Lists.newArrayList();
-          // if this is true, this must be a step
-          // now to send additional packets to get around NCP
-          double x = previousPositionPacket.getX(0.D);
-          double y = previousPositionPacket.getY(0.D);
-          double z = previousPositionPacket.getZ(0.D);
-          sendList.add(new CPacketPlayer.Position(x, y + 0.4199999869D, z, true));
-          sendList.add(new CPacketPlayer.Position(x, y + 0.7531999805D, z, true));
-          sendList.add(
-              new CPacketPlayer.Position(
-                  packetPlayer.getX(0.f),
-                  packetPlayer.getY(0.f),
-                  packetPlayer.getZ(0.f),
-                  packetPlayer.isOnGround()));
-          for (Packet toSend : sendList) {
-            PacketHelper.ignore(toSend);
-            getNetworkManager().sendPacket(toSend);
-          }
-          event.setCanceled(true);
-        }
-      }
-      previousPositionPacket = event.getPacket();
-    }
-  }
-  
-  @Override
-  public String getDebugDisplayText() {
-    return String.format(
-        "%s[%s%s]",
-        super.getDisplayText(),
-        stepHeight.get().toString(),
-        unstep.get() ? "+unstep" : ""
-    );
-  }
+
 }

@@ -16,11 +16,32 @@ import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 public class GuiNewChatPatch extends ClassTransformer {
 
   public GuiNewChatPatch() {
     super(Classes.GuiNewChat);
+  }
+
+  @RegisterMethodTransformer
+  private class printChatLinePatch extends MethodTransformer {
+
+    @Override
+    public ASMMethod getMethod() {
+      return Methods.GuiNewChat_setChatLine;
+    }
+
+    @Inject(description = "Add hook to log all messages added to chat")
+    public void inject(MethodNode main) {
+      InsnList insnList = new InsnList();
+
+      insnList.add(new VarInsnNode(ALOAD, 1));
+      insnList.add(ASMHelper.call(INVOKESTATIC, TypesHook.Methods.ForgeHaxHooks_onPrintChatLine));
+      insnList.add(new VarInsnNode(ASTORE, 1));
+      
+      main.instructions.insert(insnList); // inject at top of method
+    }
   }
 
   @RegisterMethodTransformer

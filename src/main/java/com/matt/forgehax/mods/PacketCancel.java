@@ -18,6 +18,7 @@ import joptsimple.internal.Strings;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.network.Packet;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 /**
@@ -85,7 +86,7 @@ public class PacketCancel extends ToggleMod {
                 data.markFailed();
               }
             })
-        .success(cb -> blacklist.serialize())
+        // .success(cb -> blacklist.serialize())
         .build();
     
     blacklist
@@ -105,7 +106,7 @@ public class PacketCancel extends ToggleMod {
               Optional<ClassEntry> match =
                   blacklist
                       .stream()
-                      .filter(entry -> className.contains(entry.getClassName().toLowerCase()))
+                      .filter(entry -> entry.getClassName().toLowerCase().contains(className.toLowerCase()))
                       .sorted(
                           (o1, o2) ->
                               String.CASE_INSENSITIVE_ORDER.compare(
@@ -127,7 +128,7 @@ public class PacketCancel extends ToggleMod {
                 data.markFailed();
               }
             })
-        .success(cb -> blacklist.serialize())
+        // .success(cb -> blacklist.serialize())
         .build();
     
     blacklist
@@ -165,7 +166,7 @@ public class PacketCancel extends ToggleMod {
     count = 0;
   }
   
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.HIGH)
   public void onPacketInbound(PacketEvent.Incoming.Pre event) {
     if (blacklist.get(event.getPacket().getClass()) != null) {
       event.setCanceled(true);
@@ -173,7 +174,7 @@ public class PacketCancel extends ToggleMod {
     }
   }
   
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.HIGH)
   public void onPacketOutbound(PacketEvent.Outgoing.Pre event) {
     if (blacklist.get(event.getPacket().getClass()) != null) {
       event.setCanceled(true);

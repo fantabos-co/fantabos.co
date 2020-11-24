@@ -22,6 +22,18 @@ public class SettingEnumBuilder<E extends Enum<E>>
   }
   
   public SettingEnumBuilder<E> defaultTo(E defaultValue) {
+    try { // add a default help with possible values
+      helpOption(true);
+      help(d -> {   // I do this here because I dunno where I can get enum constants otherwise
+        StringBuilder out = new StringBuilder();
+        out.append("Accepted values | ");
+        E[] constants = (E[]) defaultValue.getClass().getEnumConstants();
+        for (E e : constants) out.append(e.toString() + " ");
+        d.write(out.toString());
+      });
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
     return insert(Setting.DEFAULTVALUE, defaultValue).convertFrom(defaultValue.getClass());
   }
   
@@ -107,6 +119,6 @@ public class SettingEnumBuilder<E extends Enum<E>>
   
   @Override
   public Setting<E> build() {
-    return new Setting<>(has(Command.REQUIREDARGS) ? data : requiredArgs(1).data);
+    return new Setting<>(has(Command.REQUIREDARGS) ? data : requiredArgs(0).data);
   }
 }

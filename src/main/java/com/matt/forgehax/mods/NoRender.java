@@ -15,14 +15,17 @@ import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityFireworkRocket;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.passive.EntityBat;
 import net.minecraft.entity.passive.EntitySquid;
 import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
+import net.minecraft.network.play.server.SPacketEntityStatus;
 import net.minecraft.network.play.server.SPacketExplosion;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraftforge.client.event.RenderLivingEvent;
+import net.minecraftforge.event.entity.EntityEvent;
 import net.minecraftforge.event.entity.PlaySoundAtEntityEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -74,6 +77,10 @@ public class NoRender extends ToggleMod {
       .name("bats")
       .description("Won't render bats")
       .defaultTo(false)
+      .changed(cb -> {
+          if (isEnabled())
+            EntityUtils.isBatsDisabled = cb.getTo();
+        })
       .build();
 
   public final Setting<Boolean> noSquids =
@@ -83,6 +90,10 @@ public class NoRender extends ToggleMod {
       .name("squids")
       .description("Won't render squids")
       .defaultTo(false)
+      .changed(cb -> {
+        if (isEnabled())
+          EntityUtils.isSquidsDisabled = cb.getTo();
+        })
       .build();
 
 
@@ -110,6 +121,15 @@ public class NoRender extends ToggleMod {
       .<Boolean>newSettingBuilder()
       .name("explosions")
       .description("Won't render explosion particles")
+      .defaultTo(false)
+      .build();
+
+  public final Setting<Boolean> noFireworks =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("fireworks")
+      .description("Won't render fireworks")
       .defaultTo(false)
       .build();
 
@@ -268,6 +288,25 @@ public class NoRender extends ToggleMod {
         return;
       }
       event.setCanceled(true);
+    }
+  }
+
+  // Fireworks
+  @SubscribeEvent
+  public void onEntityUpdate(final EntityEvent event) {
+    if (noFireworks.getAsBoolean()) {
+      if (event.getEntity() instanceof EntityFireworkRocket && event.isCancelable())
+        event.setCanceled(true);
+    }
+  }
+  @SubscribeEvent
+  public void onParticleEvent(final PacketEvent.Incoming.Pre event) {
+    if(noFireworks.getAsBoolean() && event.getPacket() instanceof SPacketEntityStatus) {
+      /* Firework explosions are handled by SPacketEntityStatus... this is why I believe in the death penalty */
+      if(getLocalPlayer() == null) return; //There is no end to the pain
+      SPacketEntityStatus packet = event.getPacket();
+      if(packet.getEntity(getWorld(getLocalPlayer())) instanceof EntityFireworkRocket && event.isCancelable())
+        event.setCanceled(true);
     }
   }
 }

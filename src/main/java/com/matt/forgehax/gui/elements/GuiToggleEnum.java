@@ -20,13 +20,20 @@ public class GuiToggleEnum extends GuiElement {
 
   private static final int ELEMENT_OUTLINE = Color.of(65, 65, 65, 200).toBuffer();
   private static final int ELEMENT_IN = Color.of(100, 100, 100, 150).toBuffer();
+  private static final int ELEMENT_IN_PRESSED = Color.of(150, 150, 150, 150).toBuffer();
+
+  private boolean pressed = false;
+
+  private Setting setting;
 
   public GuiToggleEnum(Setting settingIn, GuiWindowSetting parent) {
     super(settingIn, parent);
+    this.setting = settingIn;
     height = 12;
   }
 
   public void mouseClicked(int mouseX, int mouseY, int state) {
+    this.pressed = true;
     Object[] opts = this.setting.get().getClass().getEnumConstants();
     for (int i=0; i<opts.length; i++) { // This is ugly, if you know a better way show me
       if (opts[i].equals(this.setting.get())) {
@@ -40,10 +47,20 @@ public class GuiToggleEnum extends GuiElement {
     }
   }
 
+  public void mouseReleased(int mouseX, int mouseY, int state) {
+    this.pressed = false;
+  }
+
   public void draw(int mouseX, int mouseY) {
     super.draw(x, y);
 
-    SurfaceHelper.drawOutlinedRect(x, y, width - 2, 10, ELEMENT_OUTLINE);
+    if (pressed) {
+      SurfaceHelper.drawOutlinedRect(x, y, width - 2, 10, ELEMENT_IN_PRESSED);
+      SurfaceHelper.drawRect(x + 8, y + 2, width - 2 - 16, 6, ELEMENT_IN_PRESSED);
+    } else {
+      SurfaceHelper.drawOutlinedRect(x, y, width - 2, 10, ELEMENT_OUTLINE);
+      SurfaceHelper.drawRect(x + 8, y + 2, width - 2 - 16, 6, ELEMENT_IN);
+    }
     SurfaceHelper.drawTextShadow(String.format("%s : %s", setting.getName(), setting.get().toString()),
             x + 2, y + 1, Colors.WHITE.toBuffer());
   }

@@ -140,9 +140,9 @@ public class ClickGui extends GuiScreen implements Globals {
     try {
       for (GuiWindow window : Lists.reverse(windowList)) {
         if (isMouseInWindow(mouseX, mouseY, window)) {
-          window.mouseClicked(mouseX, mouseY, b);
-          moveWindowToTop(window);
-          return;
+        	moveWindowToTop(window);
+        	window.mouseClicked(mouseX, mouseY, b);
+        	return;
         }
       }
       super.mouseClicked(mouseX, mouseY, b);

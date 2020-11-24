@@ -14,6 +14,7 @@ import java.awt.AWTException;
 import org.lwjgl.opengl.Display;
 
 import com.matt.forgehax.Helper;
+import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.entity.EntityUtils;
 import com.matt.forgehax.util.mod.Category;
@@ -21,6 +22,7 @@ import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 
 import net.minecraft.client.gui.GuiDisconnected;
+import net.minecraft.network.play.server.SPacketUpdateHealth;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
@@ -35,7 +37,15 @@ public class DesktopNotify extends ToggleMod {
         .builders()
         .<Boolean>newSettingBuilder()
         .name("player")
-        .description("Warn when spotting plauyers")
+        .description("Warn when spotting players")
+        .defaultTo(true)
+        .build();
+  private final Setting<Boolean> damage =
+    getCommandStub()
+        .builders()
+        .<Boolean>newSettingBuilder()
+        .name("damage")
+        .description("Warn on damage received")
         .defaultTo(true)
         .build();
   public final Setting<Boolean> mention =
@@ -52,6 +62,14 @@ public class DesktopNotify extends ToggleMod {
         .<Boolean>newSettingBuilder()
         .name("whisper")
         .description("Warn when a player whispers you")
+        .defaultTo(true)
+        .build();
+  private final Setting<Boolean> system_messages =
+    getCommandStub()
+        .builders()
+        .<Boolean>newSettingBuilder()
+        .name("system")
+        .description("Warn when a system message is printed")
         .defaultTo(true)
         .build();
   public final Setting<Boolean> on_disconnect =
@@ -71,56 +89,82 @@ public class DesktopNotify extends ToggleMod {
         .defaultTo(true)
         .build();
 
-  private TrayIcon icon = null;
+  private TrayIcon icon;
   SystemTray tray;
+  private boolean supported = true;
+  private static DesktopNotify INSTANCE;
 
   public DesktopNotify() {
-    super(Category.MISC, "DesktopNotify", false, "Send Desktop notifications on events");
+    super(Category.MISC, "DesktopNotify", true, "Send Desktop notifications on events");
+    DesktopNotify.INSTANCE = this;
   }
 
   @Override
   protected void onLoad() {
-    getCommandStub()
-        .builders()
-        .newCommandBuilder()
-        .name("test")
-        .description("Fire a test notification")
-        .processor(
-            data -> {
-                  displayNotification("Hello", "world");
-            })
-        .build();
-  }
-
-  @Override
-  protected void onEnabled() {
     if (!SystemTray.isSupported()) {
       Helper.printError("System tray is not supported");
-      this.disable(false);
+      supported = false;
       return;
     }
     tray = SystemTray.getSystemTray();
     Image image = Toolkit.getDefaultToolkit().createImage(
                 getClass().getClassLoader().getResource("icon.png"));
-    this.icon = new TrayIcon(image, "ForgeHax");
+    icon = new TrayIcon(image, "ForgeHax");
     icon.setImageAutoSize(true);
     //Set tooltip text for the tray icon
     icon.setToolTip("It's just ForgeHax");
     try {
       tray.add(icon); 
     } catch (AWTException e) {
+      e.printStackTrace();
       LOGGER.warn("Failed to add icon to system tray : ", e.getMessage());
-      this.disable(false);
+      supported = false;
+      return;
     }
+
+    getCommandStub()
+        .builders()
+        .newCommandBuilder()
+        .name("test")
+        .description("Fire a test notification")
+        .processor(data -> {
+          String title = "Test notification";
+          String message = "This is the default text";
+          if (data.getArgumentCount() > 2) {
+            message = data.getArgumentAsString(1);
+            title = data.getArgumentAsString(0);
+          } else if (data.getArgumentCount() > 1) {
+            message = data.getArgumentAsString(0);
+          }
+
+          try {
+            icon.displayMessage(title, message, MessageType.INFO);
+          } catch (Exception e) {
+            e.printStackTrace();
+            // ignore
+          }
+        })
+        .build();
   }
 
-  public void displayNotification(String title, String message) {
-    if (!this.isEnabled() || icon == null) return;
-    if (onlyInactive.get() && Display.isActive()) return;
+  public static void notify(String title, String message) {
+    DesktopNotify.INSTANCE.displayNotification(title, message);
+  }
+
+  private void displayNotification(String title, String message) {
+    displayNotification(title, message, MessageType.INFO);
+  }
+
+  private void displayNotification(String title, String message, MessageType type) {
+    if (!this.isEnabled() || !supported
+        || (onlyInactive.get() && Display.isActive()))
+          return;
+    
     try {
-      icon.displayMessage(title, message, MessageType.INFO);
+      icon.displayMessage(title, message, type);
     } catch (Exception e) {
-        // ignore
+      e.printStackTrace();
+      // ignore
     }
   }
 
@@ -130,6 +174,17 @@ public class DesktopNotify extends ToggleMod {
       case 1: return "The End";
       case -1: return "Nether";
       default: return "Unknown";
+    }
+  }
+
+  @SubscribeEvent
+  public void onPacketIncoming(PacketEvent.Incoming.Pre event) {
+    if (getLocalPlayer() != null && damage.get() &
+        event.getPacket() instanceof SPacketUpdateHealth) {
+      SPacketUpdateHealth packet = event.getPacket();
+      if (packet.getHealth() < getLocalPlayer().getHealth())
+        displayNotification("Took damage", String.format("Received %.1f damage",
+                                    getLocalPlayer().getHealth() - packet.getHealth()));
     }
   }
 
@@ -158,7 +213,7 @@ public class DesktopNotify extends ToggleMod {
     final String message = event.getMessage().getUnformattedText();
     if (whisper.get() && message.contains("whispers: ")) {
       displayNotification("Whisper", message);
-    } else if (mention.get() && message.contains(getLocalPlayer().getName())) { 
+    } else if (mention.get() && message.contains(MC.getSession().getProfile().getName())) { 
       displayNotification("Chat mention", message);
     } 
   }

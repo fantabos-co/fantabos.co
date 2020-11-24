@@ -1,12 +1,12 @@
 package com.matt.forgehax.util.entry;
 
 import com.google.common.collect.Lists;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -79,45 +79,25 @@ public class CustomMessageEntry implements ISerializableJson {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginObject();
+  public void serialize(JsonObject in) {
+    JsonObject add = new JsonObject();
     
-    writer.name("messages");
-    writer.beginArray();
-    for (MessageEntry entry : messages) {
-      writer.beginObject();
-      writer.name(entry.toString());
-      entry.serialize(writer);
-      writer.endObject();
-    }
-    writer.endArray();
-    
-    writer.endObject();
+    for (MessageEntry entry : messages)
+      entry.serialize(add);
+
+    in.add("messages", add);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginObject();
-    
-    while (reader.hasNext()) {
-      switch (reader.nextName()) {
-        case "messages":
-          reader.beginArray();
-          while (reader.hasNext()) {
-            reader.beginObject();
-            MessageEntry entry = new MessageEntry(UUID.fromString(reader.nextName()));
-            entry.deserialize(reader);
-            messages.add(entry);
-            reader.endObject();
-          }
-          reader.endArray();
-          break;
-        default:
-          break;
-      }
+  public void deserialize(JsonObject in) {
+    JsonObject from = in.getAsJsonObject("messages");
+    if (from == null) return;
+
+    for (Map.Entry<String, JsonElement> e : from.entrySet()) {
+      MessageEntry entry = new MessageEntry(UUID.fromString(e.getKey()));
+      entry.deserialize(in);
+      messages.add(entry);
     }
-    
-    reader.endObject();
   }
   
   @Override
@@ -160,28 +140,14 @@ public class CustomMessageEntry implements ISerializableJson {
     }
     
     @Override
-    public void serialize(JsonWriter writer) throws IOException {
-      writer.beginObject();
-      
-      writer.name("msg");
-      writer.value(message);
-      
-      writer.endObject();
+    public void serialize(JsonObject in) {
+      in.addProperty(owner.toString(), message);
     }
     
     @Override
-    public void deserialize(JsonReader reader) throws IOException {
-      reader.beginObject();
-      
-      while (reader.hasNext()) {
-        switch (reader.nextName()) {
-          case "msg":
-            setMessage(reader.nextString());
-            break;
-        }
-      }
-      
-      reader.endObject();
+    public void deserialize(JsonObject in) {
+      if (in.get(owner.toString()) != null)
+        setMessage(in.get(owner.toString()).getAsString());
     }
     
     @Override

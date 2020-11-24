@@ -58,6 +58,16 @@ public class LocalPlayerInventory {
         .map(SlotWrapper::new)
         .collect(Collectors.toList());
   }
+
+  public static List<InvItem> getArmorInventory() {
+    List<InvItem> out = new ArrayList<>();
+    int next = 8;
+    for (ItemStack item : getInventory().armorInventory) {
+      out.add(new InvItem.Armor(item, next));
+      next--;
+    }
+    return out;
+  }
   
   public static List<InvItem> getMainInventory(int start, int end) {
     return getMainInventory().subList(start, end);
@@ -306,6 +316,32 @@ public class LocalPlayerInventory {
       
       @Override
       public int getIndex() {
+        return index;
+      }
+    }
+
+    protected static class Armor extends InvItem {
+      
+      private final ItemStack itemStack;
+      private final int index;
+      
+      protected Armor(ItemStack itemStack, int index) {
+        this.itemStack = itemStack;
+        this.index = index;
+      }
+      
+      @Override
+      public ItemStack getItemStack() {
+        return itemStack;
+      }
+      
+      @Override
+      public int getIndex() {
+        return index;
+      }
+
+      @Override
+      public int getSlotNumber() {
         return index;
       }
     }

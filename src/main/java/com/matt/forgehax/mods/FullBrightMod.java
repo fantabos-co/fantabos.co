@@ -30,8 +30,9 @@ public class FullBrightMod extends ToggleMod {
           .name("gamma")
           .description("default gamma to revert to")
           .defaultTo(MC.gameSettings.gammaSetting)
-          .min(0.1F)
+          .min(0.F)
           .max(16F)
+          .defaultTo(0.F)
           .build();
 
   private final Setting<BrightMode> mode =
@@ -41,6 +42,15 @@ public class FullBrightMod extends ToggleMod {
           .name("mode")
           .description("mode for brightening [gamma/potion]")
           .defaultTo(BrightMode.GAMMA)
+          .changed(cb -> {
+            if (this.isEnabled()) {
+              if (cb.getTo() == BrightMode.POTION) {
+                MC.gameSettings.gammaSetting = defaultGamma.get();
+              } else if (getLocalPlayer() != null) {
+                getLocalPlayer().removePotionEffect(MobEffects.NIGHT_VISION);
+              }
+            }
+          })
           .build();
   
   @Override

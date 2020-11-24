@@ -1,10 +1,9 @@
 package com.matt.forgehax.util.blocks.properties;
 
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonObject;
+
 import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
-import java.io.IOException;
 import net.minecraft.util.math.MathHelper;
 
 /**
@@ -65,13 +64,14 @@ public class ColorProperty implements IBlockProperty {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.value(buffer);
+  public void serialize(JsonObject in) {
+    in.addProperty(HEADING, buffer);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    set(reader.nextInt());
+  public void deserialize(JsonObject in) {
+    if (in.get(HEADING) != null)
+      set(in.get(HEADING).getAsInt());
   }
   
   @Override

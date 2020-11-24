@@ -10,8 +10,9 @@ import static com.matt.forgehax.Helper.printWarning;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.asm.reflection.FastReflection.Fields;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.events.RenderEvent;
@@ -40,6 +41,7 @@ import com.matt.forgehax.util.serialization.ISerializableJson;
 import com.matt.forgehax.util.tesselation.GeometryMasks;
 import com.matt.forgehax.util.tesselation.GeometryTessellator;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -144,6 +146,7 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
               "Block place delay to check_neighbors after placing a block. Set to 0 to disable")
           .defaultTo(4)
           .min(0)
+          .max(60)
           .build();
   
   private final Setting<Boolean> render =
@@ -170,6 +173,15 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
           .description("Sort the blocks to break by the clients angle instead of the servers")
           .defaultTo(false)
           .build();
+  
+  public final Setting<Boolean> legit =
+    getCommandStub()
+        .builders()
+        .<Boolean>newSettingBuilder()
+        .name("legit")
+        .description("Don't place blocks you could not see")
+        .defaultTo(false)
+        .build();
   
   private final Set<BlockPos> renderingBlocks = Sets.newConcurrentHashSet();
   private BlockPos currentRenderingTarget = null;
@@ -333,12 +345,12 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
                         .collect(Collectors.toSet()));
                 data.write("Added all sides");
                 data.markSuccess();
-                sides.serializeAll();
+                // sides.serializeAll();
               } else if (sides.get(facing) == null) {
                 sides.add(new FacingEntry(facing));
                 data.write("Added side " + facing.getName2());
                 data.markSuccess();
-                sides.serializeAll();
+                // sides.serializeAll();
               } else {
                 data.write(facing.getName2() + " already exists");
                 data.markFailed();
@@ -361,11 +373,11 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
                 sides.clear();
                 data.write("Removed all sides");
                 data.markSuccess();
-                sides.serializeAll();
+                // sides.serializeAll();
               } else if (sides.remove(new FacingEntry(facing))) {
                 data.write("Removed side " + facing.getName2());
                 data.markSuccess();
-                sides.serializeAll();
+                // sides.serializeAll();
               } else {
                 data.write(facing.getName2() + " doesn't exist");
                 data.markFailed();
@@ -411,7 +423,7 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
                 entry.setUse(this.check_neighbors.get());
                 
                 config.add(entry);
-                config.serializeAll();
+                // config.serializeAll();
                 data.write("Saved current config as " + name);
                 data.markSuccess();
               } else {
@@ -454,7 +466,7 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
                       
                       this.stage = Stage.CONFIRM;
                       
-                      this.getCommandStub().serializeAll();
+                      // this.getCommandStub().serializeAll(); // TODO wtf this global???
                     };
                 this.resetToggle.set(true);
               } else {
@@ -475,7 +487,7 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
               String name = data.getArgumentAsString(0);
               
               if (config.remove(new PlaceConfigEntry(name))) {
-                config.serializeAll();
+                // config.serializeAll();
                 data.write("Deleted config " + name);
                 data.markSuccess();
               } else {
@@ -792,7 +804,7 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
                 .map(FacingEntry::getFacing)
                 .map(
                     side ->
-                        BlockHelper.getPlaceableBlockSideTrace(eyes, dir, at.getPos().offset(side)))
+                        BlockHelper.getPlaceableBlockSideTrace(eyes, dir, at.getPos().offset(side), legit.get()))
                 .filter(Objects::nonNull)
                 .filter(tr -> tr.isPlaceable(items))
                 .max(
@@ -925,129 +937,74 @@ public class AutoPlace extends ToggleMod implements PositionRotationManager.Move
     }
     
     @Override
-    public void serialize(JsonWriter writer) throws IOException {
-      writer.beginObject();
-      
-      writer.name("selection");
-      writer.beginObject();
-      {
-        writer.name("item");
-        writer.value(getSelection().getItem().getRegistryName().toString());
-        
-        writer.name("metadata");
-        writer.value(getSelection().getMetadata());
+    public void serialize(JsonObject in) {
+      JsonObject add = new JsonObject();
+
+      JsonObject sel = new JsonObject();
+
+      sel.addProperty("item", getSelection().getItem().getRegistryName().toString());
+      sel.addProperty("metadata", getSelection().getMetadata());
+
+      add.add("selection", sel);
+
+      JsonArray targets = new JsonArray();
+      for (UniqueBlock info : getTargets()) {
+        JsonObject b = new JsonObject();
+        b.addProperty("block", info.getBlock().getRegistryName().toString());
+        b.addProperty("metadata", info.getMetadata());
+        targets.add(b);
       }
-      writer.endObject();
+
+      add.add("targets", targets);
+
+      add.addProperty("use", isUse());
+      add.addProperty("whitelist", isWhitelist());
       
-      writer.name("targets");
-      writer.beginArray();
-      {
-        for (UniqueBlock info : getTargets()) {
-          writer.beginObject();
-          
-          writer.name("block");
-          writer.value(info.getBlock().getRegistryName().toString());
-          
-          writer.name("metadata");
-          writer.value(info.getMetadata());
-          
-          writer.endObject();
-        }
+      JsonArray sides = new JsonArray();
+      for (EnumFacing side : getSides()) {
+        sides.add(side.getName2()); // wtf??
       }
-      writer.endArray();
-      
-      writer.name("use");
-      writer.value(isUse());
-      
-      writer.name("whitelist");
-      writer.value(isWhitelist());
-      
-      writer.name("sides");
-      writer.beginArray();
-      {
-        for (EnumFacing side : getSides()) {
-          writer.value(side.getName2());
-        }
-      }
-      writer.endArray();
-      
-      writer.endObject();
+      add.add("sides", sides);
+
+      in.add(name, add);
     }
     
     @Override
-    public void deserialize(JsonReader reader) throws IOException {
-      reader.beginObject();
+    public void deserialize(JsonObject in) {
+      JsonObject from = in.getAsJsonObject(name);
+      if (from == null) return;
       
-      while (reader.hasNext()) {
-        switch (reader.nextName()) {
-          case "selection": {
-            reader.beginObject();
-            
-            reader.nextName();
-            Item item = ItemSword.getByNameOrId(reader.nextString());
-            
-            reader.nextName();
-            int meta = reader.nextInt();
-            
-            setSelection(new ItemStack(MoreObjects.firstNonNull(item, Items.AIR), 1, meta));
-            
-            reader.endObject();
-            break;
-          }
-          case "targets": {
-            reader.beginArray();
-            
-            List<UniqueBlock> blocks = Lists.newArrayList();
-            while (reader.hasNext()) {
-              reader.beginObject();
-              
-              // block
-              reader.nextName();
-              Block block = Block.getBlockFromName(reader.nextString());
-              
-              // metadata
-              reader.nextName();
-              int meta = reader.nextInt();
-              
-              blocks.add(BlockHelper.newUniqueBlock(block, meta));
-              
-              reader.endObject();
-            }
-            setTargets(blocks);
-            
-            reader.endArray();
-            break;
-          }
-          case "use": {
-            setUse(reader.nextBoolean());
-            break;
-          }
-          case "whitelist": {
-            setWhitelist(reader.nextBoolean());
-            break;
-          }
-          case "sides": {
-            reader.beginArray();
-            
-            List<EnumFacing> sides = Lists.newArrayList();
-            while (reader.hasNext()) {
-              sides.add(
-                  Optional.ofNullable(reader.nextString())
-                      .map(EnumFacing::byName)
-                      .orElse(EnumFacing.UP));
-            }
-            setSides(sides);
-            
-            reader.endArray();
-            break;
-          }
-          default:
-            reader.skipValue();
-            break;
+      if (from.get("selection") != null) {
+        JsonObject sel = from.getAsJsonObject("selection");
+        Item item = ItemSword.getByNameOrId(sel.get("item").getAsString());
+        int meta = sel.get("metadata").getAsInt();
+        setSelection(new ItemStack(MoreObjects.firstNonNull(item, Items.AIR), 1, meta));
+      }
+
+      if (from.get("targets") != null) {
+        List<UniqueBlock> blocks = new ArrayList<>();
+        for (JsonElement e : from.getAsJsonArray("targets")) {
+          Block block = Block.getBlockFromName(e.getAsJsonObject().get("block").getAsString());
+          int meta = e.getAsJsonObject().get("metadata").getAsInt();
+          blocks.add(BlockHelper.newUniqueBlock(block, meta));
         }
+        setTargets(blocks);
       }
       
-      reader.endObject();
+      if (from.get("use") != null) setUse(from.get("use").getAsBoolean());
+      if (from.get("whitelist") != null) setWhitelist(from.get("whitelist").getAsBoolean());
+
+      if (from.get("sides") != null) {
+        List<EnumFacing> sides = Lists.newArrayList();
+        for (JsonElement e : from.getAsJsonArray("sides")) {
+          sides.add(
+            Optional.ofNullable(e.getAsString())
+                .map(EnumFacing::byName)
+                .orElse(EnumFacing.UP));
+        }
+
+        setSides(sides);
+      }
     }
     
     @Override

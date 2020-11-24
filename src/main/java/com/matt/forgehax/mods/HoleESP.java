@@ -25,6 +25,31 @@ public class HoleESP extends ToggleMod {
     super(Category.RENDER, "HoleESP", false, "Highlights holes");
   }
 
+  private final Setting<Color> color_safe =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-safe")
+      .description("Color for all bedrock holes")
+      .defaultTo(Color.of(191, 97, 106, 128))
+      .build();
+  private final Setting<Color> color_temp =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-temp")
+      .description("Color for obsidian and mixed holes")
+      .defaultTo(Color.of(191, 97, 106, 64))
+      .build();
+  private final Setting<Color> color_void =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-void")
+      .description("Color for void holes")
+      .defaultTo(Color.of(0, 0, 0, 200))
+      .build();
+
   public final Setting<Boolean> outline =
     getCommandStub()
       .builders()
@@ -43,47 +68,6 @@ public class HoleESP extends ToggleMod {
       .defaultTo(true)
       .build();
 
-  public final Setting<Integer> alpha_safe =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("s-alpha")
-      .description("Alpha value for safe hole in fill mode")
-      .min(0)
-      .max(255)
-      .defaultTo(128)
-      .build();
-  private final Setting<Integer> red_safe =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("s-red")
-      .description("Red amount for safe hole, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(191)
-      .build();
-  private final Setting<Integer> green_safe =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("s-green")
-      .description("Green amount for safe hole, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(97)
-      .build();
-  private final Setting<Integer> blue_safe =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("s-blue")
-      .description("Blue amount for safe hole, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(106)
-      .build();
-
   public final Setting<Double> height_safe =
     getCommandStub()
       .builders()
@@ -95,47 +79,6 @@ public class HoleESP extends ToggleMod {
       .max(5D)
       .build();
 
-  public final Setting<Integer> alpha_temp =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("t-alpha")
-      .description("Alpha value for temporary holes in fill mode")
-      .min(0)
-      .max(255)
-      .defaultTo(64)
-      .build();
-  private final Setting<Integer> red_temp =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("t-red")
-      .description("Red amount for temporary hole, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(191)
-      .build();
-  private final Setting<Integer> green_temp =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("t-green")
-      .description("Green amount for temporary hole, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(97)
-      .build();
-  private final Setting<Integer> blue_temp =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("t-blue")
-      .description("Blue amount for temporary hole, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(106)
-      .build();
-
   public final Setting<Double> height_temp =
     getCommandStub()
       .builders()
@@ -145,47 +88,6 @@ public class HoleESP extends ToggleMod {
       .defaultTo(0.2D)
       .min(0.01D)
       .max(5D)
-      .build();
-
-  public final Setting<Integer> alpha_void =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("v-alpha")
-      .description("Alpha value for void in fill mode")
-      .min(0)
-      .max(255)
-      .defaultTo(255)
-      .build();
-  private final Setting<Integer> red_void =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("v-red")
-      .description("Red amount for void, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(0)
-      .build();
-  private final Setting<Integer> green_void =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("v-green")
-      .description("Green amount for void, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(0)
-      .build();
-  private final Setting<Integer> blue_void =
-    getCommandStub()
-      .builders()
-      .<Integer>newSettingBuilder()
-      .name("v-blue")
-      .description("Blue amount for void, 0-255")
-      .min(0)
-      .max(255)
-      .defaultTo(0)
       .build();
 
   public final Setting<Double> height_void =
@@ -245,7 +147,7 @@ public class HoleESP extends ToggleMod {
         event.getBuffer().begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         GeometryTessellator.drawCuboid(
           event.getBuffer(), pos, GeometryMasks.Line.ALL,
-          Color.of(red_safe.get(), green_safe.get(), blue_safe.get(), alpha_safe.get()).toBuffer(), height_safe.get());
+          color_safe.get().toBuffer(), height_safe.get());
   
         event.getTessellator().draw();
       }
@@ -254,7 +156,7 @@ public class HoleESP extends ToggleMod {
         event.getBuffer().begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
         GeometryTessellator.drawCuboid(
           event.getBuffer(), pos, GeometryMasks.Quad.ALL,
-          Color.of(red_safe.get(), green_safe.get(), blue_safe.get(), alpha_safe.get()).toBuffer(), height_safe.get());
+          color_safe.get().toBuffer(), height_safe.get());
   
         event.getTessellator().draw();
       }
@@ -266,7 +168,7 @@ public class HoleESP extends ToggleMod {
         event.getBuffer().begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
         GeometryTessellator.drawCuboid(
           event.getBuffer(), pos, GeometryMasks.Line.ALL,
-          Color.of(red_temp.get(), green_temp.get(), blue_temp.get(), alpha_temp.get()).toBuffer(), height_temp.get());
+          color_temp.get().toBuffer(), height_temp.get());
   
         event.getTessellator().draw();
       }
@@ -275,7 +177,7 @@ public class HoleESP extends ToggleMod {
         event.getBuffer().begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
         GeometryTessellator.drawCuboid(
           event.getBuffer(), pos, GeometryMasks.Quad.ALL,
-          Color.of(red_temp.get(), green_temp.get(), blue_temp.get(), alpha_temp.get()).toBuffer(), height_temp.get());
+          color_temp.get().toBuffer(), height_temp.get());
   
         event.getTessellator().draw();
       }
@@ -288,7 +190,7 @@ public class HoleESP extends ToggleMod {
           event.getBuffer().begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
           GeometryTessellator.drawCuboid(
             event.getBuffer(), pos, GeometryMasks.Line.ALL,
-            Color.of(red_void.get(), green_void.get(), blue_void.get(), alpha_void.get()).toBuffer(), height_void.get());
+            color_void.get().toBuffer(), height_void.get());
           event.getTessellator().draw();
         }
         
@@ -296,7 +198,7 @@ public class HoleESP extends ToggleMod {
           event.getBuffer().begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
           GeometryTessellator.drawCuboid(
             event.getBuffer(), pos, GeometryMasks.Quad.ALL, 
-            Color.of(red_void.get(), green_void.get(), blue_void.get(), alpha_void.get()).toBuffer(), height_void.get());
+            color_void.get().toBuffer(), height_void.get());
           event.getTessellator().draw();
         }
       }

@@ -4,8 +4,6 @@ import com.matt.forgehax.asm.ASMCommon;
 import com.matt.forgehax.asm.utils.fasttype.FastField;
 import com.matt.forgehax.asm.utils.fasttype.FastMethod;
 import com.matt.forgehax.asm.utils.fasttype.FastTypeBuilder;
-import java.nio.FloatBuffer;
-import java.util.Map;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -13,10 +11,12 @@ import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.client.gui.GuiDisconnected;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.inventory.GuiEditSign;
+import net.minecraft.client.gui.inventory.GuiShulkerBox;
 import net.minecraft.client.multiplayer.GuiConnecting;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -25,9 +25,11 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.IAttribute;
+import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.entity.monster.EntityPigZombie;
 import net.minecraft.entity.passive.AbstractHorse;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
@@ -37,21 +39,13 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.network.play.client.CPacketCloseWindow;
-import net.minecraft.network.play.client.CPacketEntityAction;
-import net.minecraft.network.play.client.CPacketPlayer;
-import net.minecraft.network.play.client.CPacketVehicleMove;
-import net.minecraft.network.play.client.CPacketCustomPayload;
+import net.minecraft.network.play.client.*;
 import net.minecraft.network.play.server.SPacketEntityVelocity;
 import net.minecraft.network.play.server.SPacketExplosion;
 import net.minecraft.network.play.server.SPacketPlayerPosLook;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.tileentity.TileEntitySign;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.EnumHand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.Session;
-import net.minecraft.util.Timer;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
@@ -59,6 +53,9 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
+
+import java.nio.FloatBuffer;
+import java.util.Map;
 
 /**
  * Created on 5/8/2017 by fr1kin
@@ -283,6 +280,16 @@ public interface FastReflection extends ASMCommon {
         .setName("horseJumpPower")
         .autoAssign()
         .asField();
+
+    /**
+     * EntityBoat
+     */
+    FastField<EntityBoat.Status> EntityBoat_status =
+      FastTypeBuilder.create()
+        .setInsideClass(EntityBoat.class)
+        .setName("status")
+        .autoAssign()
+        .asField();
     
     /**
      * GuiConnecting
@@ -454,37 +461,66 @@ public interface FastReflection extends ASMCommon {
      * EntityRenderer
      */
     FastField<ItemStack> EntityRenderer_itemActivationItem =
-      FastTypeBuilder.create()
-        .setInsideClass(ItemRenderer.class)
-        .setName("itemActivationItem")
-        .autoAssign()
-        .asField();
+            FastTypeBuilder.create()
+                    .setInsideClass(ItemRenderer.class)
+                    .setName("itemActivationItem")
+                    .autoAssign()
+                    .asField();
 
     /**
      * ItemRenderer
      */
+    FastField<ItemStack> ItemRenderer_itemStackMainHand =
+            FastTypeBuilder.create()
+                    .setInsideClass(ItemRenderer.class)
+                    .setName("itemStackMainHand")
+                    .autoAssign()
+                    .asField();
+
+    FastField<ItemStack> ItemRenderer_itemStackOffHand =
+            FastTypeBuilder.create()
+                    .setInsideClass(ItemRenderer.class)
+                    .setName("itemStackOffHand")
+                    .autoAssign()
+                    .asField();
+
     FastField<Float> ItemRenderer_equippedProgressMainHand =
-      FastTypeBuilder.create()
-        .setInsideClass(ItemRenderer.class)
-        .setName("equippedProgressMainHand")
-        .autoAssign()
-        .asField();
+            FastTypeBuilder.create()
+                    .setInsideClass(ItemRenderer.class)
+                    .setName("equippedProgressMainHand")
+                    .autoAssign()
+                    .asField();
+
+    FastField<Float> ItemRenderer_prevEquippedProgressMainHand =
+            FastTypeBuilder.create()
+                    .setInsideClass(ItemRenderer.class)
+                    .setName("prevEquippedProgressMainHand")
+                    .autoAssign()
+                    .asField();
+
     FastField<Float> ItemRenderer_equippedProgressOffHand =
-      FastTypeBuilder.create()
-        .setInsideClass(ItemRenderer.class)
-        .setName("equippedProgressOffHand")
-        .autoAssign()
-        .asField();
+            FastTypeBuilder.create()
+                    .setInsideClass(ItemRenderer.class)
+                    .setName("equippedProgressOffHand")
+                    .autoAssign()
+                    .asField();
+
+    FastField<Float> ItemRenderer_prevEquippedProgressOffHand =
+            FastTypeBuilder.create()
+                    .setInsideClass(ItemRenderer.class)
+                    .setName("prevEquippedProgressOffHand")
+                    .autoAssign()
+                    .asField();
     
     /**
      * AbstractHorse
      */
     FastField<IAttribute> AbstractHorse_JUMP_STRENGTH =
-      FastTypeBuilder.create()
-        .setInsideClass(AbstractHorse.class)
-        .setName("JUMP_STRENGTH")
-        .autoAssign()
-        .asField();
+            FastTypeBuilder.create()
+                    .setInsideClass(AbstractHorse.class)
+                    .setName("JUMP_STRENGTH")
+                    .autoAssign()
+                    .asField();
     /**
      * SharedMonsterAttributes
      */
@@ -501,6 +537,15 @@ public interface FastReflection extends ASMCommon {
       FastTypeBuilder.create()
         .setInsideClass(GuiEditSign.class)
         .setName("tileSign")
+        .autoAssign()
+        .asField();
+    /**
+     * GuiShulkerBox
+     */
+    FastField<IInventory> GuiShulkerBox_inventory =
+      FastTypeBuilder.create()
+        .setInsideClass(GuiShulkerBox.class)
+        .setName("inventory")
         .autoAssign()
         .asField();
     /**
@@ -582,6 +627,26 @@ public interface FastReflection extends ASMCommon {
       FastTypeBuilder.create()
         .setInsideClass(Chunk.class)
         .setName("storageArrays")
+        .autoAssign()
+        .asField();
+
+    /**
+     * SHADERS_TEXTURES
+     */
+    FastField<ResourceLocation[]> EntityRenderer_SHADERS_TEXTURES =
+      FastTypeBuilder.create()
+        .setInsideClass(EntityRenderer.class)
+        .setName("SHADERS_TEXTURES")
+        .autoAssign()
+        .asField();
+
+    /**
+     * shaderIndex
+     */
+    FastField<Integer> EntityRenderer_shaderIndex =
+      FastTypeBuilder.create()
+        .setInsideClass(EntityRenderer.class)
+        .setName("shaderIndex")
         .autoAssign()
         .asField();
   }

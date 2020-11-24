@@ -1,10 +1,10 @@
 package com.matt.forgehax.util.spam;
 
 import com.google.common.collect.Lists;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -144,68 +144,37 @@ public class SpamEntry implements ISerializableJson {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginObject();
-    
-    writer.name("enabled");
-    writer.value(enabled);
-    
-    writer.name("keyword");
-    writer.value(keyword);
-    
-    writer.name("type");
-    writer.value(type.name());
-    
-    writer.name("trigger");
-    writer.value(trigger.name());
-    
-    writer.name("delay");
-    writer.value(getDelay());
-    
-    writer.name("messages");
-    writer.beginArray();
-    for (String msg : messages) {
-      writer.value(msg);
-    }
-    writer.endArray();
-    
-    writer.endObject();
+  public void serialize(JsonObject in) {
+    JsonObject add = new JsonObject();
+
+    add.addProperty("enabled", enabled);
+    add.addProperty("keyword", keyword);
+    add.addProperty("type", type.name());
+    add.addProperty("trigger", trigger.name());
+    add.addProperty("delay", getDelay());
+
+    JsonArray msgs = new JsonArray();
+    for (String msg : messages)
+      msgs.add(msg);
+    add.add("messages", msgs);
+
+    in.add(name, add);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginObject();
+  public void deserialize(JsonObject in) {
+    JsonObject from = in.getAsJsonObject(name);
+    if (from == null) return;
     
-    while (reader.hasNext()) {
-      switch (reader.nextName()) {
-        case "enabled":
-          setEnabled(reader.nextBoolean());
-          break;
-        case "keyword":
-          setKeyword(reader.nextString());
-          break;
-        case "type":
-          setType(reader.nextString());
-          break;
-        case "trigger":
-          setTrigger(reader.nextString());
-          break;
-        case "delay":
-          setDelay(reader.nextLong());
-          break;
-        case "messages":
-          reader.beginArray();
-          while (reader.hasNext()) {
-            add(reader.nextString());
-          }
-          reader.endArray();
-          break;
-        default:
-          break;
-      }
+    if (from.get("enabled") != null) setEnabled(from.get("enabled").getAsBoolean());
+    if (from.get("keyword") != null) setKeyword(from.get("keyword").getAsString());
+    if (from.get("type") != null) setType(from.get("type").getAsString());
+    if (from.get("trigger") != null) setTrigger(from.get("trigger").getAsString());
+    if (from.get("delay") != null) setDelay(from.get("delay").getAsLong());
+    if (from.get("messages") != null) {
+      for (JsonElement e : from.getAsJsonArray("messages"))
+        add(e.getAsString());
     }
-    
-    reader.endObject();
   }
   
   @Override

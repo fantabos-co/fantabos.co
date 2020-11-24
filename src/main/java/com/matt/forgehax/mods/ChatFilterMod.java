@@ -2,13 +2,11 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getModManager;
 
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.asm.events.PacketEvent;
-import com.matt.forgehax.mods.services.FriendService;
-import com.matt.forgehax.mods.services.FriendService.FriendEntry;
+import com.matt.forgehax.mods.managers.FriendManager;
+import com.matt.forgehax.mods.managers.FriendManager.FriendEntry;
 import com.matt.forgehax.util.command.Options;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
@@ -20,7 +18,6 @@ import net.minecraft.network.play.server.SPacketChat;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,7 +54,7 @@ public class ChatFilterMod extends ToggleMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + TextFormatting.DARK_GRAY + filtered + TextFormatting.WHITE + "]");
+    return (getModName() + " [" + TextFormatting.DARK_GRAY + filtered + TextFormatting.RESET + "]");
   }
 
   @SubscribeEvent
@@ -67,7 +64,7 @@ public class ChatFilterMod extends ToggleMod {
       final String message = packet.getChatComponent().getUnformattedText();
 
       if (friend_bypass.get()) {
-        for (FriendEntry f : getModManager().get(FriendService.class).get().friendList) {
+        for (FriendEntry f : FriendManager.getAllFriends()) {
           if (message.contains("<" + f.getName() + ">") || // This shit is basically for LolRiTTeR/LolRiTTeRBot
               message.contains(f.getName() + " "))         // Maybe it's not in a chat message? 
             return;
@@ -81,7 +78,8 @@ public class ChatFilterMod extends ToggleMod {
 
       if (shouldFilter) {
         event.setCanceled(true);
-		filtered++;
+        LOGGER.info("[FILTERED] " + message);
+		    filtered++;
       }
     }
   }
@@ -95,14 +93,14 @@ public class ChatFilterMod extends ToggleMod {
   @Override
   protected void onLoad() {
     super.onLoad();
-    filterList.deserializeAll();
+    // filterList.deserializeAll();
 
     // TODO: allow flags
     getCommandStub()
         .builders()
         .newCommandBuilder()
-        .name("filter")
-        .description("filter <name> <regex>")
+        .name("new")
+        .description("new <name> <regex>")
         .processor(
             data -> {
               data.requiredArguments(2);
@@ -171,13 +169,14 @@ public class ChatFilterMod extends ToggleMod {
     }
 
     @Override
-    public void serialize(JsonWriter writer) throws IOException {
-      writer.value(this.regex);
+    public void serialize(JsonObject in) {
+      in.addProperty(name, regex);
     }
 
     @Override
-    public void deserialize(JsonReader reader)  {
-      this.regex  = new JsonParser().parse(reader).getAsString();
+    public void deserialize(JsonObject in) {
+      if (in.get(name) != null)
+        this.regex = in.get(name).getAsString();
     }
 
     @Override

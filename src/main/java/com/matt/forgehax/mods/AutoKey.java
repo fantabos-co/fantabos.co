@@ -1,9 +1,10 @@
 package com.matt.forgehax.mods;
 
+import static com.matt.forgehax.Helper.getLocalPlayer;
+
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.asm.reflection.FastReflection;
 import com.matt.forgehax.asm.utils.fasttype.FastField;
-import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.key.Bindings;
 import com.matt.forgehax.util.key.KeyBindingHandler;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 /**
  * Created by Babbaj on 1/30/2018.
@@ -34,7 +36,7 @@ public class AutoKey extends ToggleMod {
           .description("delay(ms) between clicks")
           .defaultTo(500) // 500 ms
           .min(0)
-          .max(10000)
+          .max(600000) // 10 min
           .build();
   
   private static Setting<Integer> holdTime; // static to allow easy access from ClickMode
@@ -56,9 +58,16 @@ public class AutoKey extends ToggleMod {
   private final Map<KeyBindingHandler, ClickMode> activeKeys = new HashMap<>();
   
   private long lastTimeMillis;
+
+  @Override
+  protected void onEnabled() {
+    lastTimeMillis = System.currentTimeMillis();
+  }
   
   @SubscribeEvent
-  public void onPlayerUpdate(LocalPlayerUpdateEvent event) {
+  public void onTick(TickEvent.ClientTickEvent event) {
+    if (getLocalPlayer() == null) return;
+
     final int lastClick = (int) (System.currentTimeMillis() - lastTimeMillis);
     if (lastClick >= delay.get()) {
       lastTimeMillis = System.currentTimeMillis();
@@ -73,8 +82,8 @@ public class AutoKey extends ToggleMod {
     getCommandStub()
         .builders()
         .newCommandBuilder()
-        .name("addKey")
-        .description("add a key to the active key list - (ex: addKey \"jump\" \"hold\"")
+        .name("add")
+        .description("add a key to the active key list - (ex: add [use/jump/attack/...] [tap/hold]")
         .processor(
             data -> {
               data.requiredArguments(2);
@@ -102,7 +111,7 @@ public class AutoKey extends ToggleMod {
     getCommandStub()
         .builders()
         .newCommandBuilder()
-        .name("clearKeys")
+        .name("clear")
         .description("clear all the active keys")
         .processor(
             data -> {
@@ -118,8 +127,8 @@ public class AutoKey extends ToggleMod {
     getCommandStub()
         .builders()
         .newCommandBuilder()
-        .name("clearKey")
-        .description("remove an active key - (ex: clearKey \"jump\"")
+        .name("remove")
+        .description("remove an active key - (ex: remove \"jump\"")
         .processor(
             data -> {
               data.requiredArguments(1);
@@ -144,7 +153,7 @@ public class AutoKey extends ToggleMod {
     TAP(
         (key, time) -> {
           if (time < holdTime.getAsInteger()) {
-            incrementPressTime(key);
+            // incrementPressTime(key);
             key.setPressed(true);
           } else {
             key.setPressed(false);
@@ -153,7 +162,7 @@ public class AutoKey extends ToggleMod {
     
     HOLD(
         (key, time) -> {
-          incrementPressTime(key);
+          // incrementPressTime(key);
           key.setPressed(true);
         }); // hold key forever
     

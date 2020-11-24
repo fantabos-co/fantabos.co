@@ -1,11 +1,10 @@
 package com.matt.forgehax.util.command;
 
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.util.command.exception.CommandBuildException;
 import com.matt.forgehax.util.console.ConsoleIO;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -146,38 +145,39 @@ public class Options<E extends ISerializableJson> extends Command
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginObject();
-    
-    writer.name("data");
-    writer.beginObject();
-    for (E element : contents) {
-      writer.name(element.toString());
-      element.serialize(writer);
-    }
-    writer.endObject();
-    
-    writer.endObject();
+  public void reset_defaults() {
+    getChildren().forEach(c -> c.reset_defaults());
+    this.contents.clear();
+  }
+
+  @Override
+  public void serialize(JsonObject in) {
+    JsonObject add = new JsonObject();
+    getChildren().forEach(c -> c.serialize(add));
+
+    JsonObject data = new JsonObject();
+    for (E element : contents)
+      element.serialize(data);
+    add.add("data", data);
+
+    in.add(getName(), add);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginObject();
-    
-    reader.nextName(); // data
-    reader.beginObject();
-    clear(); // clear current contents
-    while (reader.hasNext()) {
-      String name = reader.nextName();
-      E element = factory.apply(name);
+  public void deserialize(JsonObject in) {
+    JsonObject from = in.getAsJsonObject(getName());
+    if (from == null) return;
+    getChildren().forEach(c -> c.deserialize(from));
+    JsonObject data = from.getAsJsonObject("data");
+    if (data == null) return;
+
+    for (Map.Entry<String, JsonElement> e : data.entrySet()) {
+      E element = factory.apply(e.getKey());
       if (element != null) {
-        element.deserialize(reader);
+        element.deserialize(data);
         add(element);
       }
     }
-    reader.endObject();
-    
-    reader.endObject();
   }
   
   @Override

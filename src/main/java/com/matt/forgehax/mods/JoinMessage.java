@@ -124,7 +124,7 @@ public class JoinMessage extends ToggleMod {
           .changed(
               cb -> {
                 messages.forEach(e -> e.setSize(cb.getTo()));
-                messages.serialize();
+                // messages.serialize();
               })
           .build();
   
@@ -170,7 +170,7 @@ public class JoinMessage extends ToggleMod {
         .computeIfAbsent(setter, s -> new AtomicLong(0L))
         .set(System.currentTimeMillis() + set_cooldown.get());
     
-    messages.serialize();
+    // messages.serialize();
     
     SpamService.send(
         new SpamMessage(replyMessage, "JOIN_MESSAGE_REPLY", 0, null, PriorityEnum.HIGHEST));

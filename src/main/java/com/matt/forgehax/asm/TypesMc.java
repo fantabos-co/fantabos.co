@@ -7,7 +7,11 @@ import com.matt.forgehax.asm.utils.asmtype.ASMMethod;
 import com.matt.forgehax.asm.utils.asmtype.builders.ASMBuilders;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.GenericFutureListener;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.EnumHand;
+
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created on 5/27/2017 by fr1kin
@@ -15,7 +19,79 @@ import java.util.List;
 public interface TypesMc {
   
   interface Classes {
+	  
+	  ASMClass GameProfile =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("com/mojang/authlib/GameProfile")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass ResourceLocation =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/util/ResourceLocation")
+			  .autoAssign()
+			  .build();
     
+	  ASMClass AbstractClientPlayer =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/client/entity/AbstractClientPlayer")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass SPacketPlayerListItem =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/network/play/server/SPacketPlayerListItem")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass NetHandlerPlayClient =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/client/network/NetHandlerPlayClient")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass EntityItem =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/entity/item/EntityItem")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass RenderEntityItem =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/client/renderer/entity/RenderEntityItem")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass ModelBase =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/client/model/ModelBase")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass RenderLivingBase =
+	    		ASMBuilders.newClassBuilder()
+	    		.setClassName("net/minecraft/client/renderer/entity/RenderLivingBase")
+	    		.autoAssign()
+	    		.build();
+	  
+	  ASMClass RenderEnderCrystal =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/client/renderer/entity/RenderEnderCrystal")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass EntityEnderCrystal =
+			  ASMBuilders.newClassBuilder()
+			  .setClassName("net/minecraft/entity/item/EntityEnderCrystal")
+			  .autoAssign()
+			  .build();
+	  
+	  ASMClass RenderItem =
+	    		ASMBuilders.newClassBuilder()
+	    		.setClassName("net/minecraft/client/renderer/RenderItem")
+	    		.autoAssign()
+	    		.build();
+	  
     ASMClass Packet =
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/network/Packet")
@@ -91,6 +167,12 @@ public interface TypesMc {
     ASMClass Block =
       ASMBuilders.newClassBuilder()
         .setClassName("net/minecraft/block/Block")
+        .autoAssign()
+        .build();
+
+    ASMClass ElytraSound =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/client/audio/ElytraSound")
         .autoAssign()
         .build();
     
@@ -351,10 +433,75 @@ public interface TypesMc {
         .setClassName("net/minecraft/util/EnumActionResult")
         .autoAssign()
         .build();
+
+    ASMClass MovementInputFromOptions =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/util/MovementInputFromOptions")
+        .autoAssign()
+        .build();
+
+    ASMClass MouseHelper =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/util/MouseHelper")
+        .autoAssign()
+        .build();
+
+    ASMClass AbstractHorse =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/entity/passive/AbstractHorse")
+        .autoAssign()
+        .build();
+
+    ASMClass EntityLlama =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/entity/passive/EntityLlama")
+        .autoAssign()
+        .build();
+
+    ASMClass EntityPig =
+      ASMBuilders.newClassBuilder()
+        .setClassName("net/minecraft/entity/passive/EntityPig")
+        .autoAssign()
+        .build();
   }
   
   interface Fields {
+	  
+	  ASMField EntityPlayer_gameProfile =
+			  Classes.EntityPlayer.childField()
+			  .setName("gameProfile")
+			  .setType(Classes.GameProfile)
+			  .autoAssign()
+			  .build();
+	  
+	  ASMField RenderEntityItem_itemRenderer =
+			  Classes.RenderEntityItem.childField()
+			  .setName("itemRenderer")
+			  .setType(Classes.RenderItem)
+			  .autoAssign()
+			  .build();
     
+	  ASMField RenderEnderCrystal_modelEnderCrystal =
+			  Classes.RenderEnderCrystal.childField()
+			  .setName("modelEnderCrystal")
+			  .setType(Classes.ModelBase)
+			  .autoAssign()
+			  .build();
+	  
+	  ASMField RenderEnderCrystal_modelEnderCrystalNoBase =
+			  Classes.RenderEnderCrystal.childField()
+			  .setName("modelEnderCrystalNoBase")
+			  .setType(Classes.ModelBase)
+			  .autoAssign()
+			  .build();
+	  
+	  ASMField RenderLivingBase_mainModel =
+	    		Classes.RenderLivingBase.childField()
+	    			.setName("mainModel")
+	    			.setType(Classes.ModelBase)
+	    			.autoAssign()
+	    			.build();
+	  
     ASMField NetworkManager$4_val$inPacket =
       Classes.NetworkManager$4.childField()
         .setName("val$inPacket")
@@ -373,10 +520,177 @@ public interface TypesMc {
         .setType(Classes.ChunkRenderDispatcher)
         .autoAssign()
         .build();
+
+    ASMField Entity_stepHeight =
+      Classes.Entity.childField()
+        .setName("stepHeight")
+        .setType(float.class)
+        .autoAssign()
+        .build();
+
+    ASMField Vec3d_x =
+      Classes.Vec3d.childField()
+        .setName("x")
+        .setType(double.class)
+        .autoAssign()
+        .build();
+
+    ASMField Vec3d_y =
+      Classes.Vec3d.childField()
+        .setName("y")
+        .setType(double.class)
+        .autoAssign()
+        .build();
+
+    ASMField Vec3d_z =
+      Classes.Vec3d.childField()
+        .setName("z")
+        .setType(double.class)
+        .autoAssign()
+        .build();
   }
   
   interface Methods {
     
+	  ASMMethod GameProfile_getId =
+			  Classes.GameProfile.childMethod()
+			  .setName("getId")
+			  .setReturnType(UUID.class)
+			  .emptyParameters()
+			  .autoAssign()
+			  .build();
+	  
+	  ASMMethod Entity_getUniqueID =
+			  Classes.Entity.childMethod() 
+			  .setName("getUniqueID")
+			  .setReturnType(UUID.class)
+			  .emptyParameters()
+			  .autoAssign()
+			  .build();
+	  
+	  ASMMethod AbstractClientPlayer_getLocationCape =
+			  Classes.AbstractClientPlayer.childMethod()
+			  .setName("getLocationCape")
+			  .setReturnType(Classes.ResourceLocation)
+			  .emptyParameters()
+			  .autoAssign()
+			  .build();
+	  
+	  ASMMethod NetHandlerPlayClient_handlePlayerListItem =
+			  Classes.NetHandlerPlayClient.childMethod()
+			  .setName("handlePlayerListItem")
+			  .setReturnType(void.class)
+			  .beginParameters()
+			  .add(Classes.SPacketPlayerListItem)
+			  .finish()
+			  .autoAssign()
+			  .build();
+	  
+	  ASMMethod Minecraft_rightClickMouse =
+	    		Classes.Minecraft.childMethod()
+	    		.setName("rightClickMouse")
+	    		.setReturnType(void.class)
+	    		.emptyParameters()
+	    		.autoAssign()
+	    		.build();
+	  
+	  ASMMethod RenderEntityItem_doRender =
+			  Classes.RenderEntityItem.childMethod()
+			  .setName("doRender")
+			  .setReturnType(void.class)
+			  .beginParameters()
+			  .add(Classes.EntityItem)
+			  .add(double.class)
+			  .add(double.class)
+			  .add(double.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .finish()
+			  .autoAssign()
+			  .build();
+	  
+	  ASMMethod RenderEnderCrystal_doRender =
+			  Classes.RenderEnderCrystal.childMethod()
+			  .setName("doRender")
+			  .setReturnType(void.class)
+			  .beginParameters()
+			  .add(Classes.EntityEnderCrystal)
+			  .add(double.class)
+			  .add(double.class)
+			  .add(double.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .finish()
+			  .autoAssign()
+			  .build();
+	  
+	  ASMMethod EntityEnderCrystal_shouldShowBottom =
+			  Classes.EntityEnderCrystal.childMethod()
+			  .setName("shouldShowBottom")
+			  .setReturnType(boolean.class)
+			  .emptyParameters()
+			  .autoAssign()
+			  .build();
+
+	  ASMMethod RenderLivingBase_renderModel =
+			  Classes.RenderLivingBase.childMethod()
+			  .setName("renderModel")
+			  .setReturnType(void.class)
+			  .beginParameters()
+			  .add(Classes.EntityLivingBase)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .finish()
+			  .autoAssign()
+        .build();
+
+	  ASMMethod RenderLivingBase_renderLayers =
+			  Classes.RenderLivingBase.childMethod()
+			  .setName("renderLayers")
+			  .setReturnType(void.class)
+			  .beginParameters()
+			  .add(Classes.EntityLivingBase)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+        .add(float.class)
+        .add(float.class)
+			  .finish()
+			  .autoAssign()
+        .build();
+        
+	  ASMMethod RenderLivingBase_applyRotations =
+			  Classes.RenderLivingBase.childMethod()
+			  .setName("applyRotations")
+			  .setReturnType(void.class)
+			  .beginParameters()
+			  .add(Classes.EntityLivingBase)
+			  .add(float.class)
+			  .add(float.class)
+			  .add(float.class)
+			  .finish()
+			  .autoAssign()
+			  .build();
+	  
+	  ASMMethod RenderItem_renderItemAndEffectIntoGUI =
+			  Classes.RenderItem.childMethod()
+			  .setName("renderItemAndEffectIntoGUI")
+			  .setReturnType(void.class)
+			  .beginParameters()
+			  .add(Classes.EntityLivingBase)
+			  .add(Classes.ItemStack)
+			  .add(int.class)
+			  .add(int.class)
+			  .finish()
+			  .autoAssign()
+			  .build();
+	  
     ASMMethod Block_canRenderInLayer =
       Classes.Block.childMethod()
         .setName("canRenderInLayer")
@@ -517,6 +831,22 @@ public interface TypesMc {
         .emptyParameters()
         .autoAssign()
         .build();
+
+    ASMMethod EntityPlayerSP_isCurrentViewEntity =
+      Classes.EntityPlayerSP.childMethod()
+        .setName("isCurrentViewEntity")
+        .setReturnType(boolean.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+
+    ASMMethod EntityPlayerSP_isUser =
+      Classes.EntityPlayerSP.childMethod()
+        .setName("isUser")
+        .setReturnType(boolean.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
     
     ASMMethod EntityLivingBase_travel =
       Classes.EntityLivingBase.childMethod()
@@ -540,6 +870,48 @@ public interface TypesMc {
         .autoAssign()
         .build();
 
+      ASMMethod EntityRenderer_loadEntityShader =
+        Classes.EntityRenderer.childMethod()
+          .setName("loadEntityShader")
+          .setReturnType(void.class)
+          .beginParameters()
+          .add(Classes.Entity)
+          .finish()
+          .autoAssign()
+          .build();
+
+      ASMMethod EntityRenderer_orientCamera =
+        Classes.EntityRenderer.childMethod()
+          .setName("orientCamera")
+          .setReturnType(void.class)
+          .beginParameters()
+          .add(float.class)
+          .finish()
+          .autoAssign()
+          .build();
+
+    ASMMethod EntityRenderer_getMouseOver =
+      Classes.EntityRenderer.childMethod()
+        .setName("getMouseOver")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(float.class)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod EntityRenderer_renderWorldPass =
+      Classes.EntityRenderer.childMethod()
+        .setName("renderWorldPass")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(int.class)
+        .add(float.class)
+        .add(long.class)
+        .finish()
+        .autoAssign()
+        .build();
+    
     ASMMethod LayerArmorBase_doRenderLayer =
       Classes.LayerArmorBase.childMethod()
         .setName("doRenderLayer")
@@ -810,6 +1182,16 @@ public interface TypesMc {
         .autoAssign()
         .build();
 
+    ASMMethod GuiNewChat_printChatMessage =
+      Classes.GuiNewChat.childMethod()
+        .setName("printChatMessage")
+        .setReturnType(void.class)
+        .beginParameters()
+        .add(Classes.ITextComponent)
+        .finish()
+        .autoAssign()
+        .build();
+
     ASMMethod GuiNewChat_setChatLine =
       Classes.GuiNewChat.childMethod()
         .setName("setChatLine")
@@ -897,6 +1279,72 @@ public interface TypesMc {
         .add(Classes.BlockPos)
         .add(Classes.EnumHand)
         .add(Classes.EnumFacing)
+        .add(float.class)
+        .add(float.class)
+        .add(float.class)
+        .finish()
+        .autoAssign()
+        .build();
+
+    ASMMethod ElytraSound_update =
+      Classes.ElytraSound.childMethod()
+        .setName("update")
+        .setReturnType(void.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+
+    ASMMethod MovementInputFromOptions_updatePlayerMoveState =
+      Classes.MovementInputFromOptions.childMethod()
+        .setName("updatePlayerMoveState")
+        .setReturnType(void.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+
+    ASMMethod MouseHelper_mouseXYChange =
+      Classes.MouseHelper.childMethod()
+        .setName("mouseXYChange")
+        .setReturnType(void.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+
+    ASMMethod AbstractHorse_canBeSteered =
+      Classes.AbstractHorse.childMethod()
+        .setName("canBeSteered")
+        .setReturnType(boolean.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+    ASMMethod AbstractHorse_isHorseSaddled =
+      Classes.AbstractHorse.childMethod()
+        .setName("isHorseSaddled")
+        .setReturnType(boolean.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+
+    ASMMethod EntityLlama_canBeSteered =
+      Classes.EntityLlama.childMethod()
+        .setName("canBeSteered")
+        .setReturnType(boolean.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+
+    ASMMethod EntityPig_canBeSteered =
+      Classes.EntityPig.childMethod()
+        .setName("canBeSteered")
+        .setReturnType(boolean.class)
+        .emptyParameters()
+        .autoAssign()
+        .build();
+    ASMMethod EntityPig_travel =
+      Classes.EntityPig.childMethod()
+        .setName("travel")
+        .setReturnType(void.class)
+        .beginParameters()
         .add(float.class)
         .add(float.class)
         .add(float.class)

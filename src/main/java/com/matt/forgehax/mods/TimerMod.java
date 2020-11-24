@@ -89,10 +89,10 @@ public class TimerMod extends ToggleMod {
       TickRateService.TickRateData data = TickRateService.getTickData();
       if (data.getSampleSize() > 0) {
         TickRateService.TickRateData.CalculationData point = data.getPoint();
-        return String.format("%s [" + TextFormatting.AQUA + "%.2f" + TextFormatting.WHITE + "]", super.getDisplayText(), point.getAverage() / 20);
+        return String.format("%s [" + TextFormatting.AQUA + "%.2f" + TextFormatting.RESET + "]", super.getDisplayText(), point.getAverage() / 20);
       }
     } else {
-      return String.format("%s [" + TextFormatting.AQUA + "%.2f" + TextFormatting.WHITE + "]", super.getDisplayText(), factor.get());
+      return String.format("%s [" + TextFormatting.AQUA + "%.2f" + TextFormatting.RESET + "]", super.getDisplayText(), factor.get());
     }
     return super.getDisplayText();
   }

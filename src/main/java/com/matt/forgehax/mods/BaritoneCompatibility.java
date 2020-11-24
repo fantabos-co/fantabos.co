@@ -4,6 +4,8 @@ import static com.matt.forgehax.Helper.getLocalPlayer;
 
 import com.matt.forgehax.events.ForgeHaxEvent;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
+import com.matt.forgehax.gui.PromptGui;
+import com.matt.forgehax.gui.PromptGui.ClientMode;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
@@ -13,6 +15,8 @@ import org.lwjgl.input.Keyboard;
 
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -78,12 +82,14 @@ public class BaritoneCompatibility extends ToggleMod {
   
   private void turnOn() {
     off = false;
-    getLocalPlayer().sendChatMessage(on_string.get());
+    if (getLocalPlayer() != null)
+      getLocalPlayer().sendChatMessage(on_string.get());
   }
   
   private void turnOff() {
     off = true;
-    getLocalPlayer().sendChatMessage(off_string.get());
+    if (getLocalPlayer() != null)
+      getLocalPlayer().sendChatMessage(off_string.get());
   }
   
   @Override
@@ -104,6 +110,14 @@ public class BaritoneCompatibility extends ToggleMod {
       getLocalPlayer().sendChatMessage(macro_string.get());
     }
   }
+
+  // @SubscribeEvent
+  // public void onMessage(ClientChatEvent event) {
+  //   if (event.getMessage().startsWith("[Baritone]")) {
+  //     PromptGui.getInstance().print(
+  //       new TextComponentString(event.getMessage()), ClientMode.BARITONE);
+  //   }
+  // }
   
   @SubscribeEvent
   public void onTick(LocalPlayerUpdateEvent event) {

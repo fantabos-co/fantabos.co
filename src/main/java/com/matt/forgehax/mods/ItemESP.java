@@ -2,8 +2,10 @@ package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getWorld;
 
+import com.matt.forgehax.asm.events.RenderEntityItem2dEvent;
+import com.matt.forgehax.asm.events.RenderEntityItem3dEvent;
 import com.matt.forgehax.events.Render2DEvent;
-import com.matt.forgehax.events.RenderEvent;
+import com.matt.forgehax.mods.services.RainbowService;
 import com.matt.forgehax.util.draw.RenderUtils;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.color.Color;
@@ -20,8 +22,6 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.opengl.GL11;
 
@@ -41,7 +41,7 @@ public class ItemESP extends ToggleMod {
       .map(EntityItem.class::cast)
       .filter(entity -> entity.ticksExisted > 1)
       .count();
-    return (getModName() + " [" + TextFormatting.DARK_GREEN + count + TextFormatting.WHITE + "]");
+    return (getModName() + " [" + TextFormatting.DARK_GREEN + count + TextFormatting.RESET + "]");
   }
   public final Setting<Double> scale =
       getCommandStub()
@@ -63,14 +63,14 @@ public class ItemESP extends ToggleMod {
           .defaultTo(false)
           .build();
 
-  private final Setting<Boolean> drawBox =
-      getCommandStub()
-          .builders()
-          .<Boolean>newSettingBuilder()
-          .name("box")
-          .description("Draws a box around items")
-          .defaultTo(false)
-          .build();
+  private final Setting<Boolean> nametags =
+		  getCommandStub()
+		  	.builders()
+		  	.<Boolean>newSettingBuilder()
+		  	.name("nametag")
+		  	.description("Renders a nametag above items")
+		  	.defaultTo(true)
+		  	.build();
 
   public final Setting<Double> boxOffsetY =
       getCommandStub()
@@ -94,49 +94,23 @@ public class ItemESP extends ToggleMod {
           .defaultTo(1.0F)
           .build();
 
-  public final Setting<Integer> red =
+  private final Setting<Color> color =
       getCommandStub()
           .builders()
-          .<Integer>newSettingBuilder()
-          .name("red")
-          .description("Red value (RGB)")
-          .min(0)
-          .max(255)
-          .defaultTo(255)
+          .newSettingColorBuilder()
+          .name("color")
+          .description("Color for drawn box")
+          .defaultTo(Color.of(128, 128, 128, 200))
           .build();
 
-  public final Setting<Integer> green =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("green")
-          .description("Green value (RGB)")
-          .min(0)
-          .max(255)
-          .defaultTo(0)
-          .build();
-
-  public final Setting<Integer> blue =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("blue")
-          .description("Blue value (RGB)")
-          .min(0)
-          .max(255)
-          .defaultTo(0)
-          .build();
-
-  public final Setting<Integer> alpha =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("alpha")
-          .description("Alpha value (RGB)")
-          .defaultTo(255)
-          .min(0)
-          .max(255)
-          .build();
+	private final Setting<Boolean> rainbow =
+			getCommandStub()
+			  	.builders()
+			  	.<Boolean>newSettingBuilder()
+			  	.name("rainbow")
+			  	.description("Use rainbow color instead")
+			  	.defaultTo(false)
+			  	.build();
 
   public final Setting<Boolean> antialias =
       getCommandStub()
@@ -146,12 +120,170 @@ public class ItemESP extends ToggleMod {
           .description("Makes lines and triangles more smooth, may hurt performance")
           .defaultTo(true)
           .build();
+  private final Setting<TYPE> type =
+		  getCommandStub()
+		  	.builders()
+		  	.<TYPE>newSettingEnumBuilder()
+		  	.name("type")
+		  	.description("ESP type; outline or wireframe)")
+		  	.defaultTo(TYPE.OUTLINE)
+		  	.build();
+  
+  private final Setting<Boolean> ontop =
+		  getCommandStub()
+		  	.builders()
+		  	.<Boolean>newSettingBuilder()
+		  	.name("ontop")
+		  	.description("Renders the esp over actual entity (only for wireframe)")
+		  	.defaultTo(true)
+		  	.build();
 
   // private final int MAX_AGE = 6000; not needed! Awesome!
   private final int TICKS_SECOND = 20;
 
   @SubscribeEvent
+  public void onRenderItem3d(RenderEntityItem3dEvent event) {
+	  
+    Color c;
+    if (rainbow.get()) c = RainbowService.getRainbowColorClass();
+    else c = color.get();
+
+	  boolean fancyGraphics = MC.gameSettings.fancyGraphics; //Dont need fancy
+	  MC.gameSettings.fancyGraphics = false;
+	  float gamma = MC.gameSettings.gammaSetting;
+	  MC.gameSettings.gammaSetting = 10000.0f; //For extreme lines
+		
+	  //Renders the actual entity first
+	  if (this.ontop.getAsBoolean()) {
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+	  }
+		
+	  if(type.get() == TYPE.OUTLINE) {
+		  
+		  RenderUtils.renderOne(width.getAsFloat());
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+		  GlStateManager.glLineWidth(width.getAsFloat());
+	      
+	      RenderUtils.renderTwo();
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+	      GlStateManager.glLineWidth(width.getAsFloat());
+	      
+	      RenderUtils.renderThree();
+	      RenderUtils.renderFour(c);
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+	      GlStateManager.glLineWidth(width.getAsFloat());
+	     
+	      RenderUtils.renderFive();
+		  
+	  } else {
+		  
+		  GL11.glPushMatrix();
+          GL11.glPushAttrib(1048575);
+          GL11.glPolygonMode(1032, 6913);
+          
+          GL11.glDisable(3553);
+          GL11.glDisable(2896);
+          GL11.glDisable(2929);
+          GL11.glEnable(2848);
+          GL11.glEnable(3042);
+          GlStateManager.blendFunc(770, 771);
+          GlStateManager.color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha());
+          GlStateManager.glLineWidth(width.getAsFloat());
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+          GL11.glPopAttrib();
+          GL11.glPopMatrix();
+		  
+	  }
+	  
+	  //Renders the actual entity last
+	  if (!this.ontop.getAsBoolean()) {
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+      }
+      try {
+          MC.gameSettings.fancyGraphics = fancyGraphics;
+          MC.gameSettings.gammaSetting = gamma;
+      }
+      catch (Exception exception) {
+          // empty catch block
+      }
+      event.setCanceled(true);  }
+  
+  @SubscribeEvent
+  public void onRenderItem2d(RenderEntityItem2dEvent event) {
+	  
+    Color c;
+    if (rainbow.get()) c = RainbowService.getRainbowColorClass();
+    else c = color.get();
+
+	  boolean fancyGraphics = MC.gameSettings.fancyGraphics; //Dont need fancy
+	  MC.gameSettings.fancyGraphics = false;
+	  float gamma = MC.gameSettings.gammaSetting;
+	  MC.gameSettings.gammaSetting = 10000.0f; //For extreme lines
+		
+	  //Renders the actual entity first
+	  if (this.ontop.getAsBoolean()) {
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+	  }
+		
+	  if(type.get() == TYPE.OUTLINE) {
+		  
+		  RenderUtils.renderOne(width.getAsFloat());
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+		  GlStateManager.glLineWidth(width.getAsFloat());
+	      
+	      RenderUtils.renderTwo();
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+	      GlStateManager.glLineWidth(width.getAsFloat());
+	      
+	      RenderUtils.renderThree();
+	      RenderUtils.renderFour(c);
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+	      GlStateManager.glLineWidth(width.getAsFloat());
+	     
+	      RenderUtils.renderFive();
+		  
+	  } else {
+		  
+		  GL11.glPushMatrix();
+          GL11.glPushAttrib(1048575);
+          GL11.glPolygonMode(1032, 6913);
+          
+          GL11.glDisable(3553);
+          GL11.glDisable(2896);
+          GL11.glDisable(2929);
+          GL11.glEnable(2848);
+          GL11.glEnable(3042);
+          GlStateManager.blendFunc(770, 771);
+          GlStateManager.color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha());
+          GlStateManager.glLineWidth(width.getAsFloat());
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+          GL11.glPopAttrib();
+          GL11.glPopMatrix();
+		  
+	  }
+	  
+	  //Renders the actual entity last
+	  if (!this.ontop.getAsBoolean()) {
+		  event.renderItem.renderItem(event.stack, event.transformedModel);
+      }
+      try {
+          MC.gameSettings.fancyGraphics = fancyGraphics;
+          MC.gameSettings.gammaSetting = gamma;
+      }
+      catch (Exception exception) {
+          // empty catch block
+      }
+      event.setCanceled(true); 
+  }
+  
+  
+  @SubscribeEvent
   public void onRender2D(final Render2DEvent event) {
+	  
+	  if(!nametags.getAsBoolean()) {
+		  return;
+	  }
+	  
     GlStateManager.enableBlend();
     GlStateManager.tryBlendFuncSeparate(
         GlStateManager.SourceFactor.SRC_ALPHA,
@@ -209,41 +341,9 @@ public class ItemESP extends ToggleMod {
     GlStateManager.enableDepth();
     GlStateManager.disableBlend();
   }
-
-  //3D box function
-  @SubscribeEvent(priority = EventPriority.LOW)
-  public void onRender(final RenderEvent event) {
-    if (!drawBox.get()) {
-      return;
-    }
-
-    MC.world
-        .loadedEntityList
-        .stream()
-        .filter(EntityItem.class::isInstance)
-        .map(EntityItem.class::cast)
-        .filter(entity -> entity.ticksExisted > 1)
-        .forEach(
-            entity -> {
-              int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
-              AxisAlignedBB bb = entity.getRenderBoundingBox();
-              Vec3d minVec = new Vec3d(bb.minX, bb.minY + boxOffsetY.get(), bb.minZ);
-              Vec3d maxVec = new Vec3d(bb.maxX, bb.maxY + boxOffsetY.get(), bb.maxZ);
-
-              GlStateManager.enableDepth();
-              GlStateManager.glLineWidth(width.get());
-
-              if (antialias.get()) {
-                GL11.glEnable(GL11.GL_POLYGON_SMOOTH);
-                GL11.glEnable(GL11.GL_LINE_SMOOTH);
-              }
-
-              RenderUtils.drawBox(minVec, maxVec, color, width.get(), true);
-
-              GL11.glDisable(GL11.GL_POLYGON_SMOOTH);
-              GL11.glDisable(GL11.GL_LINE_SMOOTH);
-              GlStateManager.glLineWidth(1.0f);
-              GlStateManager.disableDepth();
-            });
+  
+  enum TYPE {
+	  OUTLINE, WIREFRAME
   }
+
 }

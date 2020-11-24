@@ -1,24 +1,31 @@
 package com.matt.forgehax.gui.windows;
 
 import com.matt.forgehax.gui.ClickGui;
+import com.matt.forgehax.gui.elements.GuiColorSelect;
 import com.matt.forgehax.gui.elements.GuiElement;
-import com.matt.forgehax.gui.elements.GuiTextInput;
 import com.matt.forgehax.gui.elements.GuiTextField;
 import com.matt.forgehax.gui.elements.GuiToggle;
 import com.matt.forgehax.gui.elements.GuiToggleEnum;
+import com.matt.forgehax.mods.services.GuiService;
 import com.matt.forgehax.gui.elements.GuiSlider;
 import com.matt.forgehax.util.command.Command;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.BaseMod;
+
+import net.minecraft.util.math.MathHelper;
+
 import com.matt.forgehax.util.color.Color;
-import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 
+import static com.matt.forgehax.Globals.MC;
+import static com.matt.forgehax.Helper.getModManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+
+import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
 
 /**
  * Created by Babbaj on 9/5/2017.
@@ -28,42 +35,64 @@ public class GuiWindowSetting extends GuiWindow {
   // list of toggles, sliders, text inputs, etc.
   public List<GuiElement> inputList = new ArrayList<>();
 
+  private GuiElement lastClicked; //Used to "unactive" elements when clicking elsewhere
+  
+  /**
+   * The button list y coord needs to be offset to move them up or down the window 0 = natural state
+   * anything above 0 means the button list has moved up and the user has scrolled down
+   */
+  private int inputListOffset;
+  
   private final BaseMod mod;
-  private final int x;
-  private final int y;
+  //private final int x;
+  //private final int y;
 
   public GuiWindowSetting(BaseMod modIn, int xIn, int yIn) {
     super(modIn.getModName() + " Settings");
     this.mod = modIn;
-    this.x = xIn;
-    this.y = yIn;
+    //this.x = xIn;
+    //this.y = yIn;
+    //height = 2; //This is modifed later
     this.setPosition(xIn, yIn);
     initializeInputs();
   }
 
   private void initializeInputs() {
-    Collection<Command> commands = getMod().getCommands();
-    commands.forEach(command -> {
+    getMod().getCommands().forEach(command -> {
       try {
         final String settingName = command.getName();
-        final Setting<?> setting = getMod().getSetting(settingName);
-        GuiElement f;
-        if (setting.getDefault() instanceof String)
-          f = new GuiTextInput(setting, this);
-        else if (setting.getDefault() instanceof Boolean)
-          f = new GuiToggle(setting, this);
-        else if (setting.getDefault() instanceof Float ||
-                 setting.getDefault() instanceof Integer ||
-                 setting.getDefault() instanceof Long ||
-                 setting.getDefault() instanceof Double)
-          f = new GuiSlider(setting, this);
-        else if (setting.getDefault() instanceof Enum)
-          f = new GuiToggleEnum(setting, this);
-        else
-          f = new GuiTextField(setting, this);
-        f.subY = height;
-        height += 12;
-        inputList.add(f);
+        if (command instanceof Setting<?>) {
+          final Setting<?> setting = getMod().getSetting(settingName);
+          GuiElement f;
+          //TODO: Give settings widths for better gui
+          if (setting.getDefault() instanceof Boolean)
+            f = new GuiToggle(setting, this);
+          else if (setting.getDefault() instanceof Float ||
+                   setting.getDefault() instanceof Integer ||
+                   setting.getDefault() instanceof Long ||
+                   setting.getDefault() instanceof Double)
+            f = new GuiSlider(setting, this);
+          else if (setting.getDefault() instanceof Enum)
+            f = new GuiToggleEnum(setting, this);
+          else if (setting.getDefault() instanceof Color) {
+        	  f = new GuiColorSelect((Setting<Color>) setting, this);
+          }
+          else {
+            f = new GuiTextField(setting, this);
+          }
+          height += f.height;
+          if(f.width > width) {
+        	  width = f.width;
+          }
+          inputList.add(f);
+        } else {
+          GuiElement f = new GuiTextField(command, this);
+          height += f.height;
+          if(f.width > width) {
+        	  width = f.width;
+          }
+          inputList.add(f);
+        }
       } catch (Exception ignored) {
       }
     });
@@ -90,17 +119,17 @@ public class GuiWindowSetting extends GuiWindow {
       for (GuiElement button : inputList) {
         if (mouseX > button.x && mouseX < (button.x + width) &&
           mouseY > button.y && mouseY < (button.y + button.height)) {
-          drawSettingTooltip(button.setting, mouseX, mouseY);
+          drawSettingTooltip(button.command, mouseX, mouseY);
           break;
         }
       }
     }
   }
 
-  private void drawSettingTooltip(Setting sett, int xScaled, int yScaled) {
+  private void drawSettingTooltip(Command comm, int xScaled, int yScaled) {
     int scale = ClickGui.scaledRes.getScaleFactor();
 
-    String description = sett.getDescription();
+    String description = comm.getDescription();
 
     int offset = 2;
     int tooltipX = xScaled / scale + offset;
@@ -108,7 +137,7 @@ public class GuiWindowSetting extends GuiWindow {
     int padding = 2;
     int tooltipWidth = SurfaceHelper.getTextWidth(description) / scale + padding * 2;
     int lineHeight = SurfaceHelper.getTextHeight() / scale;
-    int lineSpacing = 2;
+    //int lineSpacing = 2;
     int tooltipHeight = lineHeight + padding * 2;
 
     if ((tooltipX + tooltipWidth) * scale > ClickGui.scaledRes.getScaledWidth()) {
@@ -135,9 +164,39 @@ public class GuiWindowSetting extends GuiWindow {
     SurfaceHelper.drawTextShadow(description, (tooltipX + padding) * scale,
       (tooltipY + padding) * scale, 0xAAAAAA);
   }
-
+  
+  //Copied from GuiWindowMod
   public void drawWindow(int mouseX, int mouseY) {
-    super.drawWindow(mouseX, mouseY);
+	  super.drawWindow(mouseX, mouseY);
+
+	    if (isHidden){
+	      return;
+	    }
+
+	    int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() *
+	      getModManager().get(GuiService.class).get().max_height.get());
+
+	    int inputY = -inputListOffset;
+	    
+	    int scale = ClickGui.scaledRes.getScaleFactor();
+
+	    GL11.glPushMatrix();
+	    int scissorY = MC.displayHeight - (scale * windowY + scale * actualHeight - 3);
+	    GL11.glScissor(scale * posX, scissorY, scale * width, scale * actualHeight - 8);
+	    GL11.glEnable(GL11.GL_SCISSOR_TEST);
+	    for (GuiElement input : inputList) {
+	    	input.subY = inputY;
+	    	input.width = width;
+	    	input.draw(mouseX, mouseY);
+	    	inputY += input.height;
+	    }
+	    GL11.glDisable(GL11.GL_SCISSOR_TEST);
+	    GL11.glPopMatrix();
+
+	    // update variables
+	    bottomX = posX + width; // set the coords of the bottom right corner for mouse coord testing
+	    bottomY = windowY + actualHeight;
+    /*super.drawWindow(mouseX, mouseY);
 
     if (!isHidden) {
       for (GuiElement input : inputList) {
@@ -150,7 +209,7 @@ public class GuiWindowSetting extends GuiWindow {
 
     // update variables
     bottomX = posX + width; // set the coords of the bottom right corner for mouse coord testing
-    bottomY = windowY + height;
+    bottomY = windowY + height;*/
   }
 
   public void keyTyped(char typedChar, int keyCode) throws IOException {
@@ -164,9 +223,16 @@ public class GuiWindowSetting extends GuiWindow {
 
     if (state == MouseButtons.RIGHT.id && isMouseInHeader(x, y)) { // delete the window on right click
       ClickGui.getInstance().windowList.remove(this);
+      for (GuiElement input : inputList) {
+          input.onRemoved();
+      }
     } else if (!isHidden) {
+      if(lastClicked != null) {
+    	  lastClicked.isActive = false; //Set last clicked element to false
+      }
       for (GuiElement input : inputList) {
         if (input.isMouseInElement(x , y)) {
+          lastClicked = input;
           input.mouseClicked(x, y, state);
           break;
         }
@@ -182,11 +248,43 @@ public class GuiWindowSetting extends GuiWindow {
   }
 
   public void handleMouseInput(int x, int y) throws IOException {
-    for (GuiElement input : inputList) {
-      if (input.isMouseInElement(x , y)) {
-        input.handleMouseInput(x, y);
-        break;
-      }
-    }
+	  
+	  int i = Mouse.getEventDWheel();
+	  
+	  i = MathHelper.clamp(i, -1, 1);
+	  inputListOffset -= i * 10;
+
+	  if (inputListOffset < 0) {
+		  inputListOffset = 0; // don't scroll up if its already at the top
+	  }
+
+	  int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() *
+			  getModManager().get(GuiService.class).get().max_height.get());
+	  int lowestButtonY = windowY;
+	  for(GuiElement element : inputList) {
+		  lowestButtonY += element.height;
+	  }
+	  int lowestAllowedOffset = lowestButtonY - actualHeight - windowY;
+	  if (lowestButtonY - inputListOffset < bottomY) {
+		  inputListOffset = lowestAllowedOffset;
+	  }
+	  for (GuiElement input : inputList) {
+		  if (input.isMouseInElement(x , y)) {
+			  input.handleMouseInput(x, y);
+			  break;
+		  }
+	  }
+  }
+  
+  @Override
+  public boolean equals(Object other) {
+	  if(this == other) {
+		  return true;
+	  } else if(!(other instanceof GuiWindowSetting)) {
+		  return false;
+	  } else {
+		  GuiWindowSetting otherWindow = (GuiWindowSetting)other;
+		  return this.mod.getModName().equals(otherWindow.mod.getModName());
+	  }
   }
 }

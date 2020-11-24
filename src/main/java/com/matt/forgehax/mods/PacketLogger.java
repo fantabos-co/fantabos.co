@@ -12,6 +12,7 @@ import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.util.command.Options;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.command.exception.CommandExecuteException;
+import com.matt.forgehax.util.common.PriorityEnum;
 import com.matt.forgehax.util.entry.ClassEntry;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
@@ -42,6 +43,7 @@ import joptsimple.internal.Strings;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.network.Packet;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 /**
@@ -65,17 +67,25 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
       getCommandStub()
           .builders()
           .<Boolean>newSettingBuilder()
-          .name("blacklist_on")
-          .description("Enables the blacklist")
+          .name("blacklist")
+          .description("Ignore packets added to list")
           .defaultTo(false)
           .build();
-  
-  private final Options<ClassEntry> blacklist =
+  private final Setting<Boolean> whitelist_on =
+    getCommandStub()
+        .builders()
+        .<Boolean>newSettingBuilder()
+        .name("whitelist")
+        .description("only log packets added to list")
+        .defaultTo(false)
+        .build();
+          
+  private final Options<ClassEntry> log_list =
       getCommandStub()
           .builders()
           .<ClassEntry>newOptionsBuilder()
-          .name("blacklist")
-          .description("Classes to ignore")
+          .name("list")
+          .description("Classes to ignore/log")
           .factory(ClassEntry::new)
           .supplier(Sets::newConcurrentHashSet)
           .build();
@@ -93,7 +103,7 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
 
   @Override
   protected void onLoad() {
-    blacklist
+    log_list
         .builders()
         .newCommandBuilder()
         .name("add")
@@ -120,7 +130,7 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
               
               if (match.isPresent()) {
                 Class<?> clazz = match.get();
-                blacklist.add(new ClassEntry(clazz));
+                log_list.add(new ClassEntry(clazz));
                 data.write(String.format("Added class \"%s\"", clazz.getName()));
                 data.markSuccess();
               } else {
@@ -129,10 +139,10 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
                 data.markFailed();
               }
             })
-        .success(cb -> blacklist.serialize())
+        // .success(cb -> blacklist.serialize())
         .build();
     
-    blacklist
+    log_list
         .builders()
         .newCommandBuilder()
         .name("remove")
@@ -147,9 +157,9 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
               }
               
               Optional<ClassEntry> match =
-                  blacklist
+                  log_list
                       .stream()
-                      .filter(entry -> className.contains(entry.getClassName().toLowerCase()))
+                      .filter(entry -> entry.getClassName().toLowerCase().contains(className.toLowerCase()))
                       .sorted(
                           (o1, o2) ->
                               String.CASE_INSENSITIVE_ORDER.compare(
@@ -158,7 +168,7 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
               
               if (match.isPresent()) {
                 ClassEntry entry = match.get();
-                if (blacklist.remove(entry)) {
+                if (log_list.remove(entry)) {
                   data.write(String.format("Removed class \"%s\"", entry.getClassName()));
                   data.markSuccess();
                 } else {
@@ -171,10 +181,10 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
                 data.markFailed();
               }
             })
-        .success(cb -> blacklist.serialize())
+        // .success(cb -> blacklist.serialize())
         .build();
     
-    blacklist
+    log_list
         .builders()
         .newCommandBuilder()
         .name("list")
@@ -182,7 +192,7 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
         .processor(
             data -> {
               StringBuilder builder = new StringBuilder();
-              for (ClassEntry c : blacklist.contents()) {
+              for (ClassEntry c : log_list.contents()) {
                 builder.append(c.getClassName() + "\n");
               }
               data.write(builder.toString());
@@ -234,17 +244,21 @@ public class PacketLogger extends ToggleMod implements GsonConstant {
     onDisabled();
   }
   
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.LOWEST)
   public void onPacketInbound(PacketEvent.Incoming.Pre event) {
-    if (!blacklist_on.get() || blacklist.get(event.getPacket().getClass()) == null) {
+    if (event.isCanceled()) return;
+    if ((!blacklist_on.get() || log_list.get(event.getPacket().getClass()) == null) &&
+        (!whitelist_on.get() || log_list.get(event.getPacket().getClass()) != null)) {
       logPacket(stream_packet_in, event.getPacket());
       count++;
     }
   }
   
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.LOWEST)
   public void onPacketOutbound(PacketEvent.Outgoing.Pre event) {
-    if (!blacklist_on.get() || blacklist.get(event.getPacket().getClass()) == null) {
+    if (event.isCanceled()) return;
+    if ((!blacklist_on.get() || log_list.get(event.getPacket().getClass()) == null) &&
+        (!whitelist_on.get() || log_list.get(event.getPacket().getClass()) != null)) {
       logPacket(stream_packet_out, event.getPacket());
       count++;
     }

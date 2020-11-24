@@ -167,4 +167,60 @@ public class EntityPlayerSPPatch extends ClassTransformer {
       main.instructions.insert(insnPre);
     }
   }
+
+  @RegisterMethodTransformer
+  private class IsUser extends MethodTransformer {
+    
+    @Override
+    public ASMMethod getMethod() {
+      return Methods.EntityPlayerSP_isUser;
+    }
+    
+    @Inject(description = "Add hook to allow player rendering in freecam")
+    public void inject(MethodNode main) {
+      AbstractInsnNode preNode = main.instructions.getFirst();
+      
+      Objects.requireNonNull(preNode, "Find pattern failed for isUser node");
+      
+      LabelNode jump = new LabelNode();
+      
+      InsnList insnList = new InsnList();
+      insnList.add(ASMHelper.call(GETSTATIC, TypesHook.Fields.ForgeHaxHooks_allowDifferentUserForFreecam));
+      insnList.add(new JumpInsnNode(IFEQ, jump));
+      insnList.add(new InsnNode(ICONST_0));
+      insnList.add(new InsnNode(IRETURN));
+      insnList.add(jump);
+      
+      main.instructions.insert(insnList);
+    }
+  }
+
+  @RegisterMethodTransformer
+  private class IsCurrentViewEntity extends MethodTransformer {
+    
+    @Override
+    public ASMMethod getMethod() {
+      return Methods.EntityPlayerSP_isCurrentViewEntity;
+    }
+    
+    @Inject(description = "Add hook to allow player movement in freecam")
+    public void inject(MethodNode main) {
+      AbstractInsnNode preNode = main.instructions.getFirst();
+      
+      Objects.requireNonNull(preNode, "Find pattern failed for isCurrentViewEntity node");
+      
+      LabelNode jump = new LabelNode();
+      
+      InsnList insnList = new InsnList();
+      insnList.add(ASMHelper.call(GETSTATIC, TypesHook.Fields.ForgeHaxHooks_allowMovementInFreecam));
+      insnList.add(new JumpInsnNode(IFEQ, jump));
+      insnList.add(new InsnNode(ICONST_1));
+      insnList.add(new InsnNode(IRETURN));
+      insnList.add(jump);
+      
+      main.instructions.insert(insnList);
+    }
+  }
 }
+
+

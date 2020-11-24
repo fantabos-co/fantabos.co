@@ -6,6 +6,7 @@ import com.matt.forgehax.Helper;
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.events.RenderEvent;
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
@@ -75,49 +76,17 @@ public class BreadCrumbs extends ToggleMod {
           .defaultTo(true)
           .build();
 
-  public final Setting<Integer> alpha =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("alpha")
-          .description("Alpha amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(50)
-          .build();
-  public final Setting<Integer> red =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("red")
-          .description("Red amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(191)
-          .build();
-  public final Setting<Integer> green =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("green")
-          .description("Green amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(97)
-          .build();
-  public final Setting<Integer> blue =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("blue")
-          .description("Blue amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(106)
-          .build();
+  private final Setting<Color> color =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color")
+      .description("Color for trail")
+      .defaultTo(Color.of(191, 97, 106, 50))
+      .build();
 
   public BreadCrumbs() {
-    super(Category.RENDER, "BreadCrumbs", false, "epic trail meme");
+    super(Category.PLAYER, "BreadCrumbs", false, "epic trail meme");
   }
 
   private static final Path BASE_PATH = getFileManager().getBaseResolve("breadcrumbs");
@@ -459,13 +428,14 @@ public class BreadCrumbs extends ToggleMod {
   @SubscribeEvent
   public void onRender(RenderEvent event) {
     BufferBuilder builder = event.getBuffer();
+    Color c = color.get();
 
     this.pointsToDraw.get().forEach(vecStream -> {
       final List<Vec3d> path = vecStream.collect(Collectors.toList()); // TODO: dont collect
 
       builder.begin(GL11.GL_LINE_STRIP, DefaultVertexFormats.POSITION_COLOR);
       path.forEach(p -> {
-        builder.pos(p.x, p.y, p.z).color(red.get(), green.get(), blue.get(), alpha.get()).endVertex();
+        builder.pos(p.x, p.y, p.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
       });
       event.getTessellator().draw();
     });

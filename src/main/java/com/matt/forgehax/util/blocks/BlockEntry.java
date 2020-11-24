@@ -1,14 +1,13 @@
 package com.matt.forgehax.util.blocks;
 
 import com.google.common.collect.Maps;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.Globals;
 import com.matt.forgehax.util.blocks.exceptions.BlockDoesNotExistException;
 import com.matt.forgehax.util.blocks.properties.IBlockProperty;
 import com.matt.forgehax.util.blocks.properties.PropertyFactory;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -193,31 +192,30 @@ public class BlockEntry implements ISerializableJson, Globals {
   }
   
   @Override
-  public void serialize(final JsonWriter writer) throws IOException {
+  public void serialize(JsonObject in) {
     cleanupProperties();
+
+    JsonObject add = new JsonObject();
+    for (IBlockProperty property : properties.values())
+      property.serialize(add);
     
-    writer.beginObject();
-    for (IBlockProperty property : properties.values()) {
-      writer.name(property.toString());
-      property.serialize(writer);
-    }
-    writer.endObject();
+    in.add(uniqueId, add);
   }
   
   @Override
-  public void deserialize(final JsonReader reader) throws IOException {
-    reader.beginObject();
-    while (reader.hasNext()) {
-      String name = reader.nextName();
-      IBlockProperty property = PropertyFactory.newInstance(name);
+  public void deserialize(JsonObject in) {
+    JsonObject from = in.getAsJsonObject(uniqueId);
+    if (from == null) return;
+
+    for (Map.Entry<String, JsonElement> e : from.entrySet()) {
+      IBlockProperty property = PropertyFactory.newInstance(e.getKey());
       if (property != null) {
-        property.deserialize(reader);
+        property.deserialize(from);
         registerProperty(property);
       } else {
-        LOGGER.warn(String.format("\"%s\" is not a valid property name", name));
+        LOGGER.warn(String.format("\"%s\" is not a valid property name", e.getKey()));
       }
     }
-    reader.endObject();
   }
   
   @Override

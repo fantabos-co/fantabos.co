@@ -23,7 +23,7 @@ public abstract class TypeConverter<E> {
       return defaultTo;
     }
   }
-  
+
   public abstract String toString(E value);
   
   public String toString(E value, @Nonnull String defaultTo) {
@@ -32,6 +32,10 @@ public abstract class TypeConverter<E> {
     } catch (Throwable t) {
       return defaultTo;
     }
+  }
+
+  public String toStringPretty(E value) {
+    return toString(value, "N/A");
   }
   
   @Nullable

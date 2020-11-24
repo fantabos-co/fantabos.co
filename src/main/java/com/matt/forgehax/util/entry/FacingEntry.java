@@ -1,9 +1,7 @@
 package com.matt.forgehax.util.entry;
 
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonObject;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import java.io.IOException;
 import java.util.Objects;
 import net.minecraft.util.EnumFacing;
 
@@ -25,15 +23,13 @@ public class FacingEntry implements ISerializableJson {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginArray();
-    writer.endArray();
+  public void serialize(JsonObject in) {
+    in.addProperty(facing.toString(), "N/A");
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginArray();
-    reader.endArray();
+  public void deserialize(JsonObject in) {
+    //
   }
   
   @Override

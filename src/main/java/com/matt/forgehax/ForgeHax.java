@@ -3,6 +3,7 @@ package com.matt.forgehax;
 import static com.matt.forgehax.Helper.getFileManager;
 import static com.matt.forgehax.Helper.getModManager;
 
+import com.matt.forgehax.mods.services.ForgeHaxService;
 import com.matt.forgehax.util.mod.BaseMod;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -41,11 +42,18 @@ public class ForgeHax {
   public void init(FMLInitializationEvent event) {
     if (event.getSide() == Side.CLIENT) {
       // add shutdown hook to serialize all binds
+        
       Runtime.getRuntime()
-          .addShutdownHook(new Thread(() -> getModManager().forEach(BaseMod::unload)));
+          .addShutdownHook(new Thread(() -> {
+            getModManager().get(ForgeHaxService.class).ifPresent(fhs -> {
+              if (fhs.autosave.get()) Helper.getGlobalCommand().saveConfiguration();
+            });              
+            getModManager().forEach(BaseMod::unload);
+          }));
       
       // registerAll mod events
       getModManager().forEach(BaseMod::load);
+      Helper.getGlobalCommand().loadConfiguration();
     }
   }
 }

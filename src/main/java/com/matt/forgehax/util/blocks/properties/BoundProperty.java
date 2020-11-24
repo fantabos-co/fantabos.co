@@ -1,9 +1,9 @@
 package com.matt.forgehax.util.blocks.properties;
 
 import com.google.common.collect.Sets;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import java.io.IOException;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -55,26 +55,27 @@ public class BoundProperty implements IBlockProperty {
   }
   
   @Override
-  public void serialize(JsonWriter writer) throws IOException {
-    writer.beginArray();
+  public void serialize(JsonObject in) {
+    JsonArray add = new JsonArray();
+
     for (Bound bound : bounds) {
-      writer.beginArray();
-      writer.value(bound.getMin());
-      writer.value(bound.getMax());
-      writer.endArray();
+      JsonArray arr = new JsonArray();
+      arr.add(bound.getMin());
+      arr.add(bound.getMax());
+      add.add(arr);
     }
-    writer.endArray();
+    in.add(HEADING, add);
   }
   
   @Override
-  public void deserialize(JsonReader reader) throws IOException {
-    reader.beginArray();
-    while (reader.hasNext()) {
-      reader.beginArray();
-      add(reader.nextInt(), reader.nextInt());
-      reader.endArray();
+  public void deserialize(JsonObject in) {
+    JsonArray from = in.getAsJsonArray(HEADING);
+    if (from == null) return;
+
+    for (JsonElement e : from) {
+      add(e.getAsJsonArray().get(0).getAsInt(),
+          e.getAsJsonArray().get(1).getAsInt());
     }
-    reader.endArray();
   }
   
   @Override

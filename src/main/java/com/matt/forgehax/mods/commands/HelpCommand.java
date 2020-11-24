@@ -1,11 +1,9 @@
 package com.matt.forgehax.mods.commands;
 
-import static com.matt.forgehax.Helper.getGlobalCommand;
-import static com.matt.forgehax.Helper.getLocalPlayer;
-import static com.matt.forgehax.Helper.getModManager;
-
 import com.google.common.util.concurrent.FutureCallback;
 import com.matt.forgehax.Helper;
+import com.matt.forgehax.gui.ClickGui;
+import com.matt.forgehax.gui.windows.GuiWindowSetting;
 import com.matt.forgehax.util.command.Command;
 import com.matt.forgehax.util.command.CommandBuilders;
 import com.matt.forgehax.util.console.ConsoleIO;
@@ -14,32 +12,27 @@ import com.matt.forgehax.util.entity.PlayerInfoHelper;
 import com.matt.forgehax.util.mod.BaseMod;
 import com.matt.forgehax.util.mod.CommandMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
 import net.minecraft.util.text.TextComponentString;
+
+import static com.matt.forgehax.Helper.*;
 
 /**
  * Created on 6/1/2017 by fr1kin
  */
 @RegisterMod
 public class HelpCommand extends CommandMod {
-  
+
   public HelpCommand() {
     super("HelpCommand");
   }
-  
-  @RegisterCommand
-  public Command save(CommandBuilders builder) {
-    return builder
-      .newCommandBuilder()
-      .name("save")
-      .description("Save all configurations.")
-      .processor(data -> getGlobalCommand().serializeAll())
-      .build();
-  }
-  
+
   @RegisterCommand
   public Command help(CommandBuilders builder) {
     return builder
@@ -48,7 +41,8 @@ public class HelpCommand extends CommandMod {
       .description("Help text for mod syntax and command list.")
       .processor(
         data -> {
-          String build = "Type \".search <optional: containing string>\" for list of mods\n" +
+          String build = ">> ForgeHax v2.10 - tonio's private build\n" +
+              "Type \".search <optional: containing string>\" for list of mods\n" +
               "Use -? or --help after command to see command options\n" +
               "See the FAQ for details\n" +
               "https://github.com/fr1kin/ForgeHax#faq";
@@ -57,7 +51,7 @@ public class HelpCommand extends CommandMod {
         })
       .build();
   }
-  
+
   @RegisterCommand
   public Command search(CommandBuilders builder) {
     return builder
@@ -99,7 +93,7 @@ public class HelpCommand extends CommandMod {
         })
       .build();
   }
-  
+
   @RegisterCommand
   public Command history(CommandBuilders builder) {
     return builder
@@ -137,7 +131,7 @@ public class HelpCommand extends CommandMod {
                 }
                 ConsoleIO.setIndents(previousIndents);
               }
-              
+
               @Override
               public void onFailure(Throwable t) {
               }
@@ -147,7 +141,7 @@ public class HelpCommand extends CommandMod {
         })
       .build();
   }
-  
+
   @RegisterCommand
   public Command loaded(CommandBuilders builder) {
     return builder
@@ -173,7 +167,7 @@ public class HelpCommand extends CommandMod {
         })
       .build();
   }
-  
+
   @RegisterCommand
   public Command online(CommandBuilders builder) {
     return builder
@@ -183,11 +177,11 @@ public class HelpCommand extends CommandMod {
       .processor(
         data -> {
           List<PlayerInfo> players = PlayerInfoHelper.getOnlinePlayers();
-          
+
           if (players.size() > 0) {
             final String match =
               data.getArgumentCount() > 0 ? data.getArgumentAsString(0).toLowerCase() : "";
-            
+
             StringBuilder str = new StringBuilder();
             str.append(players.size());
             if (match.isEmpty()) {
@@ -212,7 +206,7 @@ public class HelpCommand extends CommandMod {
         })
       .build();
   }
-  
+
   @RegisterCommand
   public Command respawn(CommandBuilders builder) {
     return builder
@@ -230,7 +224,7 @@ public class HelpCommand extends CommandMod {
         })
       .build();
   }
-  
+
   @RegisterCommand
   public Command clearChat(CommandBuilders builders) {
     return builders
@@ -284,4 +278,34 @@ public class HelpCommand extends CommandMod {
         })
       .build();
   }
+
+    @RegisterCommand
+    public Command setting(CommandBuilders builder) {
+        return builder
+                .newCommandBuilder()
+                .name("settings")
+                .description("Shows setting window for a mod.")
+                .processor(data -> {
+                    if (getWorld() == null || getLocalPlayer() == null) {
+                        printError("You must be in game to use this command.");
+                        return;
+                    }
+
+                    data.requiredArguments(1);
+                    final String modName = data.getArgumentAsString(0);
+                    List<BaseMod> modList = new ArrayList<>(getModManager().getMods());
+
+                    for (BaseMod mod : modList
+                            .stream()
+                            .filter(mod -> mod.getModName().toLowerCase().equals(modName))
+                            .collect(Collectors.toList())) {
+                        GuiWindowSetting gui = new GuiWindowSetting(mod, ClickGui.scaledRes.getScaledWidth() / 2, ClickGui.scaledRes.getScaledHeight() / 2);
+                        if (!ClickGui.getInstance().windowList.contains(gui)) ClickGui.getInstance().windowList.add(gui);
+                        MC.displayGuiScreen(ClickGui.getInstance());
+
+                        printInform("Opened " + mod.getModName() + " settings.");
+                    }
+                })
+                .build();
+    }
 }

@@ -89,8 +89,8 @@ public abstract class BaseCommandBuilder<T extends BaseCommandBuilder, R extends
     return (T) this;
   }
   
-  public T help(Consumer<OptionSet> consumer) {
-    return insert(Command.HELP, consumer);
+  public T help(Consumer<ExecuteData> consumer) { // This was Consumer<OptionSet> but then 
+    return insert(Command.HELP, consumer);        //    custom help throws "cannot cast to ExecuteData"
   }
   
   public T success(Consumer<CallbackData> consumer) {

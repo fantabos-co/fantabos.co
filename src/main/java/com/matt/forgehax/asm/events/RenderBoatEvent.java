@@ -12,10 +12,12 @@ public class RenderBoatEvent extends Event {
   
   private float yaw;
   private EntityBoat boat;
+  private float opacity;
   
   public RenderBoatEvent(EntityBoat boatIn, float entityYaw) {
     this.boat = boatIn;
     this.yaw = entityYaw;
+    this.opacity = 1F;
   }
   
   public void setYaw(float yawIn) {
@@ -28,5 +30,13 @@ public class RenderBoatEvent extends Event {
   
   public EntityBoat getBoat() {
     return this.boat;
+  }
+
+  public void setOpacity(float opacityIn) {
+    this.opacity = opacityIn;
+  }
+
+  public float getOpacity() {
+    return this.opacity;
   }
 }

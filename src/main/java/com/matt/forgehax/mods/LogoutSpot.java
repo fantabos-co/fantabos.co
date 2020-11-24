@@ -1,6 +1,7 @@
 package com.matt.forgehax.mods;
 
 import static com.matt.forgehax.Helper.getLocalPlayer;
+import static com.matt.forgehax.Helper.getModManager;
 import static com.matt.forgehax.Helper.getWorld;
 
 import com.google.common.collect.Sets;
@@ -9,6 +10,9 @@ import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.events.PlayerConnectEvent;
 import com.matt.forgehax.events.Render2DEvent;
 import com.matt.forgehax.events.RenderEvent;
+import com.matt.forgehax.mods.managers.FriendManager;
+import com.matt.forgehax.util.color.Color;
+import com.matt.forgehax.util.color.ColorClamp;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
@@ -27,6 +31,11 @@ import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
+import net.minecraft.util.text.event.HoverEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -43,6 +52,14 @@ public class LogoutSpot extends ToggleMod {
           .name("render")
           .description("Draw a box where the player logged out")
           .defaultTo(true)
+          .build();
+  private final Setting<Color> color =
+      getCommandStub()
+          .builders()
+          .newSettingColorBuilder()
+          .name("color")
+          .description("Color for drawn box")
+          .defaultTo(Colors.RED)
           .build();
   private final Setting<Integer> max_distance =
       getCommandStub()
@@ -83,9 +100,9 @@ public class LogoutSpot extends ToggleMod {
     }
   }
   
-  private void printInform(String fmt, Object... args) {
+  private void printInform(ITextComponent t) {
     if (print_message.get()) {
-      Helper.printInform(fmt, args);
+      Helper.printInform(t);
     }
   }
   
@@ -105,6 +122,16 @@ public class LogoutSpot extends ToggleMod {
     reset();
   }
 
+  private ITextComponent makeFancyName(String name) {
+    TextFormatting color;
+    if (FriendManager.isFriend(name))
+      color = ColorClamp.getClampedColor(FriendManager.getFriendColor(name));
+    else color = TextFormatting.GRAY;
+    return Helper.getFormattedText(name, color, true, false,
+      new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/w " + name),
+      new HoverEvent(HoverEvent.Action.SHOW_TEXT, Helper.getFormattedText("whisper " + name, TextFormatting.LIGHT_PURPLE, true, false)));
+  }
+
   @SubscribeEvent(priority = EventPriority.LOWEST)
   public void onEntityJoinWorld(EntityJoinWorldEvent event) {
     if (getLocalPlayer() == null) return;
@@ -113,7 +140,8 @@ public class LogoutSpot extends ToggleMod {
         !getLocalPlayer().equals(event.getEntity()) &&
         !EntityUtils.isFakeLocalPlayer(event.getEntity())) {
       if (log_visual_range.get()) {
-          Helper.printWarning(String.format("spotted %s", event.getEntity().getName()));
+          Helper.printWarning(Helper.getFormattedText("spotted ", TextFormatting.DARK_GRAY, false, false)
+                                .appendSibling(makeFancyName(event.getEntity().getName())));
       }
     }
   }
@@ -122,7 +150,9 @@ public class LogoutSpot extends ToggleMod {
   public void onPlayerConnect(PlayerConnectEvent.Join event) {
     synchronized (spots) {
       if (spots.removeIf(spot -> spot.getId().equals(event.getPlayerInfo().getId()))) {
-          printInform("%s joined", event.getPlayerInfo().getName());
+          printInform(makeFancyName(event.getPlayerInfo().getName())
+                .appendSibling(Helper.getFormattedText(" connected", TextFormatting.DARK_AQUA, false, false))
+          );
       }
     }
   }
@@ -143,13 +173,15 @@ public class LogoutSpot extends ToggleMod {
                 event.getPlayerInfo().getName(),
                 new Vec3d(bb.maxX, bb.maxY, bb.maxZ),
                 new Vec3d(bb.minX, bb.minY, bb.minZ)))) {
-          printInform("%s disconnected", event.getPlayerInfo().getName());
+          printInform(makeFancyName(event.getPlayerInfo().getName())
+                .appendSibling(Helper.getFormattedText(" disconnected", TextFormatting.DARK_RED, false, false))
+    );
         }
       }
     }
   }
   
-  @SubscribeEvent(priority = EventPriority.LOW)
+  @SubscribeEvent(priority = EventPriority.HIGH)
   public void onRenderGameOverlayEvent(Render2DEvent event) {
     if (!render.get()) {
       return;
@@ -167,13 +199,13 @@ public class LogoutSpot extends ToggleMod {
                   name,
                   (int) upper.getX() - (SurfaceHelper.getTextWidth(name) / 2),
                   (int) upper.getY() - (SurfaceHelper.getTextHeight() + 1),
-                  Colors.RED.toBuffer());
+                  color.get().toBuffer());
             }
           });
     }
   }
   
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.HIGH)
   public void onRender(RenderEvent event) {
     if (!render.get()) {
       return;
@@ -193,7 +225,7 @@ public class LogoutSpot extends ToggleMod {
                   spot.getMaxs().y,
                   spot.getMaxs().z,
                   GeometryMasks.Line.ALL,
-                  Colors.RED.toBuffer()));
+                  color.get().toBuffer()));
     }
     
     event.getTessellator().draw();

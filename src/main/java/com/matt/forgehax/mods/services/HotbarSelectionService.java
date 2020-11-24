@@ -28,7 +28,7 @@ public class HotbarSelectionService extends ServiceMod {
   private Predicate<Long> resetCondition = Predicates.alwaysTrue();
   
   public HotbarSelectionService() {
-    super("HotbarSelectionService");
+    super("HotbarSelectionService", "Handle hotbar moving");
     instance = this;
   }
   

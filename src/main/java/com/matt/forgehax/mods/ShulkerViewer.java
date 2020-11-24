@@ -1,7 +1,9 @@
 package com.matt.forgehax.mods;
 
 import com.google.common.collect.Lists;
+import com.matt.forgehax.asm.reflection.FastReflection;
 import com.matt.forgehax.mods.services.ChatCommandService;
+import com.matt.forgehax.util.SimpleTimer;
 import com.matt.forgehax.util.Utils;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
@@ -12,6 +14,7 @@ import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.client.gui.inventory.GuiShulkerBox;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.settings.KeyBinding;
@@ -24,20 +27,23 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraftforge.client.event.GuiContainerEvent;
 import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.settings.IKeyConflictContext;
+import net.minecraftforge.event.world.BlockEvent.PlaceEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Keyboard;
-
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -99,6 +105,8 @@ public class ShulkerViewer extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("x-offset")
           .description("X Offset for the tool tip")
+          .min(0)
+          .max(10000)
           .defaultTo(8)
           .build();
   
@@ -108,7 +116,19 @@ public class ShulkerViewer extends ToggleMod {
           .<Integer>newSettingBuilder()
           .name("y-offset")
           .description("Y Offset for the tool tip")
+          .min(0)
+          .max(10000)
           .defaultTo(0)
+          .build();
+
+
+  private final Setting<Boolean> buffer_shulker =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("buffer")
+          .description("Save shulker data from opened inventories")
+          .defaultTo(false)
           .build();
   
   private final KeyBinding lockDownKey =
@@ -128,6 +148,8 @@ public class ShulkerViewer extends ToggleMod {
   
   private int lastX = -1;
   private int lastY = -1;
+
+  private Map<String, ShulkerInventory> inventory_cache = new ConcurrentHashMap<String, ShulkerInventory>();
   
   public ShulkerViewer() {
     super(Category.RENDER, "ShulkerViewer", false, "View the contents of a shulker box.");
@@ -212,6 +234,20 @@ public class ShulkerViewer extends ToggleMod {
   private boolean isInRegion(int x, int y, int width, int height, int testingX, int testingY) {
     return testingX >= x && testingY >= y && testingX <= x + width && testingY <= y + height;
   }
+
+  @Override
+  public void onLoad() {
+    getCommandStub()
+        .builders()
+        .newCommandBuilder()
+        .name("flush")
+        .description("clear shulker buffer")
+        .processor(
+            data -> {
+              inventory_cache.clear();
+            })
+        .build();
+  }
   
   @Override
   protected void onEnabled() {
@@ -273,12 +309,19 @@ public class ShulkerViewer extends ToggleMod {
   }
   
   @SubscribeEvent
-  public void onGuiChanged(GuiOpenEvent event) {
+  public void onGuiChanged(GuiScreenEvent event) {
+    if (buffer_shulker.get() && event.getGui() instanceof GuiShulkerBox) {
+      GuiShulkerBox gui = (GuiShulkerBox) event.getGui();
+      IInventory inv = FastReflection.Fields.GuiShulkerBox_inventory.get(gui);
+      inventory_cache.put(inv.getDisplayName().getUnformattedText(),
+                          new ShulkerInventory(gui.inventorySlots.inventoryItemStacks));
+      LOGGER.warn("Caching " + inv.getDisplayName().getUnformattedText());
+    }
     if (event.getGui() == null) {
       reset();
     }
   }
-  
+
   @SubscribeEvent(priority = EventPriority.LOWEST)
   public void onRender(GuiScreenEvent.DrawScreenEvent.Post event) {
     if (!(MC.currentScreen instanceof GuiContainer)) {
@@ -297,9 +340,14 @@ public class ShulkerViewer extends ToggleMod {
             || slotUnder.getStack().isEmpty()
             || !(slotUnder.getStack().getItem() instanceof ItemShulkerBox)) {
           setInCache(CACHE_HOVERING_INDEX, null);
+        } else if (buffer_shulker.get() && inventory_cache.get(slotUnder.getStack().getDisplayName()) != null) {
+          LOGGER.warn("Hovering cached " + slotUnder.getStack().getDisplayName());
+          setInCache(CACHE_HOVERING_INDEX, new GuiShulkerViewer(
+            new ShulkerContainer(inventory_cache.get(slotUnder.getStack().getDisplayName()), 0), slotUnder.getStack(), 0));
         } else if (!ItemStack.areItemStacksEqual(
             getInCache(0).map(GuiShulkerViewer::getParentShulker).orElse(ItemStack.EMPTY),
             slotUnder.getStack())) {
+          LOGGER.warn("Hovering real " + slotUnder.getStack().getDisplayName());
           setInCache(CACHE_HOVERING_INDEX, newShulkerGui(slotUnder.getStack(), 1));
         }
         
@@ -307,10 +355,15 @@ public class ShulkerViewer extends ToggleMod {
         ItemStack stackHeld = LocalPlayerInventory.getInventory().getItemStack();
         if (stackHeld.isEmpty() || !(stackHeld.getItem() instanceof ItemShulkerBox)) {
           setInCache(CACHE_HOLDING_INDEX, null);
+        } else if (buffer_shulker.get() && inventory_cache.get(stackHeld.getDisplayName()) != null) {
+          setInCache(CACHE_HOLDING_INDEX, new GuiShulkerViewer(
+            new ShulkerContainer(inventory_cache.get(stackHeld.getDisplayName()), 0), stackHeld, 0));
+          LOGGER.warn("Holding cached " + stackHeld.getDisplayName());
         } else if (!ItemStack.areItemStacksEqual(
             getInCache(1).map(GuiShulkerViewer::getParentShulker).orElse(ItemStack.EMPTY),
             stackHeld)) {
           setInCache(CACHE_HOLDING_INDEX, newShulkerGui(stackHeld, 0));
+          LOGGER.warn("Holding real " + stackHeld.getDisplayName());
         }
         
         if (locked && !updated && guiCache.stream().anyMatch(Objects::nonNull)) {

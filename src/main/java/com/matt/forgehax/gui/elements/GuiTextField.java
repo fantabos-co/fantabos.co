@@ -2,25 +2,42 @@ package com.matt.forgehax.gui.elements;
 
 import static com.matt.forgehax.Globals.MC;
 
+import com.matt.forgehax.Helper;
+import com.matt.forgehax.mods.services.ChatCommandService;
 import com.matt.forgehax.gui.windows.GuiWindowSetting;
 import com.matt.forgehax.util.color.Colors;
+import com.matt.forgehax.util.command.Command;
+import com.matt.forgehax.util.command.CommandHelper;
 import com.matt.forgehax.util.command.Setting;
+import com.matt.forgehax.util.command.exception.CommandExecuteException;
 import com.matt.forgehax.util.draw.SurfaceHelper;
-import java.io.IOException;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.TextComponentString;
-import org.lwjgl.input.Keyboard;
+import net.minecraft.client.gui.GuiChat;
 
 public class GuiTextField extends GuiElement {
 
-  public GuiTextField(Setting settingIn, GuiWindowSetting parent) {
-    super(settingIn, parent);
+  public GuiTextField(Command commandIn, GuiWindowSetting parent) {
+    super(commandIn, parent);
     height = 12;
   }
 
   public void draw(int mouseX, int mouseY) {
     super.draw(x, y);
-    SurfaceHelper.drawTextShadow(String.format("%s [%s]", setting.getName(), setting.get().toString()),
-                            x + 1, y + 1, Colors.WHITE.toBuffer());
+    String text = (command instanceof Setting ?
+            String.format("%s: \"%s\"", command.getName(), ((Setting) command).get().toString()) :
+            "-> " + command.getName());
+    SurfaceHelper.drawTextShadow(text, x + 1, y + 1, Colors.WHITE.toBuffer());
+  }
+
+  public void mouseClicked(int mouseX, int mouseY, int state) {
+    try { // This is super lazy but command.getRequiredArgs() gave 0 when it should not
+      String[] arguments = CommandHelper.translate("");
+      command.run(arguments);
+    } catch (CommandExecuteException e) {
+      Helper.printError(e.getMessage());
+      String cmd = ChatCommandService.getActivationCharacter().toString();
+      cmd += this.parentWindow.getMod().getModName();
+      cmd += (" " + this.command.getName() + " ");
+      MC.displayGuiScreen(new GuiChat(cmd));
+    }
   }
 }

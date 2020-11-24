@@ -92,12 +92,12 @@ public class BlockHelper {
   }
   
   private static BlockTraceInfo getPlaceableBlockSideTrace(
-      Vec3d eyes, Vec3d normal, Stream<EnumFacing> stream, BlockPos pos) {
+      Vec3d eyes, Vec3d normal, Stream<EnumFacing> stream, BlockPos pos, boolean legit) {
     return stream
         .map(side -> newBlockTrace(pos.offset(side), side))
         .filter(info -> isBlockPlaceable(info.getPos()))
         .filter(info -> isInReach(eyes, info.getHitVec()))
-        .filter(info -> BlockHelper.isTraceClear(eyes, info.getHitVec(), info.getSide()))
+        .filter(info -> !legit || BlockHelper.isTraceClear(eyes, info.getHitVec(), info.getSide()))
         .min(
             Comparator.<BlockTraceInfo>comparingInt(info -> info.isSneakRequired() ? 1 : 0)
                 .thenComparing(
@@ -106,12 +106,12 @@ public class BlockHelper {
   }
   
   public static BlockTraceInfo getPlaceableBlockSideTrace(
-      Vec3d eyes, Vec3d normal, EnumSet<EnumFacing> sides, BlockPos pos) {
-    return getPlaceableBlockSideTrace(eyes, normal, sides.stream(), pos);
+      Vec3d eyes, Vec3d normal, EnumSet<EnumFacing> sides, BlockPos pos, boolean legit) {
+    return getPlaceableBlockSideTrace(eyes, normal, sides.stream(), pos, legit);
   }
   
-  public static BlockTraceInfo getPlaceableBlockSideTrace(Vec3d eyes, Vec3d normal, BlockPos pos) {
-    return getPlaceableBlockSideTrace(eyes, normal, Stream.of(EnumFacing.values()), pos);
+  public static BlockTraceInfo getPlaceableBlockSideTrace(Vec3d eyes, Vec3d normal, BlockPos pos, boolean legit) {
+    return getPlaceableBlockSideTrace(eyes, normal, Stream.of(EnumFacing.values()), pos, legit);
   }
   
   public static BlockTraceInfo getBlockSideTrace(Vec3d eyes, BlockPos pos, EnumFacing side) {

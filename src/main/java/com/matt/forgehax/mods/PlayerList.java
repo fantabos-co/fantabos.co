@@ -5,7 +5,7 @@ import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getModManager;
 
 import com.matt.forgehax.asm.events.RenderTabNameEvent;
-import com.matt.forgehax.mods.services.FriendService;
+import com.matt.forgehax.mods.managers.FriendManager;
 import com.matt.forgehax.util.entity.EntityUtils;
 import com.matt.forgehax.util.entity.PlayerUtils;
 import com.matt.forgehax.util.color.Colors;
@@ -26,6 +26,47 @@ import java.util.stream.Collectors;
 
 @RegisterMod
 public class PlayerList extends HudMod {
+
+  private final Setting<Boolean> distance =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("distance")
+      .description("Show distance of player")
+      .defaultTo(true)
+      .build();
+  private final Setting<Boolean> gamemode =
+    getCommandStub()
+       .builders()
+       .<Boolean>newSettingBuilder()
+       .name("gamemode")
+       .description("Show gamemode of player")
+       .defaultTo(true)
+       .build();
+  private final Setting<Boolean> health =
+    getCommandStub()
+       .builders()
+       .<Boolean>newSettingBuilder()
+       .name("health")
+       .description("Show health of player")
+       .defaultTo(true)
+       .build();
+  private final Setting<Boolean> ping =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("ping")
+      .description("Show ping of player")
+      .defaultTo(true)
+      .build();
+  private final Setting<Boolean> above_below =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("relative")
+      .description("Show relative position (above or below)")
+      .defaultTo(true)
+      .build();
 
   private final Setting<Boolean> color =
     getCommandStub()
@@ -110,7 +151,7 @@ public class PlayerList extends HudMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + TextFormatting.DARK_AQUA + count + TextFormatting.WHITE + "]");
+    return (getModName() + " [" + TextFormatting.DARK_AQUA + count + TextFormatting.RESET + "]");
   }
 
   @SubscribeEvent
@@ -139,10 +180,7 @@ public class PlayerList extends HudMod {
         .collect(Collectors.toList());
         
       players.stream()
-        .map(entity -> (getDistanceColor(getLocalPlayer().getDistance(entity)) +
-                        getNameColor(entity) + " [" +
-                        getHPColor(entity.getHealth() + entity.getAbsorptionAmount()) + TextFormatting.GRAY + "] " +
-                        above_below(getLocalPlayer().posY, entity.posY)) + TextFormatting.RESET)
+        .map(entity -> makePlayerString(entity))
         .forEach(line -> text.add(line));
 
       count = text.size();
@@ -153,32 +191,20 @@ public class PlayerList extends HudMod {
     }
   }
 
-  private static String getHPColor(float hp) {
-    if (hp > 20F) return TextFormatting.YELLOW + String.format("%.0f", hp);
-    if (hp > 17F) return TextFormatting.DARK_GREEN + String.format("%.0f", hp);
-    if (hp > 12F) return TextFormatting.GREEN + String.format("%.0f", hp);
-    if (hp > 8F) return TextFormatting.GOLD + String.format("%.0f", hp);
-    if (hp > 5F) return TextFormatting.RED + String.format("%.1f", hp);
-    if (hp > 2F) return TextFormatting.DARK_RED + String.format("%.1f", hp);
-    return TextFormatting.DARK_GRAY + String.format("%.1f", hp);
-  }
-
-  private static String above_below(double pos1, double pos2) {
-    if (pos1 > pos2) return TextFormatting.GOLD + "++ ";
-    if (pos1 < pos2) return TextFormatting.DARK_GRAY + "-- ";
-    return TextFormatting.GRAY + "== ";
-  }
-
-  private static String getDistanceColor(double distance) {
-    if (distance > 30D) return TextFormatting.DARK_AQUA + String.format("%.1fm ", distance);
-    if (distance > 10D) return TextFormatting.AQUA + String.format("%.1fm ", distance);
-    return TextFormatting.WHITE + String.format("%.1fm ", distance);
+  private String makePlayerString(EntityPlayer in) {
+    StringBuilder out = new StringBuilder();
+    if (distance.get()) out.append(PlayerUtils.getDistanceColor(in)).append(" ");
+    if (gamemode.get()) out.append(PlayerUtils.getGmode(in)).append(" ");
+    out.append(getNameColor(in));
+    if (ping.get()) out.append(" ").append(PlayerUtils.getColorPing(in));
+    if (health.get()) out.append(" ").append(PlayerUtils.getHPColor(in));
+    if (above_below.get()) out.append(" ").append(PlayerUtils.above_below(in));
+    return out.toString();
   }
 
   private String getNameColor(EntityPlayer entity) {
-    FriendService mod = getModManager().get(FriendService.class).get(); 
-    if (mod.isFriend(entity.getName())) {
-      TextFormatting clr = ColorClamp.getClampedColor(mod.getFriendColor(entity.getName()));
+    if (FriendManager.isFriend(entity.getName())) {
+      TextFormatting clr = ColorClamp.getClampedColor(FriendManager.getFriendColor(entity.getName()));
       return clr + entity.getName() + TextFormatting.GRAY;
     }
     if (color.get()) {

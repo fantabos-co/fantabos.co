@@ -14,7 +14,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class PacketIgnoreListService extends ServiceMod {
   
   public PacketIgnoreListService() {
-    super("PacketIgnoreListService");
+    super("PacketIgnoreListService", "Handles packet ignorelist");
   }
   
   @SubscribeEvent(priority = EventPriority.LOWEST)

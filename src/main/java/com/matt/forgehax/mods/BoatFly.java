@@ -3,7 +3,6 @@ package com.matt.forgehax.mods;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 import static com.matt.forgehax.Helper.getRidingEntity;
 import static com.matt.forgehax.Helper.getNetworkManager;
-import static com.matt.forgehax.Helper.getModManager;
 import static com.matt.forgehax.Helper.getWorld;
 
 import com.matt.forgehax.asm.events.PacketEvent;
@@ -18,6 +17,7 @@ import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.RenderUtils;
 import com.matt.forgehax.util.entity.EntityUtils;
+import com.matt.forgehax.util.key.Bindings;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
@@ -45,25 +45,19 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
-/*	No-Lifed on by Tonio_Cartonio during the 1st covid wave (~March 2020)
- *		This is a shittier but working version, skid and improve
- *		freely. I will not provide settings. I will *maybe* provide
- *		some explaination if you DM me.
- *
- *	Thanks to Fleyr and Number1Princess for helping debug this shit
- *		very early on. Early adopters best adopters.
- *
- *	I would also like to thank Phobos for finding, skidding and then
- *		leaking to literally everybody my Constantiam elytra bypass.
- *		Hope u guys enjoyed!
- *
- *	Always thanks to supreme lord of the boat Popstonia himself,
- *		this would never have been possible without dank boat vids
- */
-
 @RegisterMod
 public class BoatFly extends ToggleMod {
 
+  public final Setting<Float> opacity =
+      getCommandStub()
+          .builders()
+          .<Float>newSettingBuilder()
+          .name("opacity")
+          .description("Set boat model opacity")
+          .min(0F)
+          .max(1F)
+          .defaultTo(1F)
+          .build();
   public final Setting<Double> speed =
       getCommandStub()
           .builders()
@@ -71,8 +65,18 @@ public class BoatFly extends ToggleMod {
           .name("speed")
           .description("how fast to move")
           .min(0D)
-          .max(3D)
-          .defaultTo(1D)
+          .max(5D)
+          .defaultTo(2.5D)
+          .build();
+  public final Setting<Double> speedFall =
+      getCommandStub()
+          .builders()
+          .<Double>newSettingBuilder()
+          .name("FallSpeed")
+          .description("how slowly to fall")
+          .min(0D)
+          .max(2D)
+          .defaultTo(0D)
           .build();
   public final Setting<Double> speedUp =
       getCommandStub()
@@ -94,13 +98,21 @@ public class BoatFly extends ToggleMod {
           .max(2D)
           .defaultTo(1D)
           .build();
+  public final Setting<Boolean> sprint =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("half-speed")
+          .description("Halve boat speed if not sprinting")
+          .defaultTo(true)
+          .build();
   public final Setting<Boolean> cancel_rubber =
       getCommandStub()
           .builders()
           .<Boolean>newSettingBuilder()
           .name("posLock")
           .description("Ignore server position")
-          .defaultTo(false)
+          .defaultTo(true)
           .build();
   public final Setting<Boolean> force_boat_pos =
       getCommandStub()
@@ -108,7 +120,7 @@ public class BoatFly extends ToggleMod {
           .<Boolean>newSettingBuilder()
           .name("keep-boat")
           .description("Keep the boat sticking to you")
-          .defaultTo(false)
+          .defaultTo(true)
           .build();
   public final Setting<Boolean> remount =
       getCommandStub()
@@ -116,7 +128,7 @@ public class BoatFly extends ToggleMod {
           .<Boolean>newSettingBuilder()
           .name("remount")
           .description("Automatically remount boat")
-          .defaultTo(false)
+          .defaultTo(true)
           .build();
   public final Setting<Boolean> spoof =
       getCommandStub()
@@ -132,7 +144,7 @@ public class BoatFly extends ToggleMod {
           .<Boolean>newSettingBuilder()
           .name("place-spoof")
           .description("Cancel some boat placing packets")
-          .defaultTo(false)
+          .defaultTo(true)
           .build();
   public final Setting<Boolean> force_on_ground =
       getCommandStub()
@@ -140,8 +152,9 @@ public class BoatFly extends ToggleMod {
           .<Boolean>newSettingBuilder()
           .name("ground")
           .description("Sets your movement as always on-ground")
-          .defaultTo(false)
+          .defaultTo(true)
           .build();
+  
   public final Setting<Boolean> setYaw =
       getCommandStub()
           .builders()
@@ -166,16 +179,47 @@ public class BoatFly extends ToggleMod {
           .description("disable boat gravity")
           .defaultTo(false)
           .build();
+
+  public final Setting<Boolean> entity_fly =
+       getCommandStub()
+           .builders()
+           .<Boolean>newSettingBuilder()
+           .name("entity-fly")
+           .description("Fly with any entity as if it was a boat")
+           .defaultTo(false)
+           .build();
+    
   
   public BoatFly() {
     super(Category.MOVEMENT, "BoatFly", false, "Boathax");
+  }
+
+  private boolean isRiding() {
+    return (getLocalPlayer() != null 
+            && (getLocalPlayer().getRidingEntity() != null)
+            && (getLocalPlayer().getRidingEntity() instanceof EntityBoat || entity_fly.get()));
+  }
+
+  private boolean wasRiding() {
+    return isRiding() || (last_boat != null 
+            && (last_boat instanceof EntityBoat || entity_fly.get()));
+  }
+
+  @Override
+  public String getDisplayText() {
+    if (getStatus() == EntityBoat.Status.IN_AIR)
+      return (super.getDisplayText() + " [" + TextFormatting.DARK_PURPLE + "F" + TextFormatting.RESET + "]");
+    if (getStatus() == EntityBoat.Status.ON_LAND)
+      return (super.getDisplayText() + " [" + TextFormatting.DARK_GREEN + "G" + TextFormatting.RESET + "]");
+    return super.getDisplayText();
   }
 
   private Entity last_boat = null;
 
   @SubscribeEvent
   public void onWorldUnload(WorldEvent.Unload event) {
-    getLocalPlayer().dismountRidingEntity();
+    if (getLocalPlayer() != null)
+      getLocalPlayer().dismountRidingEntity();
     last_boat = null;
   }
 
@@ -188,23 +232,24 @@ public class BoatFly extends ToggleMod {
   @SubscribeEvent
   public void onPacketInbound(PacketEvent.Incoming.Pre event) {
     if (getLocalPlayer() == null) return;
-    if (force_boat_pos.get() && event.getPacket() instanceof SPacketMoveVehicle &&
-          getLocalPlayer().getRidingEntity() != null) {
-      event.setCanceled(true);
-    }
-    if (event.getPacket() instanceof SPacketPlayerPosLook) {
-      SPacketPlayerPosLook packet = event.getPacket();
-      if (cancel_rubber.get() && last_boat != null && !MC.gameSettings.keyBindSneak.isKeyDown()) {
+    if (event.getPacket() instanceof SPacketMoveVehicle) {
+      if (force_boat_pos.get() && isRiding())
         event.setCanceled(true);
-        if (!spoof.get()) {
-          getNetworkManager().sendPacket(
-              new CPacketConfirmTeleport(packet.getTeleportId()));
+    } else if (event.getPacket() instanceof SPacketPlayerPosLook) {
+      if (wasRiding() && !Bindings.sneak.isPressed()) {
+        SPacketPlayerPosLook packet = event.getPacket();
+        if (cancel_rubber.get()) {
+          event.setCanceled(true);
+          if (!spoof.get()) {
+            getNetworkManager().sendPacket(
+                new CPacketConfirmTeleport(packet.getTeleportId()));
+          }
         }
-      }
-      if (remount.get() && last_boat != null && !MC.gameSettings.keyBindSneak.isKeyDown()) {
-        Vec3d pos = new Vec3d(last_boat.posX, last_boat.posY, last_boat.posZ);
-        getNetworkManager().sendPacket(new CPacketUseEntity(last_boat, EnumHand.MAIN_HAND, pos));
-        getNetworkManager().sendPacket(new CPacketUseEntity(last_boat, EnumHand.MAIN_HAND));
+        if (remount.get()) {
+          Vec3d pos = new Vec3d(last_boat.posX, last_boat.posY, last_boat.posZ);
+          getNetworkManager().sendPacket(new CPacketUseEntity(last_boat, EnumHand.MAIN_HAND, pos));
+          getNetworkManager().sendPacket(new CPacketUseEntity(last_boat, EnumHand.MAIN_HAND));
+        }
       }
     }
   }
@@ -216,8 +261,7 @@ public class BoatFly extends ToggleMod {
         ((CPacketUseEntity) event.getPacket()).getAction() == Action.INTERACT_AT) {
       event.setCanceled(true);
     }
-    if (last_boat == null && getLocalPlayer().getRidingEntity() == null) return;
-    if (spoof.get() && (
+    if (spoof.get() && wasRiding() && (
         event.getPacket() instanceof CPacketSteerBoat ||
         event.getPacket() instanceof CPacketPlayer ||
         event.getPacket() instanceof CPacketInput ||
@@ -257,31 +301,56 @@ public class BoatFly extends ToggleMod {
   }
   
   @SubscribeEvent
+  public void onRenderBoat(RenderBoatEvent event) {
+    if (EntityUtils.isDrivenByPlayer(event.getBoat())) {
+      if (opacity.get() < 1F) {
+        event.setOpacity(opacity.get());
+      }
+      if (setYaw.getAsBoolean()) {
+        float yaw = getLocalPlayer().rotationYaw;
+        event.getBoat().rotationYaw = yaw;
+        event.setYaw(yaw);
+      }
+    }
+  }
+  
+  @SubscribeEvent
   public void onClientTick(TickEvent.ClientTickEvent event) {
-    if (getLocalPlayer() == null) return;
+    if (getLocalPlayer() == null || FreecamMod.shouldIgnoreInput()) return;
     // if (getModManager().get(FreecamMod.class).get().isEnabled()) return;
-
     // check if the player is really riding a entity
     if (MC.player.getRidingEntity() != null) {
-      last_boat = MC.player.getRidingEntity();
-
-      ForgeHaxHooks.isNoClampingActivated = noClamp.getAsBoolean();
-      ForgeHaxHooks.isBoatSetYawActivated = setYaw.getAsBoolean();
-      ForgeHaxHooks.isNoBoatGravityActivated = noGravity.getAsBoolean();
-
-      MC.player.getRidingEntity().motionY = 0f;
+      if (getLocalPlayer().getRidingEntity() instanceof EntityBoat
+          || entity_fly.get()) {
+        last_boat = MC.player.getRidingEntity();
+        ForgeHaxHooks.isNoClampingActivated = noClamp.getAsBoolean();
+        ForgeHaxHooks.isBoatSetYawActivated = setYaw.getAsBoolean();
+        ForgeHaxHooks.isNoBoatGravityActivated = noGravity.getAsBoolean();
+  
+        MC.player.getRidingEntity().motionY = 0f;
+        
+        if (MC.gameSettings.keyBindJump.isKeyDown()) {
+          // trick the riding entity to think its onground
+          MC.player.getRidingEntity().onGround = force_on_ground.get();
+          // teleport up
+          MC.player.getRidingEntity().motionY += MC.gameSettings.keyBindSprint.isKeyDown() ? 5*speedUp.get() : speedUp.get();
+        } else if (MC.gameSettings.keyBindSprint.isKeyDown()) {
+          MC.player.getRidingEntity().motionY -= speedDown.get();
+        } else if (speedFall.get() != 0D) {
+          MC.player.getRidingEntity().motionY -= speedFall.getAsDouble();
+        } else if (MC.gameSettings.keyBindSneak.isKeyDown()) {
+          getLocalPlayer().dismountRidingEntity();
+          last_boat = null;
+          return;
+        } 
+  
+        /*if ((MC.player.posY <= maintainY.getAsDouble()-5D) && (MC.player.posY > maintainY.getAsDouble()-10D) && maintainY.getAsDouble() != 0D)
+        MC.player.getRidingEntity().setPositionAndUpdate(MC.player.posX, maintainY.getAsDouble(), MC.player.posZ );*/
       
-      if (MC.gameSettings.keyBindJump.isKeyDown()) {
-        MC.player.getRidingEntity().onGround = force_on_ground.get();
-        MC.player.getRidingEntity().motionY += speedUp.get();
-      } else if (MC.gameSettings.keyBindSprint.isKeyDown()) {
-        MC.player.getRidingEntity().motionY -= speedDown.get();
-      } else if (MC.gameSettings.keyBindSneak.isKeyDown()) {
-        getLocalPlayer().dismountRidingEntity();
+        setMoveSpeedEntity(speed.getAsDouble());
+      } else {
         last_boat = null;
-        return;
-      } 
-      setMoveSpeedEntity(speed.getAsDouble());
+      }
     } else {
       if (MC.gameSettings.keyBindSneak.isKeyDown()) {
         getLocalPlayer().dismountRidingEntity();
@@ -298,6 +367,8 @@ public class BoatFly extends ToggleMod {
       double forward = movementInput.moveForward;
       double strafe = movementInput.moveStrafe;
       float yaw = MC.player.rotationYaw;
+      if (sprint.get() && !getLocalPlayer().isSprinting())
+        speed /= 2.D;
       
       if ((forward == 0.0D) && (strafe == 0.0D)) {
         MC.player.getRidingEntity().motionX = (0.0D);
@@ -326,5 +397,17 @@ public class BoatFly extends ToggleMod {
                 - strafe * speed * Math.cos(Math.toRadians(yaw + 90.0F)));
       }
     }
+  }
+
+  private EntityBoat.Status getStatus() {
+    if (getLocalPlayer() == null || getLocalPlayer().getRidingEntity() == null
+        || !(getLocalPlayer().getRidingEntity() instanceof EntityBoat)) return null;
+    return FastReflection.Fields.EntityBoat_status.get(getLocalPlayer().getRidingEntity());
+  }
+
+  private boolean isInAir() {
+    if (getStatus() == EntityBoat.Status.IN_AIR )
+      return true;
+    return false;
   }
 }

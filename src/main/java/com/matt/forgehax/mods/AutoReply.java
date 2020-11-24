@@ -87,7 +87,7 @@ public class AutoReply extends ToggleMod {
 
   @Override
   public String getDisplayText() {
-    return (super.getDisplayText() + " [" + TextFormatting.GRAY + replies + TextFormatting.WHITE + "]");
+    return (super.getDisplayText() + " [" + TextFormatting.GRAY + replies + TextFormatting.RESET + "]");
   }
 
   @Override

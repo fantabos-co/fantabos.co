@@ -27,14 +27,7 @@ import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 /**
  * Created on 14/07/2020 by tonio coz Constantiam has not that good anti-elytra
- * 
- *	Phobos found this who knows how and right after they included it, the 1st major leak
- *		happened and literally everyone had it. It's patched anyway so enjoy.
- *		If you check phobos src you can see most of my weird SubscribeEvents,
- *		and most importantly the fucking struggle with the inventory indexes.
- *
  */
-
 @RegisterMod
 public class AutoElytra extends ToggleMod {
 

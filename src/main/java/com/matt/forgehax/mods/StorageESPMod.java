@@ -155,89 +155,128 @@ public class StorageESPMod extends ToggleMod {
           .defaultTo(20)
           .build();
 
+  private final Setting<Color> color_chest =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-chest")
+      .description("Color for chests")
+      .defaultTo(Color.of(255, 128, 0, 64))
+      .build();
+  private final Setting<Color> color_dispenser =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-dispenser")
+      .description("Color for dispensers")
+      .defaultTo(Color.of(0, 255, 0, 64))
+      .build();
+  private final Setting<Color> color_dropper =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-dropper")
+      .description("Color for droppers")
+      .defaultTo(Color.of(0, 170, 0, 64))
+      .build();
+  private final Setting<Color> color_shulker =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-shulker")
+      .description("Color for shulker boxes")
+      .defaultTo(Color.of(0, 170, 170, 64))
+      .build();
+  private final Setting<Color> color_echest =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-echest")
+      .description("Color for ender chests")
+      .defaultTo(Color.of(163, 73, 163, 64))
+      .build();
+  private final Setting<Color> color_furnace =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-furnace")
+      .description("Color for furnaces")
+      .defaultTo(Color.of(128, 128, 128, 64))
+      .build();
+  private final Setting<Color> color_hopper =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-hopper")
+      .description("Color for hoppers")
+      .defaultTo(Color.of(255, 255, 85, 64))
+      .build();
+  private final Setting<Color> color_frame =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color-frame")
+      .description("Color for item frames")
+      .defaultTo(Color.of(153, 102, 51, 64))
+      .build();
+
   public StorageESPMod() {
     super(Category.RENDER, "StorageESP", false, "Shows storage blocks/entities");
   }
 
   private int count = 0;
+  private int count_chests = 0;
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + TextFormatting.GOLD + count + TextFormatting.WHITE + "]");
+    return (getModName() + " [" + TextFormatting.GOLD + count + TextFormatting.RESET + "]");
   }
 
   @Override
   public String getInfoDisplayText() {
-    if (count >= stash_warn.get())
-      return TextFormatting.GOLD + "Chests: " + count + TextFormatting.WHITE;
+    if (count_chests >= stash_warn.get())
+      return TextFormatting.GOLD + "Chests: " + count_chests + TextFormatting.WHITE;
     return super.getInfoDisplayText();
   }
 
   private int getTileEntityOutlineColor(TileEntity tileEntity) {
-    if (chests.getAsBoolean() && tileEntity instanceof TileEntityChest) {
-      return Colors.ORANGE.toBuffer();
-    } else if (dispensers.getAsBoolean() && tileEntity instanceof TileEntityDispenser) {
-      if(tileEntity instanceof TileEntityDropper) {
-        return Colors.GREEN.toBuffer();
-      }
-      return Colors.DARK_GREEN.toBuffer();
-    } else if (shulkers.getAsBoolean() && tileEntity instanceof TileEntityShulkerBox) {
-      return Colors.GOLD.toBuffer();
-    } else if (eChests.getAsBoolean() && tileEntity instanceof TileEntityEnderChest) {
-      return Colors.PURPLE.toBuffer();
-    } else if (furnaces.getAsBoolean() && tileEntity instanceof TileEntityFurnace) {
-      return Colors.GRAY.toBuffer();
-    } else if (hoppers.getAsBoolean() && tileEntity instanceof TileEntityHopper) {
-      return Colors.DARK_RED.toBuffer();
-    } else return -1;
+    return Color.of(getTileEntityFillColor(tileEntity)).setAlpha(255).toBuffer();
   }
 
   private int getTileEntityFillColor(TileEntity tileEntity) {
     if (chests.getAsBoolean() && tileEntity instanceof TileEntityChest) {
-      return Color.of(255, 128, 0, alpha.get()).toBuffer(); //ORANGE
+      return color_chest.get().toBuffer();
     } else if (dispensers.getAsBoolean() && tileEntity instanceof TileEntityDispenser) {
       if (tileEntity instanceof TileEntityDropper) {
-        return Color.of(0, 255, 0, alpha.get()).toBuffer(); //GREEN
+        return color_dropper.get().toBuffer();
       }
-      return Color.of(0, 170, 0, alpha.get()).toBuffer(); //DARK_GREEN
+      return color_dispenser.get().toBuffer();
     } else if (shulkers.getAsBoolean() && tileEntity instanceof TileEntityShulkerBox) {
-      return Color.of(255, 191, 0, alpha.get()).toBuffer(); //GOLD
+      return color_shulker.get().toBuffer();
     } else if (eChests.getAsBoolean() && tileEntity instanceof TileEntityEnderChest) {
-      return Color.of(163, 73, 163, alpha.get()).toBuffer(); //PURPLE
+      return color_echest.get().toBuffer();
     } else if (furnaces.getAsBoolean() && tileEntity instanceof TileEntityFurnace) {
-      return Color.of(128, 128, 128, alpha.get()).toBuffer(); //GRAY
+      return color_furnace.get().toBuffer();
     } else if (hoppers.getAsBoolean() && tileEntity instanceof TileEntityHopper) {
-      return Color.of(128, 0, 0, alpha.get()).toBuffer(); //DARK_RED
+      return color_hopper.get().toBuffer();
     } else return -1;
   }
 
   private int getEntityOutlineColor(Entity entity) {
-    if (chests.getAsBoolean() && entity instanceof EntityMinecartChest)
-      return Colors.ORANGE.toBuffer();
-    else if (hoppers.getAsBoolean() && entity instanceof EntityMinecartHopper)
-      return Colors.DARK_RED.toBuffer();
-    else if (itemFrames.getAsBoolean() && entity instanceof EntityItemFrame
-        && ((EntityItemFrame) entity).getDisplayedItem().getItem() instanceof ItemShulkerBox)
-      return Colors.GOLD.toBuffer();
-    else if (itemFrames.getAsBoolean() && entity instanceof EntityItemFrame
-        && !(((EntityItemFrame) entity).getDisplayedItem().getItem() instanceof ItemShulkerBox))
-      return Colors.BROWN.toBuffer();
-
-    else return -1;
+    return Color.of(getEntityFillColor(entity)).setAlpha(255).toBuffer();
   }
 
   private int getEntityFillColor(Entity entity) {
     if (chests.getAsBoolean() && entity instanceof EntityMinecartChest)
-      return Color.of(255, 128, 0, alpha.get()).toBuffer(); //ORANGE
+      return color_chest.get().toBuffer();
     else if (hoppers.getAsBoolean() && entity instanceof EntityMinecartHopper)
-      return Color.of(128, 0, 0, alpha.get()).toBuffer(); //DARK_RED
+      return color_hopper.get().toBuffer();
     else if (itemFrames.getAsBoolean() && entity instanceof EntityItemFrame
         && ((EntityItemFrame) entity).getDisplayedItem().getItem() instanceof ItemShulkerBox)
-      return Color.of(255, 191, 0, alpha.get()).toBuffer(); //GOLD
+      return color_shulker.get().toBuffer();
     else if (itemFrames.getAsBoolean() && entity instanceof EntityItemFrame
         && !(((EntityItemFrame) entity).getDisplayedItem().getItem() instanceof ItemShulkerBox))
-      return Color.of(153, 102, 51, alpha.get()).toBuffer(); //BROWN
-
+      return color_frame.get().toBuffer();
     else return -1;
   }
 
@@ -252,9 +291,11 @@ public class StorageESPMod extends ToggleMod {
       GL11.glEnable(GL11.GL_LINE_SMOOTH);
     }
 
-    int buf = 0;
+    int chests = 0;
+    int total = 0;
     for (TileEntity tileEntity : getWorld().loadedTileEntityList) {
-      if (tileEntity instanceof TileEntityChest) buf++;
+      if (tileEntity instanceof TileEntityChest) chests++;
+      total++;
       BlockPos pos = tileEntity.getPos();
 
       int outlineColor = getTileEntityOutlineColor(tileEntity);
@@ -274,7 +315,8 @@ public class StorageESPMod extends ToggleMod {
         }
       }
     }
-    count = buf;
+    count = total;
+    count_chests = chests;
 
     for (Entity entity : getWorld().loadedEntityList) {
       BlockPos pos = entity.getPosition();

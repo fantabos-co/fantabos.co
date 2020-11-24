@@ -7,6 +7,8 @@ import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import com.matt.forgehax.asm.events.PacketEvent;
+import com.matt.forgehax.events.LocalPlayerUpdateEvent;
+
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.network.play.server.SPacketTimeUpdate;
 import net.minecraft.util.text.TextFormatting;
@@ -32,6 +34,31 @@ public class WorldTime extends ToggleMod {
       .defaultTo(false)
       .build();
 
+  public final Setting<Boolean> force =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("force")
+      .description("Force the game time to a specific one")
+      .defaultTo(false)
+      .build();
+
+  public final Setting<Integer> target_time =
+    getCommandStub()
+      .builders()
+      .<Integer>newSettingBuilder()
+      .name("time")
+      .description("Time to force the game at")
+      .min(0)
+      .max(24000)
+      .defaultTo(18000)
+      .changed(
+        cb -> {
+          if (force.get() && getWorld() != null)
+            getWorld().setWorldTime(cb.getTo());
+        })
+      .build();
+
   public WorldTime() {
     super(Category.GUI, "WorldTime", false, "Shows the time in Minecraft world");
   }
@@ -50,7 +77,14 @@ public class WorldTime extends ToggleMod {
     if (server_sync.get() && event.getPacket() instanceof SPacketTimeUpdate) {
       time = (int) (((SPacketTimeUpdate) event.getPacket()).getWorldTime() % 24000L);
       day = ((SPacketTimeUpdate) event.getPacket()).getWorldTime() / 24000L;
+      if (force.get()) event.setCanceled(true);
     }
+  }
+
+  @SubscribeEvent
+  public void onUpdate(LocalPlayerUpdateEvent event) {
+    if (force.get() && getWorld() != null)
+      getWorld().setWorldTime(target_time.get());
   }
 
   public String getInfoDisplayText() {

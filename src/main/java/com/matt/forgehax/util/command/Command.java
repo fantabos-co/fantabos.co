@@ -5,31 +5,27 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
-import com.matt.forgehax.Globals;
+import com.google.gson.JsonObject;
+
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.util.SafeConverter;
+import com.matt.forgehax.util.VariableCompTreeSet;
 import com.matt.forgehax.util.command.callbacks.CallbackData;
 import com.matt.forgehax.util.command.exception.CommandBuildException;
 import com.matt.forgehax.util.command.exception.CommandExecuteException;
 import com.matt.forgehax.util.command.exception.CommandParentNonNullException;
-import com.matt.forgehax.util.console.ConsoleIO;
 import com.matt.forgehax.util.serialization.GsonConstant;
 import com.matt.forgehax.util.serialization.ISerializableJson;
-import com.matt.forgehax.util.serialization.ISerializer;
 import java.io.IOException;
-import java.io.StringReader;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -41,9 +37,7 @@ import joptsimple.internal.Strings;
 /**
  * Created on 5/14/2017 by fr1kin
  */
-public class Command implements Comparable<Command>, ISerializer, GsonConstant {
-  
-  private static final Path SETTINGS_DIR = Helper.getFileManager().getMkConfigDirectory("settings");
+public class Command implements Comparable<Command>, ISerializableJson, GsonConstant {
   
   public static final String NAME = "Command.name";
   public static final String DESCRIPTION = "Command.description";
@@ -64,7 +58,7 @@ public class Command implements Comparable<Command>, ISerializer, GsonConstant {
   
   protected final Consumer<ExecuteData> help;
   
-  private final Set<Command> children = Sets.newHashSet();
+  private final VariableCompTreeSet<Command> children = new VariableCompTreeSet<>();
   
   protected final Multimap<CallbackType, Consumer<CallbackData>> callbacks =
       Multimaps.newSetMultimap(Maps.newHashMap(), Sets::newLinkedHashSet);
@@ -116,6 +110,8 @@ public class Command implements Comparable<Command>, ISerializer, GsonConstant {
       if (callbacks != null) {
         this.callbacks.putAll(callbacks);
       }
+
+      this.parser.allowsUnrecognizedOptions();
       
       this.requiredArgs = Math.max(SafeConverter.toInteger(data.getOrDefault(REQUIREDARGS, 0)), 0);
     } catch (Throwable t) {
@@ -130,11 +126,31 @@ public class Command implements Comparable<Command>, ISerializer, GsonConstant {
   public String getName() {
     return name;
   }
+
+  public int getRequiredArgs() {
+    return requiredArgs;
+  }
   
+  public String[] getHierarchy() {
+    List<String> parents = new ArrayList<>();
+    Command curr = this.getParent();
+    while (curr != null && !curr.isGlobal()) {
+      parents.add(curr.getName());
+      curr = curr.getParent();
+    }
+    return (String[]) parents.toArray();
+  }
+
   public String getAbsoluteName() {
     return (getParent() != null && !getParent().isGlobal())
         ? (getParent().getAbsoluteName() + "." + getName())
         : getName();
+  }
+
+  public String getRootName() {
+    return (getParent() != null && !getParent().isGlobal())
+          ? getParent().getRootName()
+          : getName();
   }
   
   public String getDescription() {
@@ -205,9 +221,63 @@ public class Command implements Comparable<Command>, ISerializer, GsonConstant {
     }
     return null;
   }
+
+  @Nullable
+  public List<Command> getPossibleChildsDeep(String[] args) {
+    List<Command> cmds = null;
+    Command curr = this;
+    for (String s : args) {
+      cmds = curr.getPossibleChilds(s);
+      if (cmds.size() != 1) break;
+      else curr = cmds.get(0);
+    }
+    return cmds;
+  }
+
+  @Nullable
+  public List<Command> getPossibleChilds(String name) {
+    return children
+          .stream()
+          .filter(cmd -> cmd.getName().toLowerCase().startsWith(name.toLowerCase()))
+          .collect(Collectors.toList());
+  }
+
+  @Nullable
+  public Command getClosestChildDeep(String[] args) {
+    Command cmd = this;
+    for (String s : args) {
+      cmd = cmd.getClosestChild(s);
+      if (cmd == null) break;
+    }
+    return cmd;
+  }
+
+  @Nullable
+  public Command getClosestChild(String name) {
+    Command res = getChild(name);
+    if (res != null) return res;
+
+    List<Command> results = getPossibleChilds(name);
+    if (results.size() == 1) return results.get(0);
+    else return null;
+  }
   
   public Collection<Command> getChildren() {
-    return Collections.unmodifiableCollection(children);
+	  return Collections.unmodifiableCollection(children);
+  }
+  
+  /*
+   * Only call this after the sort type is changed
+   */
+  public void reOrder(Comparator<Command> comp) {
+	  reOrder0(children, comp);
+  }
+  
+  private void reOrder0(VariableCompTreeSet<Command> children, Comparator<Command> comp) {
+	  children.reorganizeBasedOn(comp);
+	  for(Command c: children) {
+		  reOrder0(c.children, comp);
+	  }
   }
   
   public void getChildrenDeep(final Collection<Command> all) {
@@ -243,11 +313,10 @@ public class Command implements Comparable<Command>, ISerializer, GsonConstant {
   
   protected boolean processHelp(ExecuteData data)
       throws CommandExecuteException, NullPointerException {
-    if (help != null) {
-      help.accept(data);
-      return true;
-    } else if (data.options().has("help")) {
-      Helper.printMessageNaked(getOptionHelpText());
+    if (data.options().has("help")) {
+      if (help != null) help.accept(data);
+      data.write("");
+      data.write(getOptionHelpText());
       return true;
     } else {
       return false;
@@ -310,36 +379,13 @@ public class Command implements Comparable<Command>, ISerializer, GsonConstant {
   
   @SuppressWarnings("Duplicates")
   public void run(@Nonnull String[] args) throws CommandExecuteException, NullPointerException {
-    if (!processChildren(args)) { // attempt to match child commands first
-      OptionSet options;
-      String[] required;
-      
+    if (!processChildren(args)) { // attempt to match child commands first      
       if (!preprocessor(args)) {
         return;
       }
-      
-      if (requiredArgs > 0) {
-        if (args.length == 0) {
-          ConsoleIO.write(getPrintText());
-          return;
-        }
-        if (args.length < requiredArgs) {
-          throw new CommandExecuteException("Missing argument(s)");
-        }
-        required =
-            Arrays.copyOfRange(args, 0, requiredArgs); // do not pass through option processor
-        String[] nargs;
-        if (args.length > requiredArgs) {
-          nargs = Arrays.copyOfRange(args, requiredArgs, args.length);
-        } else {
-          nargs = new String[0];
-        }
-        options = parser.parse(nargs);
-      } else {
-        options = parser.parse(args);
-        required = new String[0];
-      }
-      ExecuteData data = new ExecuteData(this, options, required);
+
+      OptionSet options = parser.parse(args);
+      ExecuteData data = new ExecuteData(this, options, new String[0]);
       
       // only process main if no help was processed
       if (!processHelp(data)) {
@@ -356,89 +402,29 @@ public class Command implements Comparable<Command>, ISerializer, GsonConstant {
       }
     }
   }
-  
-  private Path getSettingsPath() {
-    return SETTINGS_DIR.resolve(getAbsoluteName() + ".json");
+
+  public void reset_defaults() {
+    getChildren().forEach(c -> c.reset_defaults());
   }
   
   @Override
-  public void serialize() {
-    if (this instanceof ISerializableJson) {
-      ISerializableJson serializable = (ISerializableJson) this;
-      Path path = getSettingsPath();
-      StringWriter sw = new StringWriter();
-      JsonWriter writer = new JsonWriter(sw);
-      try {
-        writer.beginArray();
-        serializable.serialize(writer);
-        writer.endArray();
-        
-        Files.write(path, sw.toString().getBytes());
-      } catch (Throwable t) {
-        Helper.printStackTrace(t);
-        Globals.LOGGER.warn(
-            String.format("Could not serialize \"%s\": %s", getAbsoluteName(), t.getMessage()));
-      } finally {
-        try {
-          sw.close();
-        } catch (IOException e) {
-        } finally {
-          try {
-            writer.close();
-          } catch (IOException e) {
-          }
-        }
-      }
-    }
-  }
-  
-  public void serializeAll() {
-    serialize();
-    getChildren().forEach(Command::serializeAll);
+  public void serialize(JsonObject in) {
+    JsonObject add = new JsonObject();
+    getChildren().forEach(c -> c.serialize(add));
+    if (!add.entrySet().isEmpty())
+      in.add(getName(), add);
   }
   
   @Override
-  public void deserialize() {
-    if (this instanceof ISerializableJson) {
-      ISerializableJson serializable = (ISerializableJson) this;
-      Path path = getSettingsPath();
-      StringReader sr = null;
-      JsonReader reader = null;
-      if (Files.exists(path)) {
-        try {
-          sr = new StringReader(new String(Files.readAllBytes(path)));
-          reader = new JsonReader(sr);
-          
-          reader.beginArray();
-          serializable.deserialize(reader);
-          reader.endArray();
-        } catch (Throwable t) {
-          Helper.printStackTrace(t);
-          Globals.LOGGER.warn(
-              String.format("Could not deserialize \"%s\": %s", getAbsoluteName(), t.getMessage()));
-        } finally {
-          if (sr != null) {
-            sr.close();
-          }
-          try {
-            if (reader != null) {
-              reader.close();
-            }
-          } catch (IOException e) {
-          }
-        }
-      }
-    }
-  }
-  
-  public void deserializeAll() {
-    deserialize();
-    getChildren().forEach(Command::deserializeAll);
+  public void deserialize(JsonObject in) {
+    JsonObject from = in.getAsJsonObject(getName());
+    if (from != null)
+      getChildren().forEach(c -> c.deserialize(from));
   }
   
   @Override
   public int compareTo(Command o) {
-    return String.CASE_INSENSITIVE_ORDER.compare(getAbsoluteName(), o.getAbsoluteName());
+	  return String.CASE_INSENSITIVE_ORDER.compare(getAbsoluteName(), o.getAbsoluteName());
   }
   
   @Override

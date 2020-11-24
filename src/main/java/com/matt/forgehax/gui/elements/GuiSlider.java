@@ -23,25 +23,69 @@ public class GuiSlider extends GuiElement {
   private static final int ELEMENT_IN = Color.of(150, 150, 150, 200).toBuffer();
 
   private boolean holding = false;
+  private Setting setting = null;
 
   public GuiSlider(Setting settingIn, GuiWindowSetting parent) {
     super(settingIn, parent);
+    this.setting = settingIn;
     height = 12;
   }
 
   private void setVal(int mouseX) {
     double val = getRelativeValue(mouseX);
-    if (this.setting.getDefault() instanceof Float)
-      this.setting.set((float) val, false);
-    else if (this.setting.getDefault() instanceof Double)
-      this.setting.set(val, false);
-    else if (this.setting.getDefault() instanceof Integer)
-      this.setting.set((int) val, false);
-    else if (this.setting.getDefault() instanceof Long)
-      this.setting.set((long) val, false);
+    setVal(val);
+  }
+  
+  private void setVal(double val) {
+	  if (this.setting.getDefault() instanceof Float)
+		  this.setting.set((float) val, false);
+	  else if (this.setting.getDefault() instanceof Double)
+		  this.setting.set(val, false);
+	  else if (this.setting.getDefault() instanceof Integer)
+		  this.setting.set((int) val, false);
+	  else if (this.setting.getDefault() instanceof Long)
+		  this.setting.set((long) val, false);
   }
 
+  /*TheAlphaEpsilon*/
+  
+  public void keyTyped(char typedChar, int keyCode) throws IOException {
+	  
+	  if(!isActive) {
+		  return;
+	  }
+	  
+	  double value = setting.getAsDouble();
+
+	  switch(keyCode) {
+	  case Keyboard.KEY_BACK:
+		  setVal(Math.floor(value / 10));
+		  return;
+	  case Keyboard.KEY_MINUS:
+		  setVal(-value);
+		  return;
+	  case Keyboard.KEY_0:
+	  case Keyboard.KEY_1:
+	  case Keyboard.KEY_2:
+	  case Keyboard.KEY_3:
+	  case Keyboard.KEY_4:
+	  case Keyboard.KEY_5:
+	  case Keyboard.KEY_6:
+	  case Keyboard.KEY_7:
+	  case Keyboard.KEY_8:
+	  case Keyboard.KEY_9:
+		  setVal(value * 10 + (value < 0 ? -1 : 1) * (typedChar - 48));
+		  return;
+	  default:
+		  return;
+	  }
+	  	  
+  }
+  
+  /**/
+  
   public void mouseClicked(int mouseX, int mouseY, int state) {
+	isActive = isMouseInElement(mouseX, mouseY);
     setVal(mouseX);
     holding = true;
   }
@@ -87,6 +131,10 @@ public class GuiSlider extends GuiElement {
     SurfaceHelper.drawTextShadow(text, (x + 2), y + 1, Colors.WHITE.toBuffer());
   }
 
+  private float getOff() { // this is for sliders which allow negative values
+    return Math.abs((Float) (this.setting.getMin() != null ? ((Number) this.setting.getMin()).floatValue() : 0f));
+  }
+
   private float getRange() {
     float max = (Float) (this.setting.getMax() != null ? ((Number) this.setting.getMax()).floatValue() : 5f);
     float min = (Float) (this.setting.getMin() != null ? ((Number) this.setting.getMin()).floatValue() : 0f);
@@ -94,11 +142,11 @@ public class GuiSlider extends GuiElement {
   }
 
   private float getPercValue(float val) {
-    return val / getRange();
+    return (val + getOff()) / getRange();
   }
 
   private double getRelativeValue(int w) {
-    return ((double) (w - x) / (double) width) * getRange();
+    return (((double) (w - x) / (double) width) * getRange()) - getOff();
   }
 }
 

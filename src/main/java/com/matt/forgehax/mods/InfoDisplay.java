@@ -1,6 +1,7 @@
 package com.matt.forgehax.mods;
 
 import com.matt.forgehax.mods.infodisplay.EffectsList;
+import com.matt.forgehax.gui.PromptGui;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.draw.SurfaceHelper;
@@ -17,6 +18,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.*;
 
+import static com.matt.forgehax.Helper.getCurrentScreen;
 import static com.matt.forgehax.Helper.getModManager;
 
 /**
@@ -68,7 +70,9 @@ public class InfoDisplay extends ListMod {
   public void onRenderScreen(RenderGameOverlayEvent.Text event) {
     List<String> text = new ArrayList<>();
 
-    if ((condense.get() && MC.currentScreen instanceof GuiChat) || MC.gameSettings.showDebugInfo) {
+    if ((condense.get() && getCurrentScreen() instanceof GuiChat)
+        || MC.gameSettings.showDebugInfo
+        || getCurrentScreen() instanceof PromptGui) {
       // Total number of InfoDisplay mods in the client
       long totalInfoMods = getModManager()
           .getMods()

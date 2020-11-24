@@ -61,4 +61,13 @@ public class ColorClamp implements Colors {
     
     return available[index];
   }
+
+  public static Color getFromMinecraftColor(TextFormatting in) {
+    for (int i = 0; i < available.length; i++) { // lmaooo this is shit use a table for sweet O(1)
+      if (available[i].equals(in)) {
+        return equivalent[i];
+      }
+    }
+    return Colors.WHITE;
+  }
 }

@@ -24,46 +24,14 @@ import org.lwjgl.opengl.GL11;
 @RegisterMod
 public class TrajectoryMod extends ToggleMod {
 
-  private final Setting<Integer> alpha =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("alpha")
-          .description("Transparency, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(255)
-          .build();
-  private final Setting<Integer> red =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("red")
-          .description("Red amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(191)
-          .build();
-  private final Setting<Integer> green =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("green")
-          .description("Green amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(97)
-          .build();
-  private final Setting<Integer> blue =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("blue")
-          .description("Blue amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(106)
-          .build();
+  private final Setting<Color> color =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color")
+      .description("Trajectory color")
+      .defaultTo(Color.of(191, 97, 106, 255))
+      .build();
   
   private final Setting<Float> width =
       getCommandStub()
@@ -116,6 +84,8 @@ public class TrajectoryMod extends ToggleMod {
       if (result == null) {
         return;
       }
+
+      Color c = color.get();
       
       if (result.getPathTraveled().size() > 1) {
         event.setTranslation(getLocalPlayer().getPositionVector());
@@ -135,9 +105,9 @@ public class TrajectoryMod extends ToggleMod {
             event
                 .getBuffer()
                 .pos(previous.x, previous.y, previous.z)
-                .color(red.get(), green.get(), blue.get(), alpha.get())
+                .color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha())
                 .endVertex();
-            event.getBuffer().pos(next.x, next.y, next.z).color(red.get(), green.get(), blue.get(), alpha.get()).endVertex();
+            event.getBuffer().pos(next.x, next.y, next.z).color(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).endVertex();
           }
           previous = next;
           count++;
@@ -148,7 +118,7 @@ public class TrajectoryMod extends ToggleMod {
         event.resetTranslation();
 
         if (target_box.get()) {
-          int color = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
+          int color = Color.of(c.getRed(), c.getGreen(), c.getBlue(), c.getAlpha()).toBuffer();
           event.getBuffer().begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
           GeometryTessellator.drawCuboid(
               event.getBuffer(),

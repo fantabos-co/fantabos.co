@@ -4,9 +4,7 @@ import static com.matt.forgehax.Helper.getWorld;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,7 +43,17 @@ public class HoleService extends ServiceMod {
       .name("radius")
       .description("How far to look for holes")
       .min(0D)
+      .max(1000D)
       .defaultTo(20D)
+      .build();
+
+  public final Setting<Boolean> save =
+    getCommandStub()
+      .builders()
+      .<Boolean>newSettingBuilder()
+      .name("save")
+      .description("Prevent player from falling in void holes")
+      .defaultTo(true)
       .build();
 
   public final Setting<Double> save_threshold =
@@ -55,11 +63,12 @@ public class HoleService extends ServiceMod {
       .name("threshold")
       .description("How much before Y 0 to trigger void save")
       .min(0D)
+      .max(5D)
       .defaultTo(0.2D)
       .build();
   
   public HoleService() {
-    super("HoleService");
+    super("HoleService", "Identify and classify holes around player, needed for other mods");
   }
 
   public enum HoleQuality {
@@ -106,7 +115,20 @@ public class HoleService extends ServiceMod {
               break;
             default: // do nothing
           }
+
         }
+      }
+    }
+  }
+
+  @SubscribeEvent
+  public void onPlayerMovement(LocalPlayerUpdateEvent event) {
+    if (getLocalPlayer() == null || !save.get()) return;
+    if (getLocalPlayer().isElytraFlying()) return; // Player will get out of this pickle by himself
+    for (BlockPos pos : voids) {
+      if (isAboveVoid(pos, getLocalPlayer())) {
+        getLocalPlayer().setVelocity(0, 0, 0); // server will snap us to last safe spot eventually
+        break;
       }
     }
   }
@@ -114,6 +136,15 @@ public class HoleService extends ServiceMod {
   public static boolean isVoid(BlockPos pos) {
     if (pos.getY() == 0 && getWorld().getBlockState(pos).getBlock().equals(Blocks.AIR))
       return true;
+    return false;
+  }
+
+  public boolean isAboveVoid(BlockPos hole, Entity entity) {
+    if (entity.posY < save_threshold.get()) {
+      if (entity.posX > hole.getX() && entity.posX < hole.getX() + 1)
+        if (entity.posZ > hole.getZ() && entity.posZ < hole.getZ() + 1)
+          return true;
+    }
     return false;
   }
 
@@ -152,6 +183,18 @@ public class HoleService extends ServiceMod {
     double zh = hole.getZ() + 0.5;
     if (Math.abs(xp - xh) < distance && Math.abs(zp - zh) < distance)
       return true;
+    return false;
+  }
+
+  public static boolean isInHole(Entity e) {
+    for (BlockPos h : safe_holes) {
+      if (e.getPosition().equals(h))
+        return true;
+    }
+    for (BlockPos h : temp_holes) {
+      if (e.getPosition().equals(h))
+        return true;
+    }
     return false;
   }
 

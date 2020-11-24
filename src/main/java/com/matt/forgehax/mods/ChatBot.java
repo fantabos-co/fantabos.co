@@ -152,7 +152,7 @@ public class ChatBot extends ToggleMod {
               
               data.markSuccess();
             })
-        .success(e -> spams.serialize())
+        // .success(e -> spams.serialize())
         .build();
     
     spams
@@ -219,7 +219,7 @@ public class ChatBot extends ToggleMod {
                 data.write("Could not find file \"" + fileN + "\" in base directory");
               }
             })
-        .success(e -> spams.serialize())
+        // .success(e -> spams.serialize())
         .build();
     
     spams
@@ -292,7 +292,7 @@ public class ChatBot extends ToggleMod {
                 data.markFailed();
               }
             })
-        .success(e -> spams.serialize())
+        // .success(e -> spams.serialize())
         .build();
     
     spams

@@ -60,6 +60,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
+
 import org.lwjgl.opengl.GL11;
 
 /**
@@ -124,6 +126,15 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
                 return contents;
               })
           .build();
+
+  public final Setting<Boolean> show_tracers =
+      getCommandStub()
+          .builders()
+          .<Boolean>newSettingBuilder()
+          .name("tracers")
+          .description("Draw tracers to matched blocks")
+          .defaultTo(false)
+          .build();
   
   public final Setting<Boolean> clear_buffer =
       getCommandStub()
@@ -179,6 +190,21 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
   
   @Override
   public void onLoad() {
+    options
+        .builders()
+        .newCommandBuilder()
+        .name("list")
+        .description("List all entries registered")
+        .processor(data -> {
+          for (BlockEntry b : options) {
+            data.write(b.helpText());
+          }
+          data.write("Total : " + options.size());
+          data.markSuccess();
+        })
+        .build();
+
+
     options
         .builders()
         .newCommandBuilder()
@@ -357,7 +383,7 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
   @Override
   public void onUnload() {
     options.forEach(BlockEntry::cleanupProperties);
-    options.serialize();
+    // options.serialize();
   }
   
   @Override
@@ -517,6 +543,9 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
       final Block block,
       final IBlockState state,
       final BlockPos pos) {
+    if (show_tracers.get() && options.get(state) != null)
+      Tracers.addExtraTracer(
+        new Vec3d(pos.getX() + 0.5d, pos.getY() + 0.5d, pos.getZ() + 0.5d));
     if (uploaders != null) {
       try {
         getCurrentRenderUploader(renderChunk)
@@ -604,7 +633,7 @@ public class Markers extends ToggleMod implements BlockModelRenderListener {
     }
   }
   
-  @SubscribeEvent(priority = EventPriority.LOWEST)
+  @SubscribeEvent(priority = EventPriority.LOW)
   public void onRenderWorld(RenderEvent event) {
     if (uploaders != null && MC.getRenderViewEntity() != null) {
       try {

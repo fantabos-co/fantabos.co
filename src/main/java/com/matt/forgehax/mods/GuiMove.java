@@ -1,10 +1,12 @@
 package com.matt.forgehax.mods;
 
+import static com.matt.forgehax.Helper.getCurrentScreen;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.gui.ClickGui;
+import com.matt.forgehax.gui.PromptGui;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.ToggleMod;
@@ -54,6 +56,8 @@ public class GuiMove extends ToggleMod {
     if (secret_close.get() && event.getPacket() instanceof CPacketCloseWindow)
       event.setCanceled(true);
   }
+
+  private boolean once = false;
   
   @SubscribeEvent
   public void LocalPlayerUpdate(LocalPlayerUpdateEvent event) {
@@ -65,15 +69,17 @@ public class GuiMove extends ToggleMod {
         MC.gameSettings.keyBindJump,
         MC.gameSettings.keyBindSprint
     };
-    if (MC.currentScreen instanceof GuiOptions
-        || MC.currentScreen instanceof GuiVideoSettings
-        || MC.currentScreen instanceof GuiScreenOptionsSounds
-        || MC.currentScreen instanceof GuiContainer
-        || MC.currentScreen instanceof GuiIngameMenu
-        || MC.currentScreen instanceof ClickGui) {
+    if (getCurrentScreen() instanceof GuiOptions
+        || getCurrentScreen() instanceof GuiVideoSettings
+        || getCurrentScreen() instanceof GuiScreenOptionsSounds
+        || getCurrentScreen() instanceof GuiContainer
+        || getCurrentScreen() instanceof GuiIngameMenu
+        || getCurrentScreen() instanceof ClickGui) {
       for (KeyBinding bind : keys) {
         KeyBinding.setKeyBindState(bind.getKeyCode(), Keyboard.isKeyDown(bind.getKeyCode()));
       }
+
+      once = true;
 
       // this block is ugly, I *may* refactor in the future
 
@@ -90,7 +96,8 @@ public class GuiMove extends ToggleMod {
         getLocalPlayer().rotationPitch -= rotate_speed.get();
       }
 
-    } else if (MC.currentScreen == null) {
+    } else if (getCurrentScreen() == null && once) {
+      once = false;
       for (KeyBinding bind : keys) {
         if (!Keyboard.isKeyDown(bind.getKeyCode())) {
           KeyBinding.setKeyBindState(bind.getKeyCode(), false);

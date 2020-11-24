@@ -11,6 +11,7 @@ import java.util.Comparator;
 public abstract class ListMod extends HudMod {
 
   protected final Setting<ListSorter> sortMode;
+  protected final Setting<String> drawnString;
 
   protected enum ListSorter {
     ALPHABETICAL((o1, o2) -> 0), // mod list is already sorted alphabetically
@@ -39,9 +40,18 @@ public abstract class ListMod extends HudMod {
             .description("Sorting mode")
             .defaultTo(ListSorter.LENGTH)
             .build();
+
+    this.drawnString =
+        getCommandStub()
+            .builders()
+            .<String>newSettingBuilder()
+            .name("drawnChar")
+            .description("The chat drawn before every module name")
+            .defaultTo(">")
+            .build();
   }
 
   public String appendArrow(final String text) {
-    return AlignHelper.getFlowDirX2(alignment.get()) == 1 ? TextFormatting.GRAY + "> " + TextFormatting.WHITE + text : text + TextFormatting.GRAY + " <";
+    return AlignHelper.getFlowDirX2(alignment.get()) == 1 ? TextFormatting.GRAY + drawnString.get() + TextFormatting.RESET + text : text + TextFormatting.GRAY + drawnString.get();
   }
 }

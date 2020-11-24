@@ -20,6 +20,8 @@ import java.util.Date;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.EntityWolf;
+import net.minecraft.entity.passive.EntityOcelot;
+import net.minecraft.entity.passive.EntityParrot;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.network.play.server.SPacketEntityTeleport;
@@ -49,27 +51,29 @@ public class CoordsFinder extends ToggleMod {
           .name("lighting-min-dist")
           .description("how far a lightning strike has to be from you to get logged")
           .min(0)
+          .max(1000)
           .defaultTo(64)
           .build();
   
   @SuppressWarnings("WeakerAccess")
-  public final Setting<Boolean> logWolf =
+  public final Setting<Boolean> logAnimals =
       getCommandStub()
           .builders()
           .<Boolean>newSettingBuilder()
           .name("wolf")
-          .description("log wolf teleports")
+          .description("log animals teleports")
           .defaultTo(true)
           .build();
   
   @SuppressWarnings("WeakerAccess")
-  public final Setting<Integer> minWolfDist =
+  public final Setting<Integer> minAnimalDist =
       getCommandStub()
           .builders()
           .<Integer>newSettingBuilder()
-          .name("wolf-min-dist")
-          .description("how far a wolf teleport has to be from you to get logged")
+          .name("animals-min-dist")
+          .description("how far an animal teleport has to be from you to get logged")
           .min(0)
+          .max(1000)
           .defaultTo(256)
           .build();
   
@@ -91,6 +95,7 @@ public class CoordsFinder extends ToggleMod {
           .name("player-min-dist")
           .description("how far a player teleport has to be from you to get logged")
           .min(0)
+          .max(1000)
           .defaultTo(256)
           .build();
   
@@ -98,8 +103,8 @@ public class CoordsFinder extends ToggleMod {
   private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
   
   public CoordsFinder() {
-    super(Category.EXPLOIT, "CoordsFinder", false,
-        "Logs coordinates of lightning strikes and teleports");
+    super(Category.EXPLOIT, "TeleportFinder", false,
+        "Logs coordinates of teleports and global events such as lightning");
   }
   
   private void logCoords(String name, double x, double y, double z) {
@@ -153,11 +158,12 @@ public class CoordsFinder extends ToggleMod {
       Entity teleporting = world.getEntityByID(packet.getEntityId());
       BlockPos pos = new BlockPos(packet.getX(), packet.getY(), packet.getZ());
       
-      if (logWolf.get() && teleporting instanceof EntityWolf) {
-        if (pastDistance(player, pos, minWolfDist.get())) {
-          logCoordsOnMinecraftThread("Wolf teleport", packet.getX(), packet.getY(), packet.getZ());
+      if (logAnimals.get() && teleporting instanceof EntityWolf || logAnimals.get() && teleporting instanceof EntityOcelot || logAnimals.get() && teleporting instanceof EntityParrot) {
+        if (pastDistance(player, pos, minAnimalDist.get())) {
+          logCoordsOnMinecraftThread("Animal teleport", packet.getX(), packet.getY(), packet.getZ());
         }
-      } else if (logPlayer.get() && teleporting instanceof EntityPlayer) {
+      }
+       else if (logPlayer.get() && teleporting instanceof EntityPlayer) {
         if (pastDistance(player, pos, minPlayerDist.get())) {
           logCoordsOnMinecraftThread(String.format("Player teleport (%s)", teleporting.getName()),
               packet.getX(), packet.getY(), packet.getZ());

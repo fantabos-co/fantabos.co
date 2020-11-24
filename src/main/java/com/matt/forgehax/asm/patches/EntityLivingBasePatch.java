@@ -31,6 +31,9 @@ public class EntityLivingBasePatch extends ClassTransformer {
       return Methods.EntityLivingBase_travel;
     }
     
+
+
+
     @Inject(description = "Add hook before first slippery motion calculation")
     public void injectFirst(MethodNode node) {
       // at first underState.getBlock().getSlipperiness(...)
@@ -112,7 +115,7 @@ public class EntityLivingBasePatch extends ClassTransformer {
     }
 
     @Inject(description = "Add hook before changing base speed if entity is not on ground")
-    public void injecThird(MethodNode main) {
+    public void injectThird(MethodNode main) {
       // Between 2 getSlipperiness, the onGround check for AIMoveSpeed
       AbstractInsnNode isOnGroundNode =
       ASMHelper.findPattern(
@@ -136,14 +139,14 @@ public class EntityLivingBasePatch extends ClassTransformer {
     }
 
     @Inject(description = "Add hook before multiplying for slipperiness if entity is on ground")
-    public void injecFourth(MethodNode main) {
+    public void injectFourth(MethodNode main) {
       // Between 2 getSlipperiness, the onGround check for AIMoveSpeed
       AbstractInsnNode isOnGroundNode =
-      ASMHelper.findPattern(
-        main.instructions.getFirst(),
-        new int[]{ALOAD, GETFIELD, IFEQ, 0x00, 0x00, ALOAD, GETFIELD, ALOAD, ALOAD,
-          GETFIELD, ALOAD, INVOKEVIRTUAL, GETFIELD, DCONST_1, DSUB},
-        "xxx??xxxxxxxxxx");
+        ASMHelper.findPattern(
+          main.instructions.getFirst(),
+          new int[]{ALOAD, GETFIELD, IFEQ, 0x00, 0x00, ALOAD, GETFIELD, ALOAD, ALOAD,
+            GETFIELD, ALOAD, INVOKEVIRTUAL, GETFIELD, DCONST_1, DSUB},
+          "xxx??xxxxxxxxxx");
 
       Objects.requireNonNull(isOnGroundNode, "Could not find isOnGround check node");
       AbstractInsnNode after = isOnGroundNode.getNext().getNext();
@@ -163,7 +166,7 @@ public class EntityLivingBasePatch extends ClassTransformer {
     }
 
     @Inject(description = "Add hook before multiplying for slipperiness if entity is on ground the first time")
-    public void injecFifth(MethodNode main) {
+    public void injectFifth(MethodNode main) {
       // Between 2 getSlipperiness, the onGround check for AIMoveSpeed
       AbstractInsnNode isOnGroundNode =
       ASMHelper.findPattern(
@@ -185,6 +188,37 @@ public class EntityLivingBasePatch extends ClassTransformer {
       
       main.instructions.insertBefore(isOnGroundNode, list);
       main.instructions.insert(after, jump); // insert after
+    }
+
+    // Tonio
+    @Inject(description = "Add hook before messing with player motions because he's elytra flying")
+    public void injectSixth(MethodNode main) {
+      AbstractInsnNode beforeMotionsNode =
+      ASMHelper.findPattern(
+        main.instructions.getFirst(),
+        new int[]{ALOAD, DUP, GETFIELD, LDC, FLOAD, F2D, LDC, DMUL},
+                    "xxxxxxxx");
+
+      Objects.requireNonNull(beforeMotionsNode, "Could not find node before elytra drift motion");
+
+      AbstractInsnNode afterNode =
+      ASMHelper.findPattern(
+        main.instructions.getFirst(),
+        new int[]{ALOAD, GETSTATIC, ALOAD, GETFIELD, ALOAD, GETFIELD, ALOAD, GETFIELD, INVOKEVIRTUAL },
+                    "xxxxxxxxx");
+
+      Objects.requireNonNull(afterNode, "Could not find node after elytra drift motion");
+      
+      LabelNode jump = new LabelNode();
+  
+      InsnList list = new InsnList();
+      list.add(new VarInsnNode(ALOAD, 0));
+      list.add(ASMHelper.call(INVOKESTATIC, TypesHook.Methods.ForgeHaxHooks_onElytraFlying));
+      list.add(new JumpInsnNode(IFNE, jump));
+      // top of stack should be a modified or unmodified slippery float
+      
+      main.instructions.insertBefore(beforeMotionsNode, list);
+      main.instructions.insertBefore(afterNode, jump); // insert after
     }
   }
 }

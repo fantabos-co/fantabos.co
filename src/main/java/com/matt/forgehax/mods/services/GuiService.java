@@ -1,16 +1,13 @@
 package com.matt.forgehax.mods.services;
 
-import java.io.IOException;
 import java.util.List;
 
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.JsonReader;
-import com.google.gson.stream.JsonWriter;
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.gui.ClickGui;
 import com.matt.forgehax.gui.windows.GuiWindow;
+import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.command.Options;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.command.StubBuilder;
@@ -40,37 +37,15 @@ public class GuiService extends ServiceMod {
           .supplier(Sets::newConcurrentHashSet)
           .factory(WindowPosition::new)
           .build();
-  
-  public final Setting<Integer> red =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("red")
-          .description("Red amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(191)
-          .build();
-  public final Setting<Integer> green =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("green")
-          .description("Green amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(97)
-          .build();
-  public final Setting<Integer> blue =
-      getCommandStub()
-          .builders()
-          .<Integer>newSettingBuilder()
-          .name("blue")
-          .description("Blue amount, 0-255")
-          .min(0)
-          .max(255)
-          .defaultTo(106)
-          .build();
+
+  public final Setting<Color> color =
+    getCommandStub()
+      .builders()
+      .newSettingColorBuilder()
+      .name("color")
+      .description("GUI color")
+      .defaultTo(Color.of(191, 97, 106, 255))
+      .build();
 
   public final Setting<Float> max_height =
       getCommandStub()
@@ -84,7 +59,7 @@ public class GuiService extends ServiceMod {
           .build();
   
   public GuiService() {
-    super("GUI");
+    super("ClickGUI", "Configuration for ClickGui");
   }
 
   @Override
@@ -120,7 +95,7 @@ public class GuiService extends ServiceMod {
         .processor(
             data -> {
               int size = ClickGui.getInstance().windowList.size();
-              ScaledResolution scaledRes = ClickGui.getInstance().scaledRes;
+              ScaledResolution scaledRes = ClickGui.scaledRes;
               List<GuiWindow> windowList = ClickGui.getInstance().windowList;
               for (int i = 0; i < ClickGui.getInstance().windowList.size(); i++) {
                 // Calculate fresh if none is found
@@ -173,27 +148,27 @@ public class GuiService extends ServiceMod {
     }
 
     @Override
-    public void serialize(JsonWriter writer) throws IOException {
-      JsonObject buf = new JsonObject();
+    public void serialize(JsonObject in) {
+      JsonObject add = new JsonObject();
       for (GuiWindow w : ClickGui.getInstance().windowList) {
         if (w.title.equals(this.title)) {
-          System.out.println(String.format("{%s [%d|%d %s]", w.title, w.posX, w.headerY, w.isHidden));
-          buf.addProperty("x", w.posX);
-          buf.addProperty("y", w.headerY);
-          buf.addProperty("hidden", w.isHidden);
-          writer.jsonValue(buf.toString());
-          return;
+          add.addProperty("x", w.posX);
+          add.addProperty("y", w.headerY);
+          add.addProperty("hidden", w.isHidden);
+          break;
         }
       }
-      writer.value("");
+      in.add(title, add);
     }
 
     @Override
-    public void deserialize(JsonReader reader) {
-      JsonObject buf = new JsonParser().parse(reader).getAsJsonObject();
-      this.x = buf.get("x").getAsInt();
-      this.y = buf.get("y").getAsInt();
-      this.hidden = buf.get("hidden").getAsBoolean();
+    public void deserialize(JsonObject in) {
+      JsonObject from = in.getAsJsonObject(title);
+      if (from == null) return;
+
+      if (from.get("x") != null) this.x = from.get("x").getAsInt();
+      if (from.get("y") != null) this.y = from.get("y").getAsInt();
+      if (from.get("hidden") != null) this.hidden = from.get("hidden").getAsBoolean();
     }
 
     @Override
@@ -207,4 +182,5 @@ public class GuiService extends ServiceMod {
     }
 
   }
+  
 }

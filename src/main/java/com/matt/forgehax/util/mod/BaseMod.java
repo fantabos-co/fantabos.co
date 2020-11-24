@@ -4,11 +4,15 @@ import static com.matt.forgehax.Helper.getGlobalCommand;
 
 import com.matt.forgehax.Globals;
 import com.matt.forgehax.Helper;
+import com.matt.forgehax.mods.services.GuiService;
 import com.matt.forgehax.util.command.Command;
 import com.matt.forgehax.util.command.ExecuteData;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.command.StubBuilder;
 import com.matt.forgehax.util.command.callbacks.CallbackData;
+import com.matt.forgehax.util.mod.loader.ModManager;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import joptsimple.internal.Strings;
@@ -74,9 +78,9 @@ public abstract class BaseMod implements Globals {
    * Load the mod
    */
   public final void load() {
-    if (stubCommand != null) {
-      stubCommand.deserializeAll();
-    }
+    // if (stubCommand != null) {
+    //   stubCommand.deserializeAll();
+    // }
     if (isEnabled()) {
       start();
     }
@@ -91,7 +95,7 @@ public abstract class BaseMod implements Globals {
     onUnload();
     // unregister command last
     if (stubCommand != null) {
-      stubCommand.serializeAll();
+      // stubCommand.serializeAll();
       stubCommand.leaveParent();
     }
   }
@@ -229,10 +233,9 @@ public abstract class BaseMod implements Globals {
   public abstract boolean isEnabled();
 
   private void writeChildren(
-      StringBuilder builder, Command command, final boolean deep, final String append) {
-    command
-        .getChildren()
-        .forEach(
+	StringBuilder builder, Command command, final boolean deep, final String append) {
+      
+    command.getChildren().forEach(
             child -> {
               boolean invalid = Strings.isNullOrEmpty(append);
               if (!invalid) {

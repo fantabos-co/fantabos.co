@@ -13,7 +13,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 public class AntiHunger extends ToggleMod {
   
   public AntiHunger() {
-    super(Category.PLAYER, "AntiHunger", false, "Don't use hunger for travelling");
+    super(Category.EXPLOIT, "AntiHunger", false, "Don't use hunger for travelling");
   }
   
   

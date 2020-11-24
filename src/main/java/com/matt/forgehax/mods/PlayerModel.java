@@ -3,11 +3,13 @@ package com.matt.forgehax.mods;
 import static com.matt.forgehax.Helper.getLocalPlayer;
 
 import com.matt.forgehax.events.Render2DEvent;
+import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.math.AlignHelper.Align;
 import com.matt.forgehax.util.mod.Category;
 import com.matt.forgehax.util.mod.HudMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 
+import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
@@ -15,12 +17,36 @@ import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+/*
+ * By tonio, TheAlphaEpsilon
+ */
+
 @RegisterMod
 public class PlayerModel extends HudMod {
   
   public PlayerModel() {
     super(Category.GUI, "PlayerModel", false, "Render a player model on screen");
   }
+
+  private final Setting<Integer> alpha =
+    getCommandStub()
+      .builders()
+      .<Integer>newSettingBuilder()
+      .name("alpha")
+      .description("make the render see-through")
+      .defaultTo(200)
+      .max(255)
+      .min(0)
+      .build();
+
+	private final Setting<Boolean> renderPlayer360 =
+			getCommandStub()
+				.builders()
+				.<Boolean>newSettingBuilder()
+				.description("Let your player model rotate 360 degrees")
+				.name("renderPlayer360")
+				.defaultTo(true)
+				.build();
 
   @Override
   protected Align getDefaultAlignment() {
@@ -39,23 +65,36 @@ public class PlayerModel extends HudMod {
 
   @Override
   protected double getDefaultScale() {
-    return 20d;
+    return 1d;
   }
   
   @SubscribeEvent
   public void onRender(Render2DEvent event) {
     if (getLocalPlayer() == null) return;
-    int scale_int = (int) Math.round(scale.get());
-    renderPlayer(getPosX(0), getPosY(0), scale_int,
-                    (float)Math.atan((double)(getLocalPlayer().rotationYaw / 40.0F)) * 40.0F,
+    GlStateManager.pushMatrix();
+		
+		GlStateManager.color(1, 1, 1, alpha.getAsFloat() / 255);
+    int scale_int = (int) Math.round(scale.get() * 30d);
+
+
+    if (renderPlayer360.get()) {
+      renderPlayer(getPosX(0), getPosY(0), scale_int,
+                    // (float)Math.atan((double)(getLocalPlayer().rotationYaw / 40.0F)) * 40.0F,
                     (float)Math.atan((double)(getLocalPlayer().rotationPitch / 40.0F)) * 40.0F,
                     getLocalPlayer());
+    } else {
+      GuiInventory.drawEntityOnScreen(getPosX(0), getPosY(0), scale_int, 
+                                      (float) (90 * Math.sin(Math.toRadians(getLocalPlayer().rotationYaw))), 
+                                      (float) (20 * Math.sin(Math.toRadians(getLocalPlayer().rotationPitch))), 
+                                      getLocalPlayer());
+    }
+
+    GlStateManager.popMatrix();
   }
 
   // Overridden to not do silly player reorienting
   // This comes from GuiInventory.drawEntityOnScreen
-  private static void renderPlayer(int posX, int posY, int scale, float mouseX, float mouseY, EntityLivingBase ent)
-  {
+  private static void renderPlayer(int posX, int posY, int scale, /* float mouseX, */ float mouseY, EntityLivingBase ent) {
       GlStateManager.enableColorMaterial();
       GlStateManager.pushMatrix();
       GlStateManager.translate((float)posX, (float)posY, 50.0F);
@@ -78,5 +117,4 @@ public class PlayerModel extends HudMod {
       GlStateManager.disableTexture2D();
       GlStateManager.setActiveTexture(OpenGlHelper.defaultTexUnit);
   }
-
 }

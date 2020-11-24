@@ -1,8 +1,8 @@
-# fantabos.co
+# thax
 
 Literally the most powerful minecraft cheat ever made, in a light and public release.
 
-This is kinda scuffed, I lazily merge stuff from my dev repo into here, but I kinda stopped doing it for a while. If enough people care, I may start merging polish and features again.
+Updated with mods we think would be good for public use.
 
 ### Maintaining
 
@@ -18,6 +18,28 @@ TheAlphaEpsilon, OverFloyd , fraazolini and Fleyr have contribuited on the dev r
 
 If you need any help, please check the [ForgeHax Wiki](https://github.com/fr1kin/ForgeHax/wiki) before submitting an issue.
 No really, fr1kin's wiki is well kept and covers some basic and generic shit. I won't make a wiki as cool as that one for this fork.
+
+## Capes
+
+We have extra textures! Upload [HERE](http://upload.2b2t.it)
+
+## External Connections (Read this if you don't want to leak your IP)
+
+This mod will get data from:
+* Minecraft's API (api.mojang.com, sessionserver.mojang.com)
+* 2b2tatlas.com
+* data.2b2t.it
+* irc.2b2t.it
+
+This is relatively safe, as it is essentially just going to these websites on a browser.
+
+This mod will send data to:
+* irc.2b2t.it
+
+Only if you connect to an IRC server. Please note: due to how IRC works, your IP info will be send to ALL other members in the IRC chat.
+Use at your own risk.
+
+As always, use of a VPN can hide your IP address from others.
 
 ## Known Issues
 

@@ -34,14 +34,6 @@ public class Blink extends ToggleMod {
       .max(1000)
       .defaultTo(0)
       .build();
-  private final Setting<Boolean> reenable =
-    getCommandStub()
-      .builders()
-      .<Boolean>newSettingBuilder()
-      .name("walk")
-      .description("After blinking, start new blink")
-      .defaultTo(false)
-      .build();
   
   public Blink() {
     super(Category.MOVEMENT, "Blink", false, "Holds all movement packets until turned off");
@@ -49,7 +41,7 @@ public class Blink extends ToggleMod {
 
   @Override
   public String getDisplayText() {
-    return (getModName() + " [" + TextFormatting.RED + packetBuf.size() + TextFormatting.WHITE + "]");
+    return (getModName() + " [" + TextFormatting.RED + packetBuf.size() + TextFormatting.RESET + "]");
   }
 
   private Queue<CPacketPlayer> packetBuf = new LinkedList<CPacketPlayer>();
@@ -86,9 +78,6 @@ public class Blink extends ToggleMod {
           event.getPacket() instanceof CPacketClientStatus)) {
       if (limit.get() > 0 && packetBuf.size() >= limit.get()) {
         this.disable(false);
-        if (reenable.get()) {
-          this.enable(false);
-        }
       } else {
         packetBuf.add(event.getPacket());
         event.setCanceled(true);

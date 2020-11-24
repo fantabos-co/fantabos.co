@@ -1,6 +1,7 @@
 package com.matt.forgehax.mods.services;
 
 import com.matt.forgehax.Helper;
+import com.matt.forgehax.gui.PromptGui;
 import com.matt.forgehax.asm.events.PacketEvent;
 import com.matt.forgehax.util.PacketHelper;
 import com.matt.forgehax.util.command.CommandHelper;
@@ -11,6 +12,9 @@ import com.matt.forgehax.util.mod.ServiceMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 import net.minecraft.network.play.client.CPacketChatMessage;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
+import net.minecraftforge.client.event.ClientChatReceivedEvent;
+
 
 /**
  * Created on 5/15/2017 by fr1kin
@@ -56,6 +60,7 @@ public class ChatCommandService extends ServiceMod {
       }
     }
   }
+
   
   // to be called from MainMenuGuiService
   public static void handleCommand(String message) {
@@ -69,7 +74,7 @@ public class ChatCommandService extends ServiceMod {
       if (!(t instanceof CommandExecuteException)) {
         t.printStackTrace();
       }
-      Helper.printMessage(t.getMessage());
+      Helper.printError(t.getMessage());
     }
     ConsoleIO.finished();
   }
