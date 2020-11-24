@@ -1,8 +1,12 @@
-# thax
+# fantabos.co
 
 Literally the most powerful minecraft cheat ever made, in a light and public release.
 
-This is kinda scuffed, I lazily merge stuff from my dev branch into here, but I kinda stopped doing it for a while. If enough people care, I may start merging polish and features again.
+This is kinda scuffed, I lazily merge stuff from my dev repo into here, but I kinda stopped doing it for a while. If enough people care, I may start merging polish and features again.
+
+### Maintaining
+
+TheAlphaEpsilon, OverFloyd , fraazolini and Fleyr have contribuited on the dev repo and will help keep this updated
 
 ## Installing
 
