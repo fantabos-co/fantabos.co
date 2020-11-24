@@ -1,4 +1,4 @@
-# thax
+# fantabos.co
 
 Literally the most powerful minecraft cheat ever made, in a light and public release.
 
