@@ -68,7 +68,7 @@ public class Watermark extends HudMod {
       .<String>newSettingBuilder()
       .name("text")
       .description("Watermark text")
-      .defaultTo("TotallyNotForgeHax™")
+        .defaultTo("\u16A0\u16A8\u16BE\u16CF\u16A8\u16D2\u16DF\u16CA\u16EB\u16B2\u16DF")
       .build();
 
   private final Setting<Boolean> rainbow =
