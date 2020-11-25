@@ -62,15 +62,6 @@ public class Watermark extends HudMod {
           .defaultTo(106)
           .build();
 
-  private final Setting<String> text =
-    getCommandStub()
-      .builders()
-      .<String>newSettingBuilder()
-      .name("text")
-      .description("Watermark text")
-        .defaultTo("\u16A0\u16A8\u16BE\u16CF\u16A8\u16D2\u16DF\u16CA\u16EB\u16B2\u16DF")
-      .build();
-
   private final Setting<Boolean> rainbow =
     getCommandStub()
       .builders()
@@ -106,7 +97,7 @@ public class Watermark extends HudMod {
 	  int clr;
 	  if (rainbow.get()) clr = color;
 	  else clr = Color.of(red.get(), green.get(), blue.get(), alpha.get()).toBuffer();
-      SurfaceHelper.drawTextAlign(text.get(), getPosX(0), getPosY(0),
+      SurfaceHelper.drawTextAlign("\u16A0\u16A8\u16BE\u16CF\u16A8\u16D2\u16DF\u16CA\u16EB\u16B2\u16DF", getPosX(0), getPosY(0),
 	  							clr, scale.get(), true, align);
   }
 }
