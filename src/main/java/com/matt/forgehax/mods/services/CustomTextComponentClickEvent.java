@@ -1,11 +1,13 @@
 package com.matt.forgehax.mods.services;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 
 import com.matt.forgehax.asm.events.ITextComponentClickEvent;
 import com.matt.forgehax.util.mod.ServiceMod;
 import com.matt.forgehax.util.mod.loader.RegisterMod;
 
+import net.minecraft.client.gui.GuiChat;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -21,21 +23,49 @@ public class CustomTextComponentClickEvent extends ServiceMod {
 		super("CustomTextComponentClickEvent");
 	}
 	
-	//TODO: A more elegant implementation because this can cause memory leaks if too many
-	//Are created
+	//TODO: A more elegant implementation
 	private static long counter;
 	
-	private static HashMap<ClickEvent, Runnable> actionMap = new HashMap<>();
+	private static LinkedList<ClickEvent> chatQueue = new LinkedList<>();
+	private static HashMap<ClickEvent, Runnable> chatMap = new HashMap<>();
+	private static HashMap<ClickEvent, Runnable> staticMap = new HashMap<>();
 	
-	public static ClickEvent createCustomEvent(Runnable action) {
+	/**
+	 * Use this method to create static events (never deleted). Only use for
+	 * static or other one-time events to prevent memory leaks.
+	 */
+	public static ClickEvent createStaticCustomEvent(Runnable action) {
 		ClickEvent event = new ClickEventFlag();
-		actionMap.put(event, action);
+		staticMap.put(event, action);
 		return event;
 	}
 
+	/**
+	 * Use this method to create chat events. You must print the chat message to
+	 * the chat gui before calling this method again to avoid errors.
+	 */
+	public static ClickEvent createChatCustomEvent(Runnable action) {
+		ClickEvent event = new ClickEventFlag();
+		chatQueue.add(event);
+		chatMap.put(event, action);
+		
+		try {
+			while(chatQueue.size() > MC.ingameGUI.getChatGUI().getSentMessages().size() + 1) {
+				chatMap.remove(chatQueue.pop());
+			}
+		} catch (Exception e) {
+			LOGGER.error("Error in custom click event: " + e.getClass().toString() + ": " + e.getMessage());
+		}
+		
+		return event;
+	}
+	
 	@SubscribeEvent
 	public void onClick(ITextComponentClickEvent event) {
-		Runnable action = actionMap.get(event.clickEvent);
+		Runnable action = staticMap.get(event.clickEvent);
+		if(action == null) {
+			action = chatMap.get(event.clickEvent);
+		}
 		if(action != null) {
 			event.setCanceled(true);
 			action.run();

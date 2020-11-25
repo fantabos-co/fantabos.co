@@ -250,8 +250,6 @@ public class AtlasWaypoints extends ToggleMod {
 		.name("info")
 		.description("search for and get info for locations")
 		.processor(data -> {
-			//TODO: Clicking the name = opening the gui screen (or just print info in chat?)
-			//Utilize hover text?
 			data.requiredArguments(1);
 			String tag = data.getArgumentAsString(0);
 			ITextComponent hoverMessage = Helper.getFormattedText(
@@ -260,7 +258,7 @@ public class AtlasWaypoints extends ToggleMod {
 					true, true);
 			for(AtlasService.Location location : AtlasService.searchFor(tag)) {
 				ITextComponent comp = new TextComponentString(location.getName());
-				ClickEvent event = CustomTextComponentClickEvent.createCustomEvent(() -> {
+				ClickEvent event = CustomTextComponentClickEvent.createChatCustomEvent(() -> {
 					MC.addScheduledTask(() -> {
 						MC.displayGuiScreen(new LocationInfoGui(location));
 					});
@@ -325,7 +323,8 @@ public class AtlasWaypoints extends ToggleMod {
 	}
 	
 	@SubscribeEvent
-	public void onDraw(RenderWorldLastEvent event) {		
+	public void onDraw(RenderWorldLastEvent event) {	
+		GlStateManager.pushMatrix();
 		AtlasService.Location internalLastHovered = null;
 		for (AtlasService.Location loc : locations) {
 			Vec3d pos = new Vec3d(loc.getX(), loc.getY() == 0 ? 70 : loc.getY(), loc.getZ());
@@ -346,7 +345,6 @@ public class AtlasWaypoints extends ToggleMod {
 		
 		lastHovered = internalLastHovered;
 		
-		//TODO: Make a cooler, less glaring waypoints image
 		if(lastHovered != null) {
 			boolean hasGuiOpen = MC.currentScreen instanceof LocationInfoGui;
 			
@@ -397,6 +395,12 @@ public class AtlasWaypoints extends ToggleMod {
 			ticksHovered = 0;
 			ticksClicked = 0;
 		}
+		
+		GlStateManager.enableDepth();
+		GlStateManager.enableTexture2D();
+		GlStateManager.depthMask(true);
+		GlStateManager.disableBlend();
+		GlStateManager.popMatrix();
 	}
 	
 	private Color colorFromTick(int tick) {
@@ -778,7 +782,7 @@ private void drawBGround(double left, double max, double top, double height, boo
     else GL11.glRotated(180, 0, 0, 1);
 				
 		GL11.glScalef(size, size, size);
-		
+	
 		GlStateManager.disableLighting();
 		GlStateManager.disableFog();
 		GlStateManager.disableDepth();
@@ -794,7 +798,7 @@ private void drawBGround(double left, double max, double top, double height, boo
 			GL11.glEnable(GL11.GL_LINE_SMOOTH);
 			GL11.glEnable(GL11.GL_POLYGON_SMOOTH);
 		}
-
+	
 	}
 	
 	static class LocationInfoGui extends GuiScreen {
