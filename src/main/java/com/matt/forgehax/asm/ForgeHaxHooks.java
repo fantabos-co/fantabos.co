@@ -35,6 +35,7 @@ import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.multiplayer.PlayerControllerMP;
 import net.minecraft.client.network.NetworkPlayerInfo;
@@ -60,6 +61,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
@@ -1009,6 +1011,20 @@ public class ForgeHaxHooks implements ASMCommon {
 						
 	}
 	
+	/**
+	 * onHandleComponentClick
+	 */
+	public static final HookReporter HOOK_onHandleComponentClick =
+			newHookReporter()
+				.hook("onHandleComponentClick")
+				.dependsOn(TypesMc.Methods.GuiScreen_handleComponentClick)
+				.forgeEvent(ITextComponentClickEvent.class)
+				.build();
+	
+	public static boolean onHandleComponentClick(GuiScreen screen, ITextComponent comp, ClickEvent event) {
+		return HOOK_onHandleComponentClick.reportHook() &&
+				MinecraftForge.EVENT_BUS.post(new ITextComponentClickEvent(screen, comp, event));
+	}
 	
 	/**
 	 * onRenderEntityItem3d

@@ -7,8 +7,6 @@ import com.matt.forgehax.asm.utils.asmtype.ASMMethod;
 import com.matt.forgehax.asm.utils.asmtype.builders.ASMBuilders;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.GenericFutureListener;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.EnumHand;
 
 import java.util.List;
 import java.util.UUID;
@@ -427,6 +425,12 @@ public interface TypesMc {
         .setClassName("net/minecraft/util/text/ITextComponent")
         .autoAssign()
         .build();
+    
+    ASMClass ClickEvent =
+    		ASMBuilders.newClassBuilder()
+    		.setClassName("net/minecraft/util/text/event/ClickEvent")
+    		.autoAssign()
+    		.build();
 
     ASMClass EnumActionResult = 
       ASMBuilders.newClassBuilder()
@@ -552,6 +556,16 @@ public interface TypesMc {
   
   interface Methods {
     
+	  ASMMethod GuiScreen_handleComponentClick =
+			  Classes.GuiScreen.childMethod()
+			  .setName("handleComponentClick")
+			  .setReturnType(boolean.class)
+			  .beginParameters()
+			  .add(Classes.ITextComponent)
+			  .finish()
+			  .autoAssign()
+			  .build();
+	  
 	  ASMMethod GameProfile_getId =
 			  Classes.GameProfile.childMethod()
 			  .setName("getId")

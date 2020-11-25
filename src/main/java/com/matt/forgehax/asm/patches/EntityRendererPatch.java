@@ -157,7 +157,6 @@ public class EntityRendererPatch extends ClassTransformer {
 
     @Inject(description = "Add hook that allows 3rd person camera to clip")
     public void inject(MethodNode main) {
-      AsmPrinter.logAsmMethod(main, "orientCamera-pre");
       AbstractInsnNode node =
         ASMHelper.findPattern(main.instructions.getFirst(),
                   new int[]{ ALOAD, GETFIELD, GETFIELD, NEW, DUP, DLOAD, FLOAD, F2D },
@@ -183,7 +182,6 @@ public class EntityRendererPatch extends ClassTransformer {
 
       main.instructions.insertBefore(node, insnList);
       main.instructions.insertBefore(postNode, jump);
-      AsmPrinter.logAsmMethod(main, "orientCamera-post");
     }
   }
 }

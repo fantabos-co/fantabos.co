@@ -10,6 +10,7 @@ import org.lwjgl.opengl.GL11;
 import com.matt.forgehax.Helper;
 import com.matt.forgehax.events.LocalPlayerUpdateEvent;
 import com.matt.forgehax.mods.services.AtlasService;
+import com.matt.forgehax.mods.services.CustomTextComponentClickEvent;
 import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.color.Colors;
 import com.matt.forgehax.util.command.Setting;
@@ -32,6 +33,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraft.util.ResourceLocation;
@@ -75,13 +77,31 @@ public class AtlasWaypoints extends ToggleMod {
 			.defaultTo(true)
 			.build();
 	
-	private Setting<Color> color =
+	private Setting<Color> color1 =
 			getCommandStub()
 			.builders()
 			.newSettingColorBuilder()
-			.name("color")
-			.description("The color of the waypoints")
-			.defaultTo(Colors.WHITE)
+			.name("firstColor")
+			.description("The first color of the outline")
+			.defaultTo(Colors.DARK_PURPLE)
+			.build();
+	
+	private Setting<Color> color2 =
+			getCommandStub()
+			.builders()
+			.newSettingColorBuilder()
+			.name("secondColor")
+			.description("The second color of the outline")
+			.defaultTo(Colors.BLUE)
+			.build();
+	
+	private Setting<Boolean> positiveDirection =
+			getCommandStub()
+			.builders()
+			.<Boolean>newSettingBuilder()
+			.name("positiveDirection")
+			.description("Whether the hue goes in the positive direction")
+			.defaultTo(true)
 			.build();
 	
 	private Setting<Integer> waypoints;
@@ -134,6 +154,60 @@ public class AtlasWaypoints extends ToggleMod {
 			})
 			.build();
 	
+	private Setting<Float> circleWidth =
+			getCommandStub()
+			.builders()
+			.<Float>newSettingBuilder()
+			.name("circleWidth")
+			.description("The width of the drawn circles")
+			.defaultTo(2F)
+			.min(1F)
+			.max(10F)
+			.build();
+	
+	private Setting<Float> textAlpha =
+			getCommandStub()
+			.builders()
+			.<Float>newSettingBuilder()
+			.name("textAlpha")
+			.description("alpha of the text boxes from 0 - 1")
+			.defaultTo(0.8F)
+			.min(0F)
+			.max(1F)
+			.build();
+	
+	private Setting<Float> waypointAlpha =
+			getCommandStub()
+			.builders()
+			.<Float>newSettingBuilder()
+			.name("waypointAlpha")
+			.description("alpha of the waypoints from 0 - 1")
+			.defaultTo(0.8F)
+			.min(0F)
+			.max(1F)
+			.build();
+	
+	private Setting<Boolean> hideBlurbs =
+			getCommandStub()
+			.builders()
+			.<Boolean>newSettingBuilder()
+			.name("hideBlurbs")
+			.description("If an info gui is open, don't render blurbs")
+			.defaultTo(true)
+			.build();
+	
+	private Setting<Float> circleAlpha =
+			getCommandStub()
+			.builders()
+			.<Float>newSettingBuilder()
+			.name("circleAlpha")
+			.description("alpha of the circle from 0 - 1")
+			.defaultTo(0.8F)
+			.min(0F)
+			.max(1F)
+			.build();
+	
+	
 	private static final int dynamicRange = 5000;
 	
 	private int circleSpeedHover = 110 - hoverDelay.getAsInteger();
@@ -168,8 +242,8 @@ public class AtlasWaypoints extends ToggleMod {
 				.changed(c -> {
 					updateLocs(c.getTo(), forceLoad.get());
 				})
-				.build(); 
-				
+				.build();
+		
 		getCommandStub()
 		.builders()
 		.newCommandBuilder()
@@ -180,8 +254,23 @@ public class AtlasWaypoints extends ToggleMod {
 			//Utilize hover text?
 			data.requiredArguments(1);
 			String tag = data.getArgumentAsString(0);
+			ITextComponent hoverMessage = Helper.getFormattedText(
+					"Click to see info", 
+					TextFormatting.GOLD, 
+					true, true);
 			for(AtlasService.Location location : AtlasService.searchFor(tag)) {
 				ITextComponent comp = new TextComponentString(location.getName());
+				ClickEvent event = CustomTextComponentClickEvent.createCustomEvent(() -> {
+					MC.addScheduledTask(() -> {
+						MC.displayGuiScreen(new LocationInfoGui(location));
+					});
+				});
+				Style style = new Style();
+				style.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, hoverMessage));
+				style.setClickEvent(event);
+				style.setColor(TextFormatting.AQUA);
+				style.setBold(false);
+				comp.setStyle(style);
 				Helper.printInform(comp);
 			}
 		})
@@ -236,7 +325,7 @@ public class AtlasWaypoints extends ToggleMod {
 	}
 	
 	@SubscribeEvent
-	public void onDraw(RenderWorldLastEvent event) {
+	public void onDraw(RenderWorldLastEvent event) {		
 		AtlasService.Location internalLastHovered = null;
 		for (AtlasService.Location loc : locations) {
 			Vec3d pos = new Vec3d(loc.getX(), loc.getY() == 0 ? 70 : loc.getY(), loc.getZ());
@@ -259,6 +348,8 @@ public class AtlasWaypoints extends ToggleMod {
 		
 		//TODO: Make a cooler, less glaring waypoints image
 		if(lastHovered != null) {
+			boolean hasGuiOpen = MC.currentScreen instanceof LocationInfoGui;
+			
 			int y = lastHovered.getY();
 			Vec3d pos = new Vec3d(lastHovered.getX(), y == 0 ? 70 : y, lastHovered.getZ());
 			
@@ -271,20 +362,24 @@ public class AtlasWaypoints extends ToggleMod {
 			if(hoverDelay.get() == 0) { //Instant name display
 				ticksHovered = circle.length / circleSpeedHover;
 			}
-			drawCircle(MC.getRenderViewEntity(), pos, 4, 6, 2, ticksHovered * circleSpeedHover, circleSpeedHover);
+			drawCircle(MC.getRenderViewEntity(), pos, 4, 6, circleWidth.getAsFloat(), ticksHovered * circleSpeedHover, circleSpeedHover);
 			ticksHovered++;
 			if(ticksHovered * circleSpeedHover > circle.length) {
 				ticksHovered = circle.length / circleSpeedHover;
-				drawNameTag(MC.getRenderViewEntity(), lastHovered.getName(), pos, textPos);
+				if(!(hasGuiOpen && hideBlurbs.getAsBoolean())) {
+					drawNameTag(MC.getRenderViewEntity(), lastHovered.getName(), pos, textPos);
+				}
 			}
 			
 			//Handles click and info
 			if(ticksClicked > 0) {
-				drawCircle(MC.getRenderViewEntity(), pos, 6, 4, 2, ticksClicked * circleSpeedClick, circleSpeedClick);
+				drawCircle(MC.getRenderViewEntity(), pos, 6, 4, circleWidth.getAsFloat(), ticksClicked * circleSpeedClick, circleSpeedClick);
 			}
 			if(ticksClicked == circle.length / circleSpeedClick) {
 				ticksHovered = circle.length / circleSpeedHover; //Show name if blurb is shown
-				drawBlurb(MC.getRenderViewEntity(), lastHovered, pos, textPos);
+				if(!(hasGuiOpen && hideBlurbs.getAsBoolean())) {
+					drawBlurb(MC.getRenderViewEntity(), lastHovered, pos, textPos);
+				}
 			}
 			if(MC.gameSettings.keyBindUseItem.isKeyDown()) {
 				if(clickDelay.get() == 0) { //Instant info display
@@ -302,6 +397,42 @@ public class AtlasWaypoints extends ToggleMod {
 			ticksHovered = 0;
 			ticksClicked = 0;
 		}
+	}
+	
+	private Color colorFromTick(int tick) {
+		float[] one = new float[3];
+		float[] two = new float[3];
+		java.awt.Color.RGBtoHSB(
+				color1.get().getRed(), 
+				color1.get().getGreen(),
+				color1.get().getBlue(),
+				one);
+		java.awt.Color.RGBtoHSB(
+				color2.get().getRed(), 
+				color2.get().getGreen(),
+				color2.get().getBlue(),
+				two);
+		
+		float hueAdd;
+		if(positiveDirection.get()) {
+			if(one[0] < two[0]) {
+				hueAdd = two[0] - one[0];
+			} else {
+				hueAdd = one[0] - two[0];
+			}
+		} else {
+			if(one[0] < two[0]) {
+				hueAdd = one[0] - two[0];
+			} else {
+				hueAdd = two[0] - one[0];
+			}
+		}
+		
+		float hue = one[0] + hueAdd * Math.abs(1 - (2 * tick / (float)circle.length));
+		float sat = one[1] + (two[1] - one[1]) * Math.abs(1 - (2 * tick / (float)circle.length));
+		float bri = one[2] + (two[2] - one[2]) * Math.abs(1 - (2 * tick / (float)circle.length));
+		Color c = Color.of(java.awt.Color.HSBtoRGB(hue, sat, bri));
+		return c;
 	}
 	
 	private void drawBlurb(Entity renderer, AtlasService.Location loc, Vec3d pos, int textpos) {
@@ -374,42 +505,8 @@ public class AtlasWaypoints extends ToggleMod {
 		
 		double height = 4 * renderer.FONT_HEIGHT + ((toDraw.size() * renderer.FONT_HEIGHT) * descscale);
 		
-		drawBlurbBGround(left, max + 10, top, height, drawDown);
+		drawBGround(left, max + 10, top, height, drawDown);
 		drawBlurb(renderer, loc.getName(), coord, toDraw, left, max + 10, drawDown ? top : top - height, descscale);
-		
-	}
-	
-	private void drawBlurbBGround(double left, double max, double top, double height, boolean drawDown) {
-		
-		Tessellator tess = Tessellator.getInstance();
-		BufferBuilder buff = tess.getBuffer();
-		GlStateManager.glLineWidth(2f);
-		GlStateManager.color(0, 0, 0);
-		buff.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION);
-		
-		buff.pos(0, 0, 0).endVertex();
-		buff.pos(left, top, 0).endVertex();
-		
-		buff.pos(0, 0, 0).endVertex();
-		buff.pos(left + max, top, 0).endVertex();
-		
-		tess.draw();
-		
-		buff.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
-		
-		if(drawDown) {
-			buff.pos(left, top + height, 0).endVertex();
-			buff.pos(left + max, top + height, 0).endVertex();
-			buff.pos(left + max, top, 0).endVertex();
-			buff.pos(left, top, 0).endVertex();
-		} else {
-			buff.pos(left, top, 0).endVertex();
-			buff.pos(left + max, top, 0).endVertex();
-			buff.pos(left + max, top - height, 0).endVertex();
-			buff.pos(left, top - height, 0).endVertex();
-		}
-		
-		tess.draw();
 		
 	}
 	
@@ -417,8 +514,9 @@ public class AtlasWaypoints extends ToggleMod {
 		GlStateManager.enableTexture2D();
 		int nameWid = renderer.getStringWidth(name);
 		int distWid = renderer.getStringWidth(loc);
-		renderer.drawString(name, (int)(left + max / 2 - nameWid / 2), (int)(top) + 5, Colors.WHITE.toBuffer());
-		renderer.drawString(loc, (int)(left+ max / 2 - distWid / 2), (int)(top) + renderer.FONT_HEIGHT + 5, Colors.WHITE.toBuffer());
+		Color white = Color.of(1, 1, 1, textAlpha.getAsFloat());
+		renderer.drawString(name, (int)(left + max / 2 - nameWid / 2), (int)(top) + 5, white.toBuffer());
+		renderer.drawString(loc, (int)(left+ max / 2 - distWid / 2), (int)(top) + renderer.FONT_HEIGHT + 5, white.toBuffer());
 		GlStateManager.scale(scale, scale, scale);
 		int counter = 0;
 		for(String s : info) {
@@ -428,7 +526,7 @@ public class AtlasWaypoints extends ToggleMod {
 					(int) (-swid / 2 + ((1 / scale) * (left + (max / 2f)))),
 					(int) (renderer.FONT_HEIGHT * (counter++ + 1) + 
 							(1 / scale) * (5 + top + renderer.FONT_HEIGHT * 2)),
-					Colors.WHITE.toBuffer()
+					white.toBuffer()
 					);
 		}
 		
@@ -447,24 +545,17 @@ public class AtlasWaypoints extends ToggleMod {
 		for(int i = 0; i < ticks; i++) {
 			Color c = colorFromTick(i);
 			buff.pos(radx * circle[i][0], rady * circle[i][1], 0)
-				.color(c.getRedAsFloat(), c.getGreenAsFloat(), c.getBlueAsFloat(), 1).endVertex();
+				.color(c.getRedAsFloat(), c.getGreenAsFloat(), c.getBlueAsFloat(), circleAlpha.getAsFloat()).endVertex();
 			if(i > circle.length - speed - 1) {
 				c = colorFromTick(0);
 				buff.pos(radx * circle[0][0], rady * circle[0][1], 0)
-					.color(c.getRedAsFloat(), c.getGreenAsFloat(), c.getBlueAsFloat(), 1).endVertex();
+					.color(c.getRedAsFloat(), c.getGreenAsFloat(), c.getBlueAsFloat(), circleAlpha.getAsFloat()).endVertex();
 			}
 		}
 		
 		tess.draw();
 		
 		GlStateManager.popMatrix();
-	}
-	
-	private Color colorFromTick(int tick) {
-		float hue = (240/360f) + (30/360f) * Math.abs(1 - (2 * tick / (float)circle.length));
-		float bri = (360/360f) - (180/360f) * Math.abs(1 - (2 * tick / (float)circle.length));
-		Color c = Color.of(java.awt.Color.HSBtoRGB(hue, 1, bri));
-		return c;
 	}
 	
 	private void drawNameAndBGround(String name, int pos, double distance) {
@@ -503,7 +594,7 @@ public class AtlasWaypoints extends ToggleMod {
 			break;
 		}
 		
-		drawNameBGround(left, max, top, height, drawDown);
+		drawBGround(left, max, top, height, drawDown);
 		drawName(renderer, name, dist, left, max, drawDown ? top : top - height);
 	}
 	
@@ -512,17 +603,20 @@ public class AtlasWaypoints extends ToggleMod {
 		GlStateManager.enableTexture2D();
 		int nameWid = renderer.getStringWidth(name);
 		int distWid = renderer.getStringWidth(dist);
-		renderer.drawString(name, (int)(left + max / 2 - nameWid / 2), (int)(top) + 5, Colors.WHITE.toBuffer());
-		renderer.drawString(dist, (int)(left+ max / 2 - distWid / 2), (int)(top) + renderer.FONT_HEIGHT + 5, Colors.WHITE.toBuffer());
+		Color white = Color.of(1, 1, 1, textAlpha.getAsFloat());
+		renderer.drawString(name, (int)(left + max / 2 - nameWid / 2), (int)(top) + 5, white.toBuffer());
+		renderer.drawString(dist, (int)(left+ max / 2 - distWid / 2), (int)(top) + renderer.FONT_HEIGHT + 5, white.toBuffer());
 
 	}
 	
-private void drawNameBGround(double left, double max, double top, double height, boolean drawDown) {
+private void drawBGround(double left, double max, double top, double height, boolean drawDown) {
 		
+		double border = 1;
+	
 		Tessellator tess = Tessellator.getInstance();
 		BufferBuilder buff = tess.getBuffer();
 		GlStateManager.glLineWidth(2f);
-		GlStateManager.color(0, 0, 0);
+		GlStateManager.color(0, 0, 0, textAlpha.getAsFloat());
 		buff.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION);
 		
 		buff.pos(0, 0, 0).endVertex();
@@ -533,18 +627,45 @@ private void drawNameBGround(double left, double max, double top, double height,
 		
 		tess.draw();
 		
-		buff.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
+		buff.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
 		
 		if(drawDown) {
-			buff.pos(left, top + height, 0).endVertex();
-			buff.pos(left + max, top + height, 0).endVertex();
-			buff.pos(left + max, top, 0).endVertex();
-			buff.pos(left, top, 0).endVertex();
+			buff.pos(left - border, top + height + border, 0)
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max + border, top + height + border, 0)
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max + border, top - border, 0)
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left - border, top - border, 0)
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+
+			buff.pos(left, top + height, 0)
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max, top + height, 0)
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max, top, 0)				
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left, top, 0)
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
+
 		} else {
-			buff.pos(left, top, 0).endVertex();
-			buff.pos(left + max, top, 0).endVertex();
-			buff.pos(left + max, top - height, 0).endVertex();
-			buff.pos(left, top - height, 0).endVertex();
+			buff.pos(left - border, top + border, 0)				
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max + border, top + border, 0)
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max + border, top - height - border, 0)
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left - border, top - height - border, 0)
+				.color(1, 1, 1, textAlpha.getAsFloat()).endVertex();
+
+			buff.pos(left, top, 0)
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max, top, 0)
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left + max, top - height, 0)
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
+			buff.pos(left, top - height, 0)				
+				.color(0, 0, 0, textAlpha.getAsFloat()).endVertex();
 		}
 		
 		tess.draw();
@@ -570,7 +691,7 @@ private void drawNameBGround(double left, double max, double top, double height,
 		GlStateManager.popMatrix();
 	}
 	
-	private static void drawPoint(int color, double scale, float closeness) {
+	private void drawPoint(int color, double scale, float closeness) {
 		Tessellator tess = Tessellator.getInstance();
 		BufferBuilder buff = tess.getBuffer();
 
@@ -578,7 +699,7 @@ private void drawNameBGround(double left, double max, double top, double height,
 		int g = color >> 8 & 255;
 		int b = color & 255;
 		
-		GlStateManager.color(r / 255f, g / 255f, b / 255f);
+		GlStateManager.color(r / 255f, g / 255f, b / 255f, waypointAlpha.getAsFloat());
 		
 		if(closeness < 0.2) {
 			closeness = 0.2F;
@@ -778,6 +899,14 @@ private void drawNameBGround(double left, double max, double top, double height,
 			int i = width / 2;
 			int j = height / 2;
 			
+			int padding = 3;
+			
+			drawRect(i - guiwidth / 2 - padding, 
+					j - guiheight / 2 - padding, 
+					i + guiwidth / 2 + padding, 
+					j + guiheight / 2 + padding, 
+					Colors.WHITE.toBuffer());
+			
 			drawRect(i - guiwidth / 2, 
 					j - guiheight / 2, 
 					i + guiwidth / 2, 
@@ -835,8 +964,17 @@ private void drawNameBGround(double left, double max, double top, double height,
 			
 			int scrollAmt = (int) (scrollf * fontRenderer.FONT_HEIGHT * Math.min((-desc.size() + lines), 0));
 						
+			Color c = Color.of(30, 30, 30);
+			
 			//Scrolling here
 			GlStateManager.pushMatrix();
+			
+			 drawRect(i - guiwidth / 2 + 2, 
+						scrollStart - 2, 
+						i + guiwidth / 2 - 2, 
+						scrollStart + fontRenderer.FONT_HEIGHT * lines + 2, 
+						c.toBuffer());
+			 
 			GL11.glScissor(
 					factor * (i - guiwidth / 2),
 					MC.displayHeight - factor * (scrollStart + fontRenderer.FONT_HEIGHT * lines), 
@@ -844,7 +982,7 @@ private void drawNameBGround(double left, double max, double top, double height,
 					factor * fontRenderer.FONT_HEIGHT * lines
 					);
 		    GL11.glEnable(GL11.GL_SCISSOR_TEST);
-		    						
+		    
 			for(int index = 0; index < desc.size(); index++) {
 				fontRenderer.drawString(desc.get(index), 
 						i - fontRenderer.getStringWidth(desc.get(index)) / 2 - 5, 
@@ -871,6 +1009,14 @@ private void drawNameBGround(double left, double max, double top, double height,
 		    		scrollStart + barscroll + scrollbarHeight,
 		    		Colors.WHITE.toBuffer()
 		    		);
+		    
+		    if(links.size() > 0) {
+		    	 drawRect(i - guiwidth / 2 + 2, 
+							linkStart - 2, 
+							i + guiwidth / 2 - 2, 
+							linkStart + links.size() * fontRenderer.FONT_HEIGHT + 2, 
+							c.toBuffer());
+		    }
 		    
 		    //Draw link text
 		    for(int index = 0; index < links.size(); index++) {

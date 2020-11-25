@@ -60,7 +60,6 @@ public class EntityPigPatch extends ClassTransformer {
         
         @Inject(description = "Prevent pigs from wandering on their own")
         public void inject(MethodNode main) {
-            AsmPrinter.logAsmMethod(main, "pigTravel-pre");
             AbstractInsnNode node =
                 ASMHelper.findPattern(main.instructions.getFirst(),
                     new int[] { ALOAD, FCONST_0, FCONST_0, FCONST_1, INVOKESPECIAL },
@@ -71,7 +70,7 @@ public class EntityPigPatch extends ClassTransformer {
             for (int i = 0; i < 3; i++) {
                 main.instructions.remove(node.getNext()); // remove FCONST
             }
-
+            
             /* node now points to this.setAIMoveSpeed(f); */
             final InsnList insnList = new InsnList();
             LabelNode before = new LabelNode();
@@ -99,7 +98,6 @@ public class EntityPigPatch extends ClassTransformer {
             // now normal travel() is called
 
             main.instructions.insert(node, insnList);
-            AsmPrinter.logAsmMethod(main, "pigTravel-post");
         }
     }
 }

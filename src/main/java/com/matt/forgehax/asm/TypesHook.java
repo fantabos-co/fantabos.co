@@ -1,11 +1,9 @@
 package com.matt.forgehax.asm;
 
-import com.matt.forgehax.asm.TypesHook.Classes;
 import com.matt.forgehax.asm.utils.asmtype.ASMClass;
 import com.matt.forgehax.asm.utils.asmtype.ASMField;
 import com.matt.forgehax.asm.utils.asmtype.ASMMethod;
 import com.matt.forgehax.asm.utils.asmtype.builders.ASMBuilders;
-import net.minecraft.entity.MoverType;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 import java.util.List;
@@ -158,6 +156,17 @@ public interface TypesHook {
 
   interface Methods {
 
+	  ASMMethod ForgeHaxHooks_onHandleComponentClick =
+			  Classes.ForgeHaxHooks.childMethod()
+			  .setName("onHandleComponentClick")
+			  .setReturnType(boolean.class)
+			  .beginParameters()
+			  .add(TypesMc.Classes.GuiScreen)
+			  .add(TypesMc.Classes.ITextComponent)
+			  .add(TypesMc.Classes.ClickEvent)
+			  .finish()
+			  .build();
+	  
 	  ASMMethod ForgeHaxHooks_onRenderEntityItem3d =
 			  Classes.ForgeHaxHooks.childMethod()
 			  .setName("onRenderEntityItem3d")
