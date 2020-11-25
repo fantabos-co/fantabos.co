@@ -291,7 +291,7 @@ public class IRC extends ServiceMod {
   @Override
   protected void onLoad() {
     // Deserialize
-    //  irc channels are not part of the config file
+    // irc channels are not part of the config file
 
     JsonObject chans = FileManager.load(CHANNELS_FILE);
     if (chans != null) {

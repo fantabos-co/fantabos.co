@@ -145,9 +145,8 @@ public class ForgeHaxService extends ServiceMod {
   private static HoverEvent defaultHover() {
     return new HoverEvent(HoverEvent.Action.SHOW_TEXT,
           Helper.getFormattedText("ForgeHax", TextFormatting.GRAY, true, false)
-                          .appendSibling(Helper.getFormattedText(" v2.10\n", TextFormatting.DARK_GRAY, false, false))
-                            .appendSibling(Helper.getFormattedText("tonio's private fork\n\n", TextFormatting.DARK_AQUA, false, false))
-                              .appendSibling(Helper.getFormattedText("if you have this, you are a friend\nto me, I very much trust you!\n\n", TextFormatting.GOLD, false, true))
+                          .appendSibling(Helper.getFormattedText(" v69.420\n", TextFormatting.DARK_GRAY, false, false))
+                            .appendSibling(Helper.getFormattedText("fantabos.co on toppe\n\n", TextFormatting.GOLD, false, false))
                                 .appendSibling(Helper.getFormattedText("ASCII art from patorjk.com\n" +
                                                                      "tediously fixed by OverFloyd <3", TextFormatting.DARK_GRAY, false, true))
     );
