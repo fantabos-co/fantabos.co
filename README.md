@@ -6,7 +6,7 @@ Updated with mods we think would be good for public use.
 
 ### Maintaining
 
-TheAlphaEpsilon, OverFloyd , fraazolini and Fleyr have contribuited on the dev repo and will help keep this updated
+TheAlphaEpsilon, OverFloyd, FraazT0 and Fleyr have contribuited on the dev repo and will help keep this updated
 
 ## Installing
 
