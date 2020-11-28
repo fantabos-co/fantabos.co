@@ -129,6 +129,7 @@ public class FHTexturesMod extends ServiceMod {
 		
 		if(p instanceof SPacketDisconnect) {
 			synchronized(toRemove) {
+				FHTextures.updateUsers();
 				FHTextures.currentIds().forEach(x -> toRemove.add(x));
 			}
 		}
@@ -140,6 +141,7 @@ public class FHTexturesMod extends ServiceMod {
 		//If player is disconnects, reset
 		if(event.getButton().id == 1 && event.getGui() instanceof GuiIngameMenu) {
 			synchronized(toRemove) {
+				FHTextures.updateUsers();
 				FHTextures.currentIds().forEach(x -> toRemove.add(x));
 			}
 		}
