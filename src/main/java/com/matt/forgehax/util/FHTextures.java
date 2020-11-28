@@ -77,8 +77,12 @@ public class FHTextures {
 		return uuids.containsKey(uuid);
 	}
 	
-	public static Set<UUID> RegisteredUsers() {
+	public static Set<UUID> registeredUsers() {
 		return new HashSet<>(uuids.keySet());
+	}
+	
+	public static Set<UUID> currentIds() {
+		return new HashSet<>(players.keySet());
 	}
 	
 	/**
