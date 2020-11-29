@@ -16,8 +16,6 @@ import java.util.List;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.Tuple;
-import net.minecraftforge.client.event.GuiScreenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.lwjgl.input.Mouse;
 
 /**
@@ -51,7 +49,23 @@ public class ClickGui extends GuiScreen implements Globals {
     windowList.add(guiWindow);
   }
   
-  public static ScaledResolution scaledRes = new ScaledResolution(MC);
+  private static ScaledResolution scaledRes = new ScaledResolution(MC);
+  
+  public static int getScaledResFactor() {
+	  return scaledRes.getScaleFactor();
+  }
+  
+  public static int getScaledWidth() {
+	  return scaledRes.getScaledWidth();
+  }
+  
+  public static int getScaledHeight() {
+	  return scaledRes.getScaledHeight();
+  }
+  
+  public static void setScaledResolution(ScaledResolution res) {
+	  scaledRes = res;
+  }
   
   public int baseColor;
   
@@ -101,11 +115,6 @@ public class ClickGui extends GuiScreen implements Globals {
     return false;
   }
   
-  @SubscribeEvent
-  public void onScreenUpdated(GuiScreenEvent.InitGuiEvent.Post ev) {
-    scaledRes = new ScaledResolution(MC);
-  }
-  
   public void moveWindowToTop(GuiWindow window) {
     if (windowList.remove(window)) // if it wasnt already in the list dont add it
     {
@@ -131,8 +140,12 @@ public class ClickGui extends GuiScreen implements Globals {
       window.drawWindow(mouseX, mouseY);
     }
     
-    for (GuiWindow window : windowList) {
-      window.drawTooltip(mouseX, mouseY);
+    List<GuiWindow> reverse = Lists.reverse(windowList);
+    for(int index = 0; index < reverse.size(); index++) {
+    	
+    	GuiWindow window = reverse.get(index);
+    	window.drawTooltip(mouseX, mouseY, index);
+    
     }
   }
   

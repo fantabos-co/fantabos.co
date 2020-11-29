@@ -299,7 +299,10 @@ public class HelpCommand extends CommandMod {
                             .stream()
                             .filter(mod -> mod.getModName().toLowerCase().equals(modName))
                             .collect(Collectors.toList())) {
-                        GuiWindowSetting gui = new GuiWindowSetting(mod, ClickGui.scaledRes.getScaledWidth() / 2, ClickGui.scaledRes.getScaledHeight() / 2);
+                        GuiWindowSetting gui = new GuiWindowSetting(
+                        		mod, 
+                        		ClickGui.getScaledWidth() / 2, 
+                        		ClickGui.getScaledHeight() / 2);
                         if (!ClickGui.getInstance().windowList.contains(gui)) ClickGui.getInstance().windowList.add(gui);
                         MC.displayGuiScreen(ClickGui.getInstance());
 

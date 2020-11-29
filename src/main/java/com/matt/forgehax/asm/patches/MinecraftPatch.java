@@ -1,13 +1,13 @@
 package com.matt.forgehax.asm.patches;
 
 import com.matt.forgehax.asm.TypesHook;
-import com.matt.forgehax.asm.TypesMc.Methods;
 import com.matt.forgehax.asm.utils.ASMHelper;
 import com.matt.forgehax.asm.utils.asmtype.ASMMethod;
 import com.matt.forgehax.asm.utils.transforming.ClassTransformer;
 import com.matt.forgehax.asm.utils.transforming.Inject;
 import com.matt.forgehax.asm.utils.transforming.MethodTransformer;
 import com.matt.forgehax.asm.utils.transforming.RegisterMethodTransformer;
+
 import java.util.Objects;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -20,6 +20,22 @@ public class MinecraftPatch extends ClassTransformer {
   
   public MinecraftPatch() {
     super(Classes.Minecraft);
+  }
+  
+  @RegisterMethodTransformer
+  public class OnResize extends MethodTransformer {
+	  
+	  @Override
+	  public ASMMethod getMethod() {
+		  return Methods.Minecraft_updateFramebufferSize;
+	  }
+	  
+	  @Inject(description = "Inject event on resize")
+	  public void inject(MethodNode method) {
+	      method.instructions.insertBefore(method.instructions.getFirst(), 
+	    		  ASMHelper.call(INVOKESTATIC, TypesHook.Methods.ForgeHaxHooks_onUpdateFramebufferSize));
+	  }
+	  
   }
   
   @RegisterMethodTransformer

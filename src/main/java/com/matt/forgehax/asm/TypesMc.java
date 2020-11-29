@@ -556,6 +556,14 @@ public interface TypesMc {
   
   interface Methods {
     
+	  ASMMethod Minecraft_updateFramebufferSize =
+			  Classes.Minecraft.childMethod()
+			  .setName("updateFramebufferSize")
+			  .setReturnType(void.class)
+			  .emptyParameters()
+			  .autoAssign()
+			  .build();
+	  
 	  ASMMethod GuiScreen_handleComponentClick =
 			  Classes.GuiScreen.childMethod()
 			  .setName("handleComponentClick")
@@ -1280,6 +1288,13 @@ public interface TypesMc {
         .beginParameters()
         .add(Classes.BlockPos)
         .finish()
+        .autoAssign()
+        .build();
+    ASMMethod PlayerControllerMC_getBlockReachDistance =
+      Classes.PlayerControllerMP.childMethod()
+        .setName("getBlockReachDistance")
+        .setReturnType(float.class)
+        .emptyParameters()
         .autoAssign()
         .build();
 

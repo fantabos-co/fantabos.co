@@ -3,10 +3,10 @@ package com.matt.forgehax.util.mod;
 import com.matt.forgehax.util.command.Setting;
 import com.matt.forgehax.util.math.AlignHelper;
 import com.matt.forgehax.util.math.AlignHelper.Align;
+import com.matt.forgehax.asm.events.ResizeGameEvent;
 import com.matt.forgehax.gui.PromptGui;
 import net.minecraft.client.gui.GuiChat;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public abstract class HudMod extends ToggleMod {
@@ -97,7 +97,7 @@ public abstract class HudMod extends ToggleMod {
   }
 
   @SubscribeEvent
-  public void onScreenUpdated(GuiScreenEvent.InitGuiEvent.Post ev) {
+  public void onScreenUpdated(ResizeGameEvent ev) {
     scaledRes = new ScaledResolution(MC);
   }
 }

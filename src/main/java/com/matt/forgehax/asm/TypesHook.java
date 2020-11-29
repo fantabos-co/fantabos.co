@@ -147,14 +147,27 @@ public interface TypesHook {
         .setType(boolean.class)
         .build();
 
- 	ASMField ForgeHaxHooks_forceControlEntity =
-	  Classes.ForgeHaxHooks.childField()
-		.setName("forceControlEntity")
-		.setType(boolean.class)
-		.build();
+ 	  ASMField ForgeHaxHooks_forceControlEntity =
+	    Classes.ForgeHaxHooks.childField()
+		    .setName("forceControlEntity")
+		    .setType(boolean.class)
+        .build();
+        
+ 	  ASMField ForgeHaxHooks_forcedReach =
+	    Classes.ForgeHaxHooks.childField()
+		    .setName("forcedReach")
+		    .setType(float.class)
+		    .build();
   }
 
   interface Methods {
+	  
+	  ASMMethod ForgeHaxHooks_onUpdateFramebufferSize =
+			  Classes.ForgeHaxHooks.childMethod()
+			  .setName("onUpdateFramebufferSize")
+			  .setReturnType(boolean.class)
+			  .emptyParameters()
+			  .build();
 
 	  ASMMethod ForgeHaxHooks_onHandleComponentClick =
 			  Classes.ForgeHaxHooks.childMethod()

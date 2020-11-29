@@ -2,19 +2,12 @@ package com.matt.forgehax.gui.windows;
 
 import static com.matt.forgehax.Helper.getModManager;
 
-import static com.matt.forgehax.Globals.MC;
-import static com.matt.forgehax.util.color.Colors.GRAY;
 import static com.matt.forgehax.util.color.Colors.WHITE;
 
 import com.matt.forgehax.gui.ClickGui;
-import com.matt.forgehax.gui.windows.GuiWindowMod;
-import com.matt.forgehax.gui.windows.GuiWindowSetting;
-import com.matt.forgehax.mods.ActiveModList;
 import com.matt.forgehax.mods.services.GuiService;
-import com.matt.forgehax.util.color.Color;
 import com.matt.forgehax.util.draw.SurfaceHelper;
 import java.io.IOException;
-import net.minecraft.client.gui.ScaledResolution;
 
 /**
  * Created by Babbaj on 9/5/2017.
@@ -49,8 +42,8 @@ public abstract class GuiWindow {
   }
 
   GuiWindow(String titleIn) {
-    this.title = titleIn;
-    width = SurfaceHelper.getTextWidth(title) + 15;
+	  this.title = titleIn;
+	  width = SurfaceHelper.getTextWidth(title) + 15;
   }
 
   public void setPosition(int x, int y) {
@@ -95,8 +88,6 @@ public abstract class GuiWindow {
   }
 
   public void drawWindow(int mouseX, int mouseY) {
-    ClickGui.scaledRes = new ScaledResolution(MC);
-    int color = gui.color.get().toBuffer();
     if (dragging) {
       posX = mouseX - dragX;
       headerY = mouseY - dragY;
@@ -104,22 +95,32 @@ public abstract class GuiWindow {
     drawHeader();
     windowY = headerY + 21;
     if (!isHidden) {
-      int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() * 
+      int actualHeight = (int) Math.min(height, ClickGui.getScaledResFactor() * 
                           getModManager().get(GuiService.class).get().max_height.get());
       
       SurfaceHelper.drawOutlinedRectShaded(
-        posX, windowY, width, actualHeight, color, 80, 3);
+        posX, 
+        windowY,
+        width,
+        actualHeight,
+        gui.headerColor.get().toBuffer(),
+        gui.headerAlpha.getAsInteger(),
+        3);
     }
   }
   
-  public void drawTooltip(int mouseX, int mouseY) {}
+  public void drawTooltip(int mouseX, int mouseY, int index) {}
 
   public void drawHeader() {
     // draw the title of the window
-    Color c = gui.color.get();
-    int color = Color.of(c.getRed() + 22, c.getGreen() + 22, c.getBlue() + 22, c.getAlpha()).toBuffer();
     SurfaceHelper.drawOutlinedRectShaded(
-      posX, headerY, width, 20, color, 50, 5);
+    		posX,
+    		headerY, 
+    		width, 
+    		20,
+    		gui.headerColor.get().toBuffer(),
+    		gui.headerAlpha.getAsInteger(), 
+    		5);
     SurfaceHelper.drawTextShadowCentered(
         getTitle(), posX + width / 2f, headerY + 10, WHITE.toBuffer());
   }

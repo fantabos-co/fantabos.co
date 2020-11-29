@@ -47,7 +47,6 @@ import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.chunk.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.MoverType;
 import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.player.EntityPlayer;
@@ -114,6 +113,7 @@ public class ForgeHaxHooks implements ASMCommon {
   public static boolean drawBlockHighlightInWater = false;
   public static boolean allowCameraClip = false;
   public static boolean forceControlEntity = false;
+  public static float forcedReach = -1.F;
 
   /** static hooks */
   
@@ -1056,6 +1056,21 @@ public class ForgeHaxHooks implements ASMCommon {
 	public static boolean onRenderEntityItem2d(RenderItem renderItem, ItemStack stack, IBakedModel bakedModel) {
 		return HOOK_onRenderEntityItem2d.reportHook() &&
 				MinecraftForge.EVENT_BUS.post(new RenderEntityItem2dEvent(renderItem, stack, bakedModel));
+	}
+	
+	/**
+	 * onResize
+	 */
+	public static final HookReporter HOOK_onUpdateFramebufferSize =
+			newHookReporter()
+				.hook("onUpdateFramebufferSize")
+				.dependsOn(TypesMc.Methods.Minecraft_updateFramebufferSize)
+				.forgeEvent(ResizeGameEvent.class)
+				.build();
+	
+	public static boolean onUpdateFramebufferSize() {
+		return HOOK_onUpdateFramebufferSize.reportHook() &&
+				MinecraftForge.EVENT_BUS.post(new ResizeGameEvent());
 	}
 	
 	public static void testingMethod() {

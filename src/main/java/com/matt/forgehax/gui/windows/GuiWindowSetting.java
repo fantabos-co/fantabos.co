@@ -1,5 +1,6 @@
 package com.matt.forgehax.gui.windows;
 
+import com.google.common.collect.Lists;
 import com.matt.forgehax.gui.ClickGui;
 import com.matt.forgehax.gui.elements.GuiColorSelect;
 import com.matt.forgehax.gui.elements.GuiElement;
@@ -46,7 +47,7 @@ public class GuiWindowSetting extends GuiWindow {
   private final BaseMod mod;
   //private final int x;
   //private final int y;
-
+  
   public GuiWindowSetting(BaseMod modIn, int xIn, int yIn) {
     super(modIn.getModName() + " Settings");
     this.mod = modIn;
@@ -96,6 +97,7 @@ public class GuiWindowSetting extends GuiWindow {
       } catch (Exception ignored) {
       }
     });
+    height += 4;
   }
 
   public String getModName() {
@@ -107,27 +109,41 @@ public class GuiWindowSetting extends GuiWindow {
   }
 
   @Override
-  public void drawTooltip(int mouseX, int mouseY) {
-    int scale = ClickGui.scaledRes.getScaleFactor();
+  public void drawTooltip(int mouseX, int mouseY, int index) {
+	  
+    int scale = ClickGui.getScaledResFactor();
 
     if (isHidden){
       return;
     }
 
+    boolean isGood = true;
+    
+    List<GuiWindow> reverse = Lists.reverse(ClickGui.getInstance().windowList);
+    for(int i = 0; i < index; i++) {
+    	GuiWindow window = reverse.get(i);
+    	isGood = !(mouseX >= window.posX && mouseX <= window.posX + window.width &&
+    			mouseY >= window.headerY && mouseY <= window.bottomY);
+    	if(!isGood) {
+    		break;
+    	}
+    }
+    
     if (mouseX >= posX && mouseX < bottomX &&
       mouseY >= windowY + (5 / scale) && mouseY < bottomY - (5 / scale)) {
       for (GuiElement button : inputList) {
         if (mouseX > button.x && mouseX < (button.x + width) &&
-          mouseY > button.y && mouseY < (button.y + button.height)) {
-          drawSettingTooltip(button.command, mouseX, mouseY);
-          break;
+          mouseY > button.y && mouseY < (button.y + button.height) &&
+          isGood) {
+        	drawSettingTooltip(button.command, mouseX, mouseY);
+        	break;
         }
       }
     }
   }
 
   private void drawSettingTooltip(Command comm, int xScaled, int yScaled) {
-    int scale = ClickGui.scaledRes.getScaleFactor();
+    int scale = ClickGui.getScaledResFactor();
 
     String description = comm.getDescription();
 
@@ -140,11 +156,11 @@ public class GuiWindowSetting extends GuiWindow {
     //int lineSpacing = 2;
     int tooltipHeight = lineHeight + padding * 2;
 
-    if ((tooltipX + tooltipWidth) * scale > ClickGui.scaledRes.getScaledWidth()) {
+    if ((tooltipX + tooltipWidth) * scale > ClickGui.getScaledWidth()) {
       tooltipX -= tooltipWidth + offset * 2;
     }
 
-    if ((tooltipY + tooltipHeight) * scale > ClickGui.scaledRes.getScaledHeight()) {
+    if ((tooltipY + tooltipHeight) * scale > ClickGui.getScaledWidth()) {
       tooltipY -= tooltipHeight + offset * 2;
     }
 
@@ -158,31 +174,34 @@ public class GuiWindowSetting extends GuiWindow {
       tooltipWidth * scale - 2, tooltipHeight * scale,
       col);
 
-    // SurfaceHelper
-    //   .drawTextShadow(modName, (tooltipX + padding) * scale, (tooltipY + padding) * scale,
-    //     0xFFFFFF);
     SurfaceHelper.drawTextShadow(description, (tooltipX + padding) * scale,
       (tooltipY + padding) * scale, 0xAAAAAA);
   }
   
-  //Copied from GuiWindowMod
   public void drawWindow(int mouseX, int mouseY) {
-	  super.drawWindow(mouseX, mouseY);
-
+	  	super.drawWindow(mouseX, mouseY);
+	    windowY = headerY + 23;
 	    if (isHidden){
 	      return;
 	    }
-
-	    int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() *
+	    int actualHeight = (int) Math.min(height, ClickGui.getScaledHeight() *
 	      getModManager().get(GuiService.class).get().max_height.get());
 
-	    int inputY = -inputListOffset;
+	    SurfaceHelper.drawOutlinedRectShaded(
+	    	      posX, 
+	    	      windowY, 
+	    	      width, 
+	    	      actualHeight, 
+	    	      gui.settingsColor.get().toBuffer(), 
+	    	      gui.settingsAlpha.getAsInteger(), 
+	    	      3);
+	    int inputY = -inputListOffset + 4;
 	    
-	    int scale = ClickGui.scaledRes.getScaleFactor();
+	    int scale = ClickGui.getScaledResFactor();
 
 	    GL11.glPushMatrix();
-	    int scissorY = MC.displayHeight - (scale * windowY + scale * actualHeight - 3);
-	    GL11.glScissor(scale * posX, scissorY, scale * width, scale * actualHeight - 8);
+	    int scissorY = MC.displayHeight - (scale * windowY + scale * actualHeight);
+	    GL11.glScissor(scale * posX, scissorY, scale * width, scale * actualHeight);
 	    GL11.glEnable(GL11.GL_SCISSOR_TEST);
 	    for (GuiElement input : inputList) {
 	    	input.subY = inputY;
@@ -196,20 +215,6 @@ public class GuiWindowSetting extends GuiWindow {
 	    // update variables
 	    bottomX = posX + width; // set the coords of the bottom right corner for mouse coord testing
 	    bottomY = windowY + actualHeight;
-    /*super.drawWindow(mouseX, mouseY);
-
-    if (!isHidden) {
-      for (GuiElement input : inputList) {
-        input.x = 2;
-        input.y = height + 2;
-        input.width = width;
-        input.draw(mouseX, mouseY);
-      }
-    }
-
-    // update variables
-    bottomX = posX + width; // set the coords of the bottom right corner for mouse coord testing
-    bottomY = windowY + height;*/
   }
 
   public void keyTyped(char typedChar, int keyCode) throws IOException {
@@ -258,13 +263,13 @@ public class GuiWindowSetting extends GuiWindow {
 		  inputListOffset = 0; // don't scroll up if its already at the top
 	  }
 
-	  int actualHeight = (int) Math.min(height, ClickGui.scaledRes.getScaledHeight() *
+	  int actualHeight = (int) Math.min(height, ClickGui.getScaledHeight() *
 			  getModManager().get(GuiService.class).get().max_height.get());
 	  int lowestButtonY = windowY;
 	  for(GuiElement element : inputList) {
 		  lowestButtonY += element.height;
 	  }
-	  int lowestAllowedOffset = lowestButtonY - actualHeight - windowY;
+	  int lowestAllowedOffset = lowestButtonY - actualHeight - windowY + 4;
 	  if (lowestButtonY - inputListOffset < bottomY) {
 		  inputListOffset = lowestAllowedOffset;
 	  }
