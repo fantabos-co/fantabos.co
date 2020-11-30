@@ -9,7 +9,7 @@ Updated with mods we think would be good for public use.
 TheAlphaEpsilon, OverFloyd, FraazT0 and Fleyr have contribuited on the dev repo and will help keep this updated.
 
 ### Discord support
-You can join a very Work-In-Progress discord server [HERE](https://discord.gg/8QjDRRPyeh) and chat with us.
+You can join a very Work-In-Progress discord server [HERE](https://discord.gg/8QjDRRPyeh). No guarantee is made about server being _not dead_.
 
 ## Installing
 
