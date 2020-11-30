@@ -300,6 +300,8 @@ public class IRC extends ServiceMod {
         newChan.deserialize(chans);
         channelList.put(newChan.getUniqueHeader(), newChan);
       }
+    } else {
+      channelList.put("#fhchat", new ChannelEntry("#fhchat"));
     }
 
     timer.start();
