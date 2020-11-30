@@ -4,6 +4,8 @@ Literally the most powerful minecraft cheat ever made, in a light and public rel
 
 Updated with mods we think would be good for public use.
 
+In case you cannot read, this is a fork of fr1kin's ForgeHax. Since the 1.12.2 branch is not actively developed, we added more stuff in ourselves.
+
 ### Maintaining
 
 TheAlphaEpsilon, OverFloyd, FraazT0 and Fleyr have contribuited on the dev repo and will help keep this updated.
