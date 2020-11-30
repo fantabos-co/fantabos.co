@@ -34,7 +34,7 @@ This mod will get data from:
 * data.2b2t.it
 * irc.2b2t.it (only if using IRC)
 
-This is relatively safe, as it is essentially just going to these websites on a browser. **Any connection to any service will its source known to receiving server**.
+This is relatively safe, as it is essentially just going to these websites on a browser. **Any connection to any service will make its source known to the receiving server**.
 
 This mod will send data to:
 * irc.2b2t.it (only if using IRC)
