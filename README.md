@@ -45,6 +45,10 @@ Please note: IRC identifies users by IP. If the server you're connecting to does
 
 As always, use of a VPN can hide your IP address from others.
 
+### IRC
+
+By default, the IRC service won't connect to anything. If you wish to use IRC chat, turn on `.irc auto-connect`. It is set to connect to `irc.2b2t.it` by default and join the `#fhchat` public channel, but neither is enforced.
+
 ## Known Issues
 
 Most recent Optifine release breaks Markers. All Optifine releases break XRay. (Also XRay isn't really XRay but install Wurst ffs)
