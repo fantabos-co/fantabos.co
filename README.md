@@ -6,7 +6,10 @@ Updated with mods we think would be good for public use.
 
 ### Maintaining
 
-TheAlphaEpsilon, OverFloyd, FraazT0 and Fleyr have contribuited on the dev repo and will help keep this updated
+TheAlphaEpsilon, OverFloyd, FraazT0 and Fleyr have contribuited on the dev repo and will help keep this updated.
+
+### Discord support
+You can join a very Work-In-Progress discord server [HERE](https://discord.gg/8QjDRRPyeh) and chat with us.
 
 ## Installing
 
@@ -29,15 +32,14 @@ This mod will get data from:
 * Minecraft's API (api.mojang.com, sessionserver.mojang.com)
 * 2b2tatlas.com
 * data.2b2t.it
-* irc.2b2t.it
+* irc.2b2t.it (only if using IRC)
 
-This is relatively safe, as it is essentially just going to these websites on a browser.
+This is relatively safe, as it is essentially just going to these websites on a browser. **Any connection to any service will its source known to receiving server**.
 
 This mod will send data to:
-* irc.2b2t.it
+* irc.2b2t.it (only if using IRC)
 
-Only if you connect to an IRC server. Please note: due to how IRC works, your IP info will be send to ALL other members in the IRC chat.
-Use at your own risk.
+Please note: IRC identifies users by IP. If the server you're connecting to does not enforce IP masks, your IP will be shared will any user requesting it. `irc.2b2t.it` does mask your IP, and so does `irc.freenode.net`. Private servers might not do so, **investigate server policies before connecting to unknown IRC hosts**.
 
 As always, use of a VPN can hide your IP address from others.
 
