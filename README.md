@@ -57,6 +57,16 @@ Most recent Optifine release breaks Markers. All Optifine releases break XRay. (
 
 The usual shit. `gradlew setupDecompWorkspace`, `gradlew build`.
 
+For Windows:
+1) Download, clone, or pull the files
+2) In command prompt cd to the folder
+3) Run `gradlew setupDecompWorkspace` (try `gradlew setupDecompWorkspace --no-daemon` if this fails)
+4) Run `gradlew build`
+5) The jar will be in build/libs
+
+For Linux/MacOS:
+🤷
+
 ## Why are you making this public
 
 Because I can. I used to have quite exclusive haccs but now everyone seems to have them. I want to share the way I did things.
