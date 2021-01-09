@@ -55,17 +55,25 @@ Most recent Optifine release breaks Markers. All Optifine releases break XRay. (
 
 ## Building
 
-The usual shit. `gradlew setupDecompWorkspace`, `gradlew build`.
+You will need to first set up a local copy of the main repo:
 
-For Windows:
+**For Windows**:
 1) Download, clone, or pull the files
 2) In command prompt cd to the folder
 3) Run `gradlew setupDecompWorkspace` (try `gradlew setupDecompWorkspace --no-daemon` if this fails)
-4) Run `gradlew build`
-5) The jar will be in build/libs
 
-For Linux/MacOS:
-🤷
+Commands above vary slightly depending on used shell (`cmd`, `powershell`), try also `gradlew.bat` , `./gradlew.bat`, `./gradlew`.
+
+**For Linux/MacOS**:
+1) `git clone https://github.com/tonio-cartonio/fantabos.co.git`
+2) `cd fantabos.co`
+3) `./gradlew setupDecompWorkspace`
+
+Once you have a local copy, you can update it every time we push a new commit just by doing `git pull` inside the project folder.
+To build, run `./gradlew build`, jar will be in `build/libs`:
+
+1) `./gradlew build` or `gradlew build` or `gradlew.bat build` or `./gradlew.bat build`
+2) built jars will be in main project folder `/build/libs` (don't use the one with `-sources` at the end!)
 
 ## Why are you making this public
 
