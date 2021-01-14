@@ -22,7 +22,7 @@ import net.minecraftforge.client.event.ClientChatReceivedEvent;
 @RegisterMod
 public class ChatCommandService extends ServiceMod {
   
-  private static Character ACTIVATION_CHARACTER = '.';
+  private static Character ACTIVATION_CHARACTER = '-';
   
   public static Character getActivationCharacter() {
     return ACTIVATION_CHARACTER;
