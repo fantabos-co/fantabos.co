@@ -24,11 +24,13 @@ import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
+// N1P was here 
+
 @RegisterMod
 public class WaifuESP extends ToggleMod {
   
   public WaifuESP() {
-    super(Category.RENDER, "WaifuESP", false, "overlay cute animes over players");
+    super(Category.RENDER, "EeveESP", false, "overlay cute eevees over players");
   }
   
   public final Setting<Boolean> noRenderPlayers =
@@ -40,13 +42,15 @@ public class WaifuESP extends ToggleMod {
           .defaultTo(false)
           .build();
   
-  // private final ResourceLocation waifu = new ResourceLocation("textures/forgehax/waifu1.png");
+  // private final ResourceLocation waifu = new ResourceLocation("textures/forgehax/waifu1.png"); 
+  // fr1kin doesnt even know whats good smh - N1P
+
   private ResourceLocation waifu;
   
-  private final String waifuUrl = "https://raw.githubusercontent.com/forgehax/assets/master/img/waifu_v01.png";
+  private final String waifuUrl = "https://i.imgur.com/PSGzzqt.png";
   
   private final File waifuCache =
-      Helper.getFileManager().getBaseResolve("cache/waifu.png").toFile();
+      Helper.getFileManager().getBaseResolve("cache/eevee.png").toFile();
   
   private <T> BufferedImage getImage(T source, ThrowingFunction<T, BufferedImage> readFunction) {
     try {
@@ -124,13 +128,13 @@ public class WaifuESP extends ToggleMod {
               }
             }
             if (image == null) {
-              LOGGER.warn("Failed to download waifu image");
+              LOGGER.warn("Failed to download eevee image");
               return;
             }
             
             DynamicTexture dynamicTexture = new DynamicTexture(image);
             dynamicTexture.loadTexture(MC.getResourceManager());
-            waifu = MC.getTextureManager().getDynamicTextureLocation("WAIFU", dynamicTexture);
+            waifu = MC.getTextureManager().getDynamicTextureLocation("EEVEE", dynamicTexture);
           } catch (Exception e) {
             e.printStackTrace();
           }
