@@ -73,7 +73,7 @@ public class IRC extends ServiceMod {
         .<String>newSettingBuilder()
         .name("server")
         .description("Server to connect to")
-        .defaultTo("irc.2b2t.it")
+        .defaultTo("irc.fantabos.co")
         .build();
 
   private final Setting<String> nick =
