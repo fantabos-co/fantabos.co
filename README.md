@@ -26,28 +26,28 @@ No really, fr1kin's wiki is well kept and covers some basic and generic shit. I 
 
 ## Capes
 
-We have extra textures! Upload [HERE](http://upload.2b2t.it)
+We have extra textures! Upload [HERE](http://texture.fantabos.co)
 
 ## External Connections (Read this if you don't want to leak your IP)
 
 This mod will get data from:
 * Minecraft's API (api.mojang.com, sessionserver.mojang.com)
 * 2b2tatlas.com
-* data.2b2t.it
-* irc.2b2t.it (only if using IRC)
+* data.fantabos.co
+* irc.fantabos.co (only if using IRC)
 
 This is relatively safe, as it is essentially just going to these websites on a browser. **Any connection to any service will make its source known to the receiving server**.
 
 This mod will send data to:
-* irc.2b2t.it (only if using IRC)
+* irc.fantabos.co (only if using IRC)
 
-Please note: IRC identifies users by IP. If the server you're connecting to does not enforce IP masks, your IP will be shared will any user requesting it. `irc.2b2t.it` does mask your IP, and so does `irc.freenode.net`. Private servers might not do so, **investigate server policies before connecting to unknown IRC hosts**.
+Please note: IRC identifies users by IP. If the server you're connecting to does not enforce IP masks, your IP will be shared will any user requesting it. `irc.fantabos.co` does mask your IP, and so does `irc.freenode.net`. Private servers might not do so, **investigate server policies before connecting to unknown IRC hosts**.
 
 As always, use of a VPN can hide your IP address from others.
 
 ### IRC
 
-By default, the IRC service won't connect to anything. If you wish to use IRC chat, turn on `.irc auto-connect`. It is set to connect to `irc.2b2t.it` by default and join the `#fhchat` public channel, but neither is enforced.
+By default, the IRC service won't connect to anything. If you wish to use IRC chat, turn on `.irc auto-connect`. It is set to connect to `irc.fantabos.co` by default and join the `#fhchat` public channel, but neither is enforced.
 
 ## Known Issues
 

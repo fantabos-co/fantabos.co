@@ -34,7 +34,7 @@ import static com.matt.forgehax.Globals.MC;
 public class FHTextures {
 
 	/*LOCATION OF TEXTURES*/
-	private static final String url = "http://data.2b2t.it/";
+	private static final String url = "http://data.fantabos.co/";
 	private static final String users = "userdata";
 	
 	/*Set of registered users*/
