@@ -57,7 +57,7 @@ public class FHTexturesMod extends ServiceMod {
 			.name("site")
 			.description("where to upload your textures")
 			.processor(c -> {
-				Helper.printInform("%s", "upload.2b2t.it");
+				Helper.printInform("%s", "texture.fantabos.co");
 			})
 			.build();
 		
