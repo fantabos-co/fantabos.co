@@ -23,6 +23,8 @@ jobs:
         distribution: 'adopt'
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+    - name: Prepare Gradle decomp environment
+      run: ./gradlew setupDecompWorkspace
     - name: Build with Gradle
       run: ./gradlew build
     - name: Publish Artifact
